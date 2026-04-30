@@ -1,0 +1,36 @@
+# Environment
+.env
+
+# Storage
+storage/logs/*.log
+storage/cache/*
+storage/backups/*
+!storage/logs/.gitkeep
+!storage/cache/.gitkeep
+!storage/backups/.gitkeep
+
+# Uploads
+public/assets/uploads/*
+!public/assets/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Composer
+/vendor/
+composer.lock
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+scratch/

@@ -1,0 +1,186 @@
+/* MMO Marketplace Custom Styles */
+
+:root {
+    /* Theme Tím Nhạt - Tím Trendy */
+    --brand-main: #8b5cf6;       /* Violet 500 */
+    --brand-hover: #7c3aed;      /* Violet 600 */
+    --brand-light: #ddd6fe;      /* Violet 200 */
+    --brand-dark: #6d28d9;       /* Violet 700 */
+    
+    --primary-color: var(--brand-main);
+    --secondary-color: #a855f7;  /* Purple 500 */
+    --danger-color: #ef4444;     /* Red 500 */
+    --warning-color: #f59e0b;    /* Amber 500 */
+    --dark-color: #1f2937;       /* Gray 800 */
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8fafc; /* Màu nền sáng nhẹ */
+}
+
+/* OVERRIDE BOOTSTRAP COLORS THÀNH MÀU TÍM */
+.text-success, .text-primary {
+    color: var(--brand-main) !important;
+}
+
+.bg-success, .bg-primary {
+    background-color: var(--brand-main) !important;
+}
+
+.btn-success, .btn-primary {
+    background-color: var(--brand-main);
+    border-color: var(--brand-main);
+    color: white;
+}
+
+.btn-success:hover, .btn-primary:hover, .btn-success:focus, .btn-primary:focus {
+    background-color: var(--brand-hover);
+    border-color: var(--brand-hover);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.btn-outline-success, .btn-outline-primary {
+    color: var(--brand-main);
+    border-color: var(--brand-main);
+}
+
+.btn-outline-success:hover, .btn-outline-primary:hover {
+    background-color: var(--brand-main);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.badge.bg-success, .badge.bg-primary {
+    background-color: var(--brand-main) !important;
+    color: white;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn {
+    border-radius: 8px;
+    padding: 8px 20px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+/* Product Card */
+.product-card {
+    transition: all 0.3s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 30px rgba(0,0,0,.15);
+}
+
+.product-card img {
+    border-radius: 10px 10px 0 0;
+}
+
+/* Category Card */
+.category-card {
+    text-align: center;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    transform: scale(1.05);
+}
+
+/* Alert */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* Table */
+.table {
+    background: white;
+}
+
+.table thead th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+/* Form */
+.form-control, .form-select {
+    border-radius: 5px;
+    border: 1px solid #ced4da;
+    padding: 10px 15px;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Footer */
+footer {
+    margin-top: auto;
+}
+
+footer a {
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+footer a:hover {
+    color: var(--primary-color) !important;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* Loading Spinner */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #218838;
+}
