@@ -338,6 +338,7 @@ try {
 
     ensureColumn($pdo, 'users', 'last_active_at', 'DATETIME DEFAULT NULL AFTER `updated_at`');
     ensureColumn($pdo, 'users', 'is_seller_requested', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`');
+    ensureColumn($pdo, 'users', 'max_products', 'INT(11) NOT NULL DEFAULT 10 AFTER `is_seller_requested`');
     ensureColumn($pdo, 'order_items', 'is_read', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `seller_amount`');
     ensureMenus($pdo);
     ensureExtraTables($pdo);

@@ -25,7 +25,9 @@
                                         <?= mb_strtoupper(mb_substr($conv['other_username'], 0, 1)) ?>
                                     </div>
                                     <?php
-                                    $isOnline = $conv['other_last_active'] && (time() - strtotime($conv['other_last_active']) < 300);
+                                    $otherLastActive = $conv['other_last_active'] ?? null;
+                                    $isOnline = $otherLastActive && (time() - strtotime($otherLastActive) < 300);
+                                    $conversationTime = $conv['updated_at'] ?? ($conv['last_message_at'] ?? null);
                                     if ($isOnline):
                                         ?>
                                         <span
@@ -37,7 +39,7 @@
                                     <div class="d-flex justify-content-between align-items-center">
                                         <h6 class="fw-bold mb-0 text-dark"><?= e($conv['other_name'] ?? $conv['other_username']) ?></h6>
                                         <small class="text-muted"
-                                            style="font-size: 0.65rem;"><?= date('H:i', strtotime($conv['updated_at'])) ?></small>
+                                            style="font-size: 0.65rem;"><?= $conversationTime ? date('H:i', strtotime($conversationTime)) : '--:--' ?></small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-1">
                                         <p class="text-muted small mb-0 text-truncate me-2">
