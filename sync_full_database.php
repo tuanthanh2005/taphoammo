@@ -58,6 +58,8 @@ function shouldIgnoreSqlError(PDOException $e): bool
         'Duplicate column name',
         'Duplicate key name',
         'Duplicate foreign key constraint name',
+        'errno: 121',
+        '1005',
         '1060',
         '1061',
         '1050',
