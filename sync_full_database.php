@@ -337,6 +337,8 @@ try {
     executeSqlFile($pdo, 'migrations/articles.sql', 'Articles schema');
 
     ensureColumn($pdo, 'users', 'last_active_at', 'DATETIME DEFAULT NULL AFTER `updated_at`');
+    ensureColumn($pdo, 'users', 'is_seller_requested', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`');
+    ensureColumn($pdo, 'order_items', 'is_read', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `seller_amount`');
     ensureMenus($pdo);
     ensureExtraTables($pdo);
     ensureSystemSettings($pdo);
