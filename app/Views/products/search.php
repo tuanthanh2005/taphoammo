@@ -114,10 +114,6 @@
                     <!-- Horizontal Product Card -->
                     <div class="col-xl-6 col-lg-12">
                         <div class="card h-100 border-0 shadow-sm product-horizontal-card position-relative">
-                            <div class="position-absolute" style="top: 10px; right: 10px; z-index: 3;">
-                                <button class="btn btn-sm btn-light text-muted rounded-circle p-1 position-relative z-3" style="width: 28px; height: 28px;"><i class="far fa-heart"></i></button>
-                            </div>
-                            
                             <div class="row g-0 p-3 h-100">
                                 <!-- Trái: Hình ảnh & Giá -->
                                 <div class="col-4 text-center d-flex flex-column justify-content-center align-items-center border-end pe-3">
@@ -167,7 +163,7 @@
                                     
                                     <div class="small mb-1" style="font-size: 12px;">
                                         <span class="text-muted">Người bán:</span> 
-                                        <a href="<?= url('/seller/' . ($product['seller_username'] ?? '')) ?>" class="text-success text-decoration-none fw-medium position-relative z-3"><?= e($product['seller_name']) ?></a> 
+                                        <a href="<?= url('/seller/' . ($product['seller_username'] ?? $product['seller_id'])) ?>" class="text-decoration-none fw-bold" style="position: relative; z-index: 2;"><?= e($product['seller_name']) ?></a>
                                         <span class="text-success ms-1"><i class="fas fa-check-circle" title="Đã xác thực"></i></span>
                                     </div>
                                     

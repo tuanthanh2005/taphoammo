@@ -48,6 +48,17 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link d-flex justify-content-between align-items-center" href="<?= url('/admin/spam-users') ?>">
+                                <span><i class="fas fa-user-slash text-danger"></i> Khách hàng spam</span>
+                                <?php
+                                $adminSpamCount = $db->fetchOne("SELECT COUNT(*) as count FROM (SELECT user_id FROM deposit_requests WHERE status = 'rejected' GROUP BY user_id HAVING COUNT(*) >= 3) as t")['count'] ?? 0;
+                                if ($adminSpamCount > 0):
+                                ?>
+                                    <span class="badge bg-warning text-dark rounded-pill"><?= $adminSpamCount ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="<?= url('/admin/sellers') ?>">
                                 <i class="fas fa-store"></i> Sellers
                             </a>
@@ -65,6 +76,17 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                                 <span><i class="fas fa-shopping-cart"></i> Đơn hàng</span>
                                 <?php if ($adminPendingOrders > 0): ?>
                                     <span class="badge bg-danger rounded-pill"><?= $adminPendingOrders ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex justify-content-between align-items-center" href="<?= url('/admin/disputes') ?>">
+                                <span><i class="fas fa-balance-scale"></i> Khiếu nại</span>
+                                <?php
+                                $adminPendingDisputes = $db->fetchOne("SELECT COUNT(*) as count FROM disputes WHERE status IN ('open', 'under_review')")['count'] ?? 0;
+                                if ($adminPendingDisputes > 0):
+                                ?>
+                                    <span class="badge bg-danger rounded-pill"><?= $adminPendingDisputes ?></span>
                                 <?php endif; ?>
                             </a>
                         </li>
@@ -105,6 +127,11 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="<?= url('/admin/bai-viet') ?>">
+                                <i class="fas fa-newspaper"></i> Bài viết
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="<?= url('/') ?>">
                                 <i class="fas fa-home"></i> Về trang chủ
                             </a>
@@ -112,7 +139,7 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                     </ul>
                 </div>
             </nav>
-            
+
             <main class="col-md-10 ms-sm-auto px-md-4">
                 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                     <h1 class="h2"><?= $pageTitle ?? 'Dashboard' ?></h1>
@@ -121,26 +148,26 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                         <a href="<?= url('/logout') ?>" class="btn btn-sm btn-outline-danger ms-2">Đăng xuất</a>
                     </div>
                 </div>
-                
+
                 <?php if (Session::hasFlash('success')): ?>
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         <?= e(Session::getFlash('success')) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <?php if (Session::hasFlash('error')): ?>
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <?= e(Session::getFlash('error')) ?>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 <?php endif; ?>
-                
+
                 <?php echo $content ?? ''; ?>
             </main>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

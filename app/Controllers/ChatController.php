@@ -95,12 +95,21 @@ class ChatController extends Controller {
                 try {
                     $recipientIdFinal = $isBuyer ? $conversation['seller_id'] : $conversation['buyer_id'];
                     $recipientUser = $this->userModel->find($recipientIdFinal);
+                    
                     if (!empty($recipientUser['telegram_chat_id'])) {
-                        $senderUser = Auth::user();
-                        $msg = "💬 <b>TIN NHẮN MỚI TỪ " . e($senderUser['name']) . "</b>\n";
-                        $msg .= "Nội dung: " . e($message) . "\n";
-                        $msg .= "Vui lòng truy cập hệ thống để trả lời.";
-                        Helper::sendTelegramMessage($recipientUser['telegram_chat_id'], $msg);
+                        // Kiểm tra nếu người nhận đang online (hoạt động trong 5 phút qua) thì không gửi Telegram
+                        $isOnline = false;
+                        if (!empty($recipientUser['last_active_at'])) {
+                            $isOnline = (time() - strtotime($recipientUser['last_active_at'])) < 300; // 5 phút
+                        }
+
+                        if (!$isOnline) {
+                            $senderUser = Auth::user();
+                            $msg = "💬 <b>TIN NHẮN MỚI TỪ " . e($senderUser['name']) . "</b>\n";
+                            $msg .= "Nội dung: " . e($message) . "\n";
+                            $msg .= "Vui lòng truy cập hệ thống để trả lời.";
+                            Helper::sendTelegramMessage($recipientUser['telegram_chat_id'], $msg);
+                        }
                     }
                 } catch (Exception $e) {
                     error_log("Telegram Notify Chat Error: " . $e->getMessage());
@@ -153,6 +162,7 @@ class ChatController extends Controller {
         if ($seller && $seller['last_active_at']) {
             $isOnline = (time() - strtotime($seller['last_active_at'])) < 300;
         }
+        if ((int)$sellerId === Helper::getSystemUserId()) $isOnline = true;
 
         return $this->json([
             'success' => true,
@@ -208,7 +218,14 @@ class ChatController extends Controller {
         if (!$id) return $this->json(['success' => false]);
 
         $userId = Auth::id();
-        $conversation = $this->conversationModel->find($id);
+        $systemUserId = Helper::getSystemUserId();
+        
+        if ($id === 'npc') {
+            $conversation = $this->conversationModel->findOrCreate($userId, $systemUserId);
+            $id = $conversation['id'];
+        } else {
+            $conversation = $this->conversationModel->find($id);
+        }
 
         if (!$conversation || ($conversation['buyer_id'] != $userId && $conversation['seller_id'] != $userId)) {
             return $this->json(['success' => false]);
@@ -227,6 +244,7 @@ class ChatController extends Controller {
         if ($otherUser && $otherUser['last_active_at']) {
             $isOnline = (time() - strtotime($otherUser['last_active_at'])) < 300;
         }
+        if ((int)$otherId === $systemUserId) $isOnline = true;
 
         return $this->json([
             'success' => true,
@@ -248,6 +266,36 @@ class ChatController extends Controller {
         return $this->json([
             'success' => true,
             'conversations' => $conversations
+        ]);
+    }
+
+    public function checkNotifications() {
+        if (!Auth::check()) {
+            return $this->json(['success' => false]);
+        }
+        
+        $userId = Auth::id();
+        $unreadCount = $this->conversationModel->getTotalUnread($userId);
+        $systemUserId = Helper::getSystemUserId();
+        
+        // Kiểm tra xem có tin nhắn chưa đọc từ NPC (User ID 1) không
+        $db = Database::getInstance();
+        $npcMessage = $db->fetchOne(
+            "SELECT m.id 
+             FROM messages m 
+             JOIN conversations c ON m.conversation_id = c.id 
+             WHERE (c.buyer_id = ? OR c.seller_id = ?) 
+             AND m.sender_id = ? 
+             AND m.is_read = 0 
+             ORDER BY m.created_at DESC LIMIT 1",
+            [$userId, $userId, $systemUserId]
+        );
+
+        return $this->json([
+            'success' => true,
+            'unread_count' => $unreadCount,
+            'has_new_npc_message' => !!$npcMessage,
+            'last_npc_message_id' => $npcMessage['id'] ?? null
         ]);
     }
 }

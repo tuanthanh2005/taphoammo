@@ -69,7 +69,19 @@
                             <i class="fas fa-tag me-1"></i> <?= e($product['category_name']) ?>
                         </span>
                         <div class="product-actions">
-                            <button class="btn btn-light btn-sm rounded-circle shadow-sm" title="Nhắn tin với shop" onclick="openChatModal(<?= $product['seller_id'] ?>, '<?= e($product['seller_name']) ?>')">
+                            <button class="btn btn-fav btn-light btn-sm rounded-circle shadow-sm me-1" 
+                                    data-id="<?= $product['id'] ?>" onclick="toggleFavorite(this, event)" title="Yêu thích">
+                                <?php
+                                $isFav = false;
+                                if (Auth::check()) {
+                                    $db = Database::getInstance();
+                                    $isFav = (bool)$db->fetchOne("SELECT id FROM user_favorites WHERE user_id = ? AND product_id = ?", [Auth::id(), $product['id']]);
+                                }
+                                ?>
+                                <i class="<?= $isFav ? 'fas text-danger' : 'far' ?> fa-heart"></i>
+                            </button>
+                            <button class="btn btn-light btn-sm rounded-circle shadow-sm" title="Nhắn tin với shop"
+                                onclick="openChatModal(<?= $product['seller_id'] ?>, '<?= e($product['seller_name']) ?>')">
                                 <i class="fas fa-comments text-primary"></i>
                             </button>
                         </div>
@@ -83,7 +95,7 @@
                             <?php if (!empty($product['rating_avg']) && $product['rating_avg'] > 0): ?>
                                 <div class="text-warning mb-1">
                                     <?php for ($i = 1; $i <= 5; $i++): ?>
-                                        <i class="fas fa-star<?= $i <= $product['rating_avg'] ? '' : '-o' ?>"></i>
+                                        <i class="<?= $i <= $product['rating_avg'] ? 'fas' : 'far' ?> fa-star"></i>
                                     <?php endfor; ?>
                                     <span
                                         class="text-dark fw-bold ms-1"><?= number_format($product['rating_avg'], 1) ?></span>
@@ -120,6 +132,13 @@
                                 <h2 class="text-primary fw-bold mb-0 fs-1"><?= money($product['price']) ?></h2>
                             <?php endif; ?>
                         </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 small mb-4">
+                        <strong>Bảo hành:</strong> <?= e(Helper::formatWarranty($product['warranty_days'] ?? 0)) ?>
+                        <?php if (!empty($product['warranty_note'])): ?>
+                            <div><?= nl2br(e($product['warranty_note'])) ?></div>
+                        <?php endif; ?>
                     </div>
 
                     <!-- Seller Info Mini -->
@@ -184,24 +203,24 @@
                                     </div>
                                 </div>
                             </div>
-                            <?php else: ?>
-                                <div class="alert alert-warning py-3 rounded-3 mt-4 d-flex align-items-center">
-                                    <i class="fas fa-exclamation-circle fs-4 me-3"></i>
-                                    <div class="fw-bold">Sản phẩm hiện đang tạm hết hàng! Hãy quay lại sau.</div>
-                                </div>
-                            <?php endif; ?>
                         <?php else: ?>
-                            <div class="mt-4 p-4 rounded-4 text-center"
-                                style="background-color: #f0f7ff; border: 1px dashed #0d6efd;">
-                                <div class="fs-4 mb-2 text-primary"><i class="fas fa-user-lock"></i></div>
-                                <h6 class="fw-bold text-dark mb-2">Đăng nhập để mua hàng</h6>
-                                <p class="text-muted small mb-3">Vui lòng đăng nhập tài khoản của bạn để tiến hành thanh
-                                    toán sản phẩm này.</p>
-                                <a href="<?= url('/login') ?>" class="btn btn-primary rounded-pill px-5 fw-bold shadow">
-                                    Đăng Nhập Ngay
-                                </a>
+                            <div class="alert alert-warning py-3 rounded-3 mt-4 d-flex align-items-center">
+                                <i class="fas fa-exclamation-circle fs-4 me-3"></i>
+                                <div class="fw-bold">Sản phẩm hiện đang tạm hết hàng! Hãy quay lại sau.</div>
                             </div>
                         <?php endif; ?>
+                    <?php else: ?>
+                        <div class="mt-4 p-4 rounded-4 text-center"
+                            style="background-color: #f0f7ff; border: 1px dashed #0d6efd;">
+                            <div class="fs-4 mb-2 text-primary"><i class="fas fa-user-lock"></i></div>
+                            <h6 class="fw-bold text-dark mb-2">Đăng nhập để mua hàng</h6>
+                            <p class="text-muted small mb-3">Vui lòng đăng nhập tài khoản của bạn để tiến hành thanh
+                                toán sản phẩm này.</p>
+                            <a href="<?= url('/login') ?>" class="btn btn-primary rounded-pill px-5 fw-bold shadow">
+                                Đăng Nhập Ngay
+                            </a>
+                        </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -223,9 +242,11 @@
                                     class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
                                 <div>
                                     <div class="fw-bold text-dark text-truncate" style="max-width: 250px;">
-                                        <?= e($product['name']) ?></div>
+                                        <?= e($product['name']) ?>
+                                    </div>
                                     <div class="text-danger fw-bold">
-                                        <?= money($product['sale_price'] ?? $product['price']) ?></div>
+                                        <?= money($product['sale_price'] ?? $product['price']) ?>
+                                    </div>
                                 </div>
                             </div>
 
@@ -246,10 +267,13 @@
                             </div>
 
                             <?php if (!empty($product['require_note'])): ?>
-                            <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Ghi Chú <span class="text-danger">*</span></label>
-                                <textarea name="note" id="modal_note" class="form-control" rows="2" placeholder="Sản phẩm này bắt buộc nhập ghi chú (Ví dụ: Email cần nâng cấp, link profile...)" required></textarea>
-                            </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold small text-muted text-uppercase">Ghi Chú <span
+                                            class="text-danger">*</span></label>
+                                    <textarea name="note" id="modal_note" class="form-control" rows="2"
+                                        placeholder="Sản phẩm này bắt buộc nhập ghi chú (Ví dụ: Email cần nâng cấp, link profile...)"
+                                        required></textarea>
+                                </div>
                             <?php endif; ?>
 
                             <div class="p-3 rounded-3" style="background-color: #fff9f0; border: 1px solid #ffeeba;">
@@ -364,15 +388,15 @@
 
                         Swal.fire({
                             icon: 'success',
-                            title: 'Thanh cong!',
+                            title: 'Thành công',
                             text: data.message,
                             confirmButtonColor: '#198754'
                         });
                     } catch (error) {
                         Swal.fire({
                             icon: 'error',
-                            title: 'Co loi xay ra',
-                            text: error.message || 'Khong the dat hang',
+                            title: 'Có lỗi xảy ra',
+                            text: error.message || 'Không thể đặt hàng',
                             confirmButtonColor: '#dc3545'
                         });
                     } finally {
@@ -430,12 +454,13 @@
                                                         <div class="text-warning small">
                                                             <?php for ($i = 1; $i <= 5; $i++): ?>
                                                                 <i
-                                                                    class="fas fa-star<?= $i <= $review['rating'] ? '' : '-o' ?>"></i>
+                                                                    class="<?= $i <= $review['rating'] ? 'fas' : 'far' ?> fa-star"></i>
                                                             <?php endfor; ?>
                                                         </div>
                                                     </div>
                                                     <div class="ms-auto text-muted small">
-                                                        <?= Helper::timeAgo($review['created_at']) ?></div>
+                                                        <?= Helper::timeAgo($review['created_at']) ?>
+                                                    </div>
                                                 </div>
                                                 <p class="mb-0 text-secondary small italic">
                                                     "<?= nl2br(e($review['comment'])) ?>"</p>
@@ -444,40 +469,39 @@
                                     <?php endforeach; ?>
                                 </div>
                             </div>
-                            <?php else: ?>
-                                <div class="text-center py-5">
-                                    <i class="far fa-comments fs-1 text-muted mb-3 d-block"></i>
-                                    <h6 class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</h6>
-                                    <p class="small text-muted mb-0">Hãy là người đầu tiên trải nghiệm và để lại nhận xét!
-                                    </p>
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                        <?php else: ?>
+                            <div class="text-center py-5">
+                                <i class="far fa-comments fs-1 text-muted mb-3 d-block"></i>
+                                <h6 class="text-muted">Chưa có đánh giá nào cho sản phẩm này.</h6>
+                                <p class="small text-muted mb-0">Hãy là người đầu tiên trải nghiệm và để lại nhận xét!
+                                </p>
+                            </div>
+                        <?php endif; ?>
+                    </div>
 
-                        <div id="warranty" class="tab-pane fade">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6 class="fw-bold mb-3">Quy định chung:</h6>
-                                    <ul class="small text-secondary list-unstyled">
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Bảo hành 1 đổi 1
-                                            nếu sản phẩm lỗi kỹ thuật.</li>
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Thời gian xử lý
-                                            khiếu nại trong vòng 24h.</li>
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Hỗ trợ kỹ thuật
-                                            trọn đời sau khi mua.</li>
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6 class="fw-bold mb-3">Trường hợp từ chối bảo hành:</h6>
-                                    <ul class="small text-secondary list-unstyled">
-                                        <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Sản phẩm đã quá
-                                            hạn bảo hành quy định.</li>
-                                        <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Do lỗi của người
-                                            dùng trong quá trình sử dụng.</li>
-                                        <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Đã can thiệp hoặc
-                                            thay đổi cấu trúc sản phẩm.</li>
-                                    </ul>
-                                </div>
+                    <div id="warranty" class="tab-pane fade">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">Quy định chung:</h6>
+                                <ul class="small text-secondary list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Bảo hành 1 đổi 1
+                                        nếu sản phẩm lỗi kỹ thuật.</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Thời gian xử lý
+                                        khiếu nại trong vòng 24h.</li>
+                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> Hỗ trợ kỹ thuật
+                                        trọn đời sau khi mua.</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-3">Trường hợp từ chối bảo hành:</h6>
+                                <ul class="small text-secondary list-unstyled">
+                                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Sản phẩm đã quá
+                                        hạn bảo hành quy định.</li>
+                                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Do lỗi của người
+                                        dùng trong quá trình sử dụng.</li>
+                                    <li class="mb-2"><i class="fas fa-times text-danger me-2"></i> Đã can thiệp hoặc
+                                        thay đổi cấu trúc sản phẩm.</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -528,147 +552,240 @@
     </div>
 </div>
 
-        <!-- Chat Modal -->
-        <div class="modal fade" id="chatWithSellerModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
-                <div class="modal-content border-0" style="border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
-                    <!-- Header -->
-                    <div class="px-4 py-3 d-flex align-items-center justify-content-between" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-bottom:none;">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold" id="chatSellerAvatar" style="width:38px;height:38px;color:#6366f1;font-size:1rem;flex-shrink:0;">S</div>
-                            <div>
-                                <div class="fw-semibold text-white" id="chatSellerName" style="font-size:0.95rem;line-height:1.2;">Người bán</div>
-                                <div id="chatSellerStatus" class="d-flex align-items-center gap-1" style="font-size:0.7rem;opacity:0.85;color:#fff;">
-                                    <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span> Đang trực tuyến
-                                </div>
-                            </div>
-                        </div>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <!-- Messages -->
-                    <div class="modal-body p-0" style="background:#f8fafc;">
-                        <div id="chatMessageHistory" class="px-3 py-3" style="height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
-                            <div class="text-center text-muted py-5">
-                                <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
-                                <div class="small">Đang tải...</div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Footer input -->
-                    <div class="px-3 py-3 bg-white" style="border-top:1px solid #e9ecef;">
-                        <div class="d-flex align-items-end gap-2 rounded-3 px-3 py-2" style="background:#f1f5f9;">
-                            <textarea id="chatMessageInput" class="form-control border-0 bg-transparent flex-grow-1 p-0" placeholder="Nhập tin nhắn..." style="box-shadow:none;resize:none;min-height:22px;max-height:140px;font-size:0.875rem;line-height:1.5;" rows="1" oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,140)+'px'"></textarea>
-                            <button id="sendChatMessageBtn" class="btn rounded-circle d-flex align-items-center justify-content-center p-0 mb-1" style="width:32px;height:32px;flex-shrink:0;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;color:#fff;">
-                                <i class="fas fa-paper-plane" style="font-size:0.75rem;"></i>
-                            </button>
+<!-- Chat Modal -->
+<div class="modal fade" id="chatWithSellerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+        <div class="modal-content border-0"
+            style="border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);">
+            <!-- Header -->
+            <div class="px-4 py-3 d-flex align-items-center justify-content-between"
+                style="background:linear-gradient(135deg,#6366f1,#8b5cf6);border-bottom:none;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle bg-white d-flex align-items-center justify-content-center fw-bold"
+                        id="chatSellerAvatar"
+                        style="width:38px;height:38px;color:#6366f1;font-size:1rem;flex-shrink:0;">S</div>
+                    <div>
+                        <div class="fw-semibold text-white" id="chatSellerName"
+                            style="font-size:0.95rem;line-height:1.2;">Người bán</div>
+                        <div id="chatSellerStatus" class="d-flex align-items-center gap-1"
+                            style="font-size:0.7rem;opacity:0.85;color:#fff;">
+                            <span
+                                style="width:6px;height:6px;border-radius:50%;background:#4ade80;display:inline-block;"></span>
+                            Đang trực tuyến
                         </div>
                     </div>
                 </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <!-- Messages -->
+            <div class="modal-body p-0" style="background:#f8fafc;">
+                <div id="chatMessageHistory" class="px-3 py-3"
+                    style="height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">
+                    <div class="text-center text-muted py-5">
+                        <div class="spinner-border spinner-border-sm mb-2" role="status"></div>
+                        <div class="small">Đang tải...</div>
+                    </div>
+                </div>
+            </div>
+            <!-- Footer input -->
+            <div class="px-3 py-3 bg-white position-relative" style="border-top:1px solid #e9ecef;">
+                <!-- Attachment Preview Card (Telegram-style) -->
+                <div id="modalChatImagePreviewContainer" class="d-none mb-2">
+                    <div class="d-flex align-items-center bg-white border rounded-3 p-2 shadow-sm"
+                        style="max-width:300px;gap:8px;">
+                        <div class="flex-shrink-0"
+                            style="width:48px;height:48px;border-radius:6px;overflow:hidden;background:#f0f0f0;">
+                            <img id="modalChatImagePreview" src="" style="width:100%;height:100%;object-fit:cover;">
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div id="modalChatAttachFileName" class="fw-semibold text-dark text-truncate"
+                                style="font-size:0.78rem;"></div>
+                            <div id="modalChatAttachFileSize" class="text-muted" style="font-size:0.7rem;"></div>
+                        </div>
+                        <button
+                            class="btn btn-danger rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
+                            style="width:22px;height:22px;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.2);"
+                            onclick="removeModalChatAttachment()" title="Xóa ảnh">
+                            <i class="fas fa-times" style="font-size:8px;"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Input Row -->
+                <div class="d-flex align-items-end gap-2">
+                    <input type="file" id="modalChatAttachmentInput" accept="image/*" data-skip-default-preview="true"
+                        class="d-none" onchange="previewModalChatAttachment(this)">
+                    <button
+                        class="btn btn-light rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                        onclick="document.getElementById('modalChatAttachmentInput').click()" title="Đính kèm ảnh"
+                        style="width:36px;height:36px;border:1.5px solid #dee2e6;flex-shrink:0;">
+                        <i class="fas fa-paperclip text-secondary" style="font-size:0.8rem;"></i>
+                    </button>
+                    <div class="flex-grow-1">
+                        <textarea id="chatMessageInput" class="form-control" placeholder="Nhập tin nhắn..."
+                            style="resize:none;min-height:36px;max-height:140px;border-radius:18px;padding:7px 14px;border:1.5px solid #dee2e6;box-shadow:none;font-size:0.875rem;line-height:1.5;transition:border-color 0.2s;"
+                            rows="1"
+                            oninput="this.style.height='';this.style.height=Math.min(this.scrollHeight,140)+'px'"
+                            onfocus="this.style.borderColor='#198754'"
+                            onblur="this.style.borderColor='#dee2e6'"></textarea>
+                    </div>
+                    <button id="sendChatMessageBtn"
+                        class="btn rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                        style="width:38px;height:38px;background:#198754;border:none;color:#fff;box-shadow:0 2px 8px rgba(25,135,84,0.35);transition:background 0.2s;"
+                        onmouseover="this.style.background='#157347'" onmouseout="this.style.background='#198754'">
+                        <i class="fas fa-paper-plane" style="font-size:0.75rem;transform:rotate(-10deg);"></i>
+                    </button>
+                </div>
             </div>
         </div>
+    </div>
+</div>
 
-        <script>
-            let chatSellerId = null, chatInterval = null;
+<script>
+    let chatSellerId = null, chatInterval = null, modalSelectedAttachment = null;
 
-            function timeAgo(d) {
-                if (!d) return '';
-                const s = Math.floor((new Date() - new Date(d.replace(' ','T'))) / 1000);
-                if (s < 60) return 'vài giây trước';
-                if (s < 3600) return Math.floor(s/60) + ' phút trước';
-                if (s < 86400) return Math.floor(s/3600) + ' giờ trước';
-                return Math.floor(s/86400) + ' ngày trước';
+    function _modalFormatSize(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b / 1024).toFixed(2) + ' KB';
+        return (b / 1048576).toFixed(2) + ' MB';
+    }
+
+    function previewModalChatAttachment(input) {
+        if (input.files && input.files[0]) {
+            modalSelectedAttachment = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('modalChatImagePreview').src = e.target.result;
+                document.getElementById('modalChatAttachFileName').textContent = modalSelectedAttachment.name;
+                document.getElementById('modalChatAttachFileSize').textContent = _modalFormatSize(modalSelectedAttachment.size);
+                document.getElementById('modalChatImagePreviewContainer').classList.remove('d-none');
+            };
+            reader.readAsDataURL(modalSelectedAttachment);
+        }
+    }
+
+    function removeModalChatAttachment() {
+        modalSelectedAttachment = null;
+        document.getElementById('modalChatAttachmentInput').value = '';
+        document.getElementById('modalChatImagePreviewContainer').classList.add('d-none');
+        document.getElementById('modalChatImagePreview').src = '';
+        document.getElementById('modalChatAttachFileName').textContent = '';
+        document.getElementById('modalChatAttachFileSize').textContent = '';
+    }
+
+    function timeAgo(d) {
+        if (!d) return '';
+        const s = Math.floor((new Date() - new Date(d.replace(' ', 'T'))) / 1000);
+        if (s < 60) return 'vài giây trước';
+        if (s < 3600) return Math.floor(s / 60) + ' phút trước';
+        if (s < 86400) return Math.floor(s / 3600) + ' giờ trước';
+        return Math.floor(s / 86400) + ' ngày trước';
+    }
+
+    function renderMsgHtml(msg, uid) {
+        const me = msg.sender_id == uid;
+        let attachHtml = '';
+        if (msg.attachment) {
+            attachHtml = `<div class="mb-1"><img src="<?= asset('') ?>${msg.attachment}" class="img-fluid rounded border shadow-sm" style="max-height: 150px; cursor:pointer;" onclick="window.open(this.src)"></div>`;
+        }
+        let body = '';
+        if (msg.message && msg.message !== '[Tệp đính kèm]') {
+            body = `<div style="font-size:0.875rem;white-space:pre-wrap;word-break:break-word;line-height:1.5;">${msg.message}</div>`;
+        } else if (msg.message === '[Tệp đính kèm]' && !msg.attachment) {
+            body = `<div style="font-size:0.875rem;font-style:italic;opacity:0.8;">[Tệp đính kèm]</div>`;
+        }
+        const t = new Date(msg.created_at.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const s = me ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:18px 18px 4px 18px;' : 'background:#fff;color:#1e293b;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.08);';
+        return `<div class="d-flex ${me ? 'justify-content-end' : 'justify-content-start'}"><div style="max-width:85%;padding:8px 14px;${s}">${attachHtml}${body}<div style="font-size:0.6rem;opacity:0.6;text-align:${me ? 'right' : 'left'};margin-top:2px;">${t}</div></div></div>`;
+    }
+
+    function openChatModal(sellerId, sellerName) {
+        if (!<?= Auth::check() ? 'true' : 'false' ?>) {
+            Swal.fire({ icon: 'info', title: 'Đăng nhập', text: 'Vui lòng đăng nhập để nhắn tin', confirmButtonText: 'Đăng nhập', showCancelButton: true })
+                .then(r => { if (r.isConfirmed) window.location.href = '<?= url('/login') ?>'; });
+            return;
+        }
+        chatSellerId = sellerId;
+        document.getElementById('chatSellerName').innerText = sellerName;
+        document.getElementById('chatSellerAvatar').innerText = sellerName.charAt(0).toUpperCase();
+        new bootstrap.Modal(document.getElementById('chatWithSellerModal')).show();
+        loadChatMessages();
+        if (chatInterval) clearInterval(chatInterval);
+        chatInterval = setInterval(loadChatMessages, 3000);
+    }
+
+    async function loadChatMessages() {
+        if (!chatSellerId) return;
+        const el = document.getElementById('chatMessageHistory');
+        try {
+            const r = await fetch(`<?= url('/api/chat/messages') ?>?seller_id=${chatSellerId}`);
+            if (!r.ok) throw new Error();
+            const d = await r.json();
+            if (!d.success) { el.innerHTML = `<div class="text-center text-danger small my-5">${d.message || 'Lỗi'}</div>`; return; }
+            const bot = el.scrollHeight - el.scrollTop <= el.clientHeight + 60;
+            const st = document.getElementById('chatSellerStatus');
+            if (st) {
+                const dot = d.is_online ? '#4ade80' : '#9ca3af';
+                const txt = d.is_online ? 'Đang trực tuyến' : (d.last_active_at ? 'Hoạt động ' + timeAgo(d.last_active_at) : 'Ngoại tuyến');
+                st.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dot};display:inline-block;"></span> ${txt}`;
             }
+            el.innerHTML = d.messages.length === 0
+                ? '<div class="text-center text-muted small" style="margin-top:80px;"><i class="far fa-comment-dots" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:8px;"></i>Hãy bắt đầu cuộc trò chuyện!</div>'
+                : d.messages.map(m => renderMsgHtml(m, d.current_user_id)).join('');
+            if (bot) el.scrollTop = el.scrollHeight;
+        } catch (e) {
+            if (el.querySelector('.spinner-border')) el.innerHTML = '<div class="text-center text-danger small my-5">Lỗi kết nối</div>';
+        }
+    }
 
-            function renderMsgHtml(msg, uid) {
-                const me = msg.sender_id == uid;
-                const body = msg.message ? `<div style="font-size:0.875rem;white-space:pre-wrap;word-break:break-word;line-height:1.5;">${msg.message}</div>` : '';
-                const t = new Date(msg.created_at.replace(' ','T')).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-                const s = me ? 'background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:18px 18px 4px 18px;' : 'background:#fff;color:#1e293b;border-radius:18px 18px 18px 4px;box-shadow:0 1px 4px rgba(0,0,0,0.08);';
-                return `<div class="d-flex ${me?'justify-content-end':'justify-content-start'}"><div style="max-width:75%;padding:8px 14px;${s}">${body}<div style="font-size:0.6rem;opacity:0.6;text-align:${me?'right':'left'};margin-top:2px;">${t}</div></div></div>`;
+    async function sendChatMessage() {
+        const inp = document.getElementById('chatMessageInput');
+        const btn = document.getElementById('sendChatMessageBtn');
+        const message = inp.value.trim();
+        if (!message && !modalSelectedAttachment) return;
+        const ob = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:0.7rem;"></i>';
+        try {
+            const fd = new FormData();
+            fd.append('seller_id', chatSellerId);
+            fd.append('message', message);
+            if (modalSelectedAttachment) {
+                fd.append('attachment', modalSelectedAttachment);
             }
-
-            function openChatModal(sellerId, sellerName) {
-                if (!<?= Auth::check() ? 'true' : 'false' ?>) {
-                    Swal.fire({icon:'info',title:'Đăng nhập',text:'Vui lòng đăng nhập để nhắn tin',confirmButtonText:'Đăng nhập',showCancelButton:true})
-                        .then(r => { if (r.isConfirmed) window.location.href='<?= url('/login') ?>'; });
-                    return;
+            fd.append('csrf_token', '<?= csrf_token() ?>');
+            const r = await fetch('<?= url('/api/chat/send') ?>', { method: 'POST', body: fd });
+            const d = await r.json();
+            if (d.success) {
+                removeModalChatAttachment();
+                inp.value = ''; inp.style.height = '22px';
+                if (d.messages && d.current_user_id) {
+                    const el = document.getElementById('chatMessageHistory');
+                    el.innerHTML = d.messages.map(m => renderMsgHtml(m, d.current_user_id)).join('');
+                    el.scrollTop = el.scrollHeight;
                 }
-                chatSellerId = sellerId;
-                document.getElementById('chatSellerName').innerText = sellerName;
-                document.getElementById('chatSellerAvatar').innerText = sellerName.charAt(0).toUpperCase();
-                new bootstrap.Modal(document.getElementById('chatWithSellerModal')).show();
-                loadChatMessages();
-                if (chatInterval) clearInterval(chatInterval);
-                chatInterval = setInterval(loadChatMessages, 3000);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Lỗi', text: d.message || 'Không thể gửi', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
             }
+        } catch (e) {
+            Swal.fire({ icon: 'error', title: 'Lỗi', text: 'Lỗi kết nối', toast: true, position: 'top-end', showConfirmButton: false, timer: 3000 });
+        } finally {
+            btn.disabled = false; btn.innerHTML = ob;
+            document.getElementById('chatMessageInput').focus();
+        }
+    }
 
-            async function loadChatMessages() {
-                if (!chatSellerId) return;
-                const el = document.getElementById('chatMessageHistory');
-                try {
-                    const r = await fetch(`<?= url('/api/chat/messages') ?>?seller_id=${chatSellerId}`);
-                    if (!r.ok) throw new Error();
-                    const d = await r.json();
-                    if (!d.success) { el.innerHTML = `<div class="text-center text-danger small my-5">${d.message||'Lỗi'}</div>`; return; }
-                    const bot = el.scrollHeight - el.scrollTop <= el.clientHeight + 60;
-                    const st = document.getElementById('chatSellerStatus');
-                    if (st) {
-                        const dot = d.is_online ? '#4ade80' : '#9ca3af';
-                        const txt = d.is_online ? 'Đang trực tuyến' : (d.last_active_at ? 'Hoạt động ' + timeAgo(d.last_active_at) : 'Ngoại tuyến');
-                        st.innerHTML = `<span style="width:6px;height:6px;border-radius:50%;background:${dot};display:inline-block;"></span> ${txt}`;
-                    }
-                    el.innerHTML = d.messages.length === 0
-                        ? '<div class="text-center text-muted small" style="margin-top:80px;"><i class="far fa-comment-dots" style="font-size:2rem;opacity:0.2;display:block;margin-bottom:8px;"></i>Hãy bắt đầu cuộc trò chuyện!</div>'
-                        : d.messages.map(m => renderMsgHtml(m, d.current_user_id)).join('');
-                    if (bot) el.scrollTop = el.scrollHeight;
-                } catch(e) {
-                    if (el.querySelector('.spinner-border')) el.innerHTML = '<div class="text-center text-danger small my-5">Lỗi kết nối</div>';
-                }
-            }
+    document.getElementById('sendChatMessageBtn').addEventListener('click', sendChatMessage);
+    document.getElementById('chatMessageInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    });
+    document.getElementById('chatWithSellerModal').addEventListener('hidden.bs.modal', () => {
+        if (chatInterval) clearInterval(chatInterval);
+        chatInterval = null; chatSellerId = null;
+        removeModalChatAttachment();
+    });
+</script>
 
-            async function sendChatMessage() {
-                const inp = document.getElementById('chatMessageInput');
-                const btn = document.getElementById('sendChatMessageBtn');
-                if (!inp.value.trim()) return;
-                const ob = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size:0.7rem;"></i>';
-                try {
-                    const fd = new FormData();
-                    fd.append('seller_id', chatSellerId);
-                    fd.append('message', inp.value.trim());
-                    fd.append('csrf_token', '<?= csrf_token() ?>');
-                    const r = await fetch('<?= url('/api/chat/send') ?>', {method:'POST',body:fd});
-                    const d = await r.json();
-                    if (d.success) {
-                        inp.value = ''; inp.style.height = '22px';
-                        if (d.messages && d.current_user_id) {
-                            const el = document.getElementById('chatMessageHistory');
-                            el.innerHTML = d.messages.map(m => renderMsgHtml(m, d.current_user_id)).join('');
-                            el.scrollTop = el.scrollHeight;
-                        }
-                    } else {
-                        Swal.fire({icon:'error',title:'Lỗi',text:d.message||'Không thể gửi',toast:true,position:'top-end',showConfirmButton:false,timer:3000});
-                    }
-                } catch(e) {
-                    Swal.fire({icon:'error',title:'Lỗi',text:'Lỗi kết nối',toast:true,position:'top-end',showConfirmButton:false,timer:3000});
-                } finally {
-                    btn.disabled = false; btn.innerHTML = ob;
-                    document.getElementById('chatMessageInput').focus();
-                }
-            }
-
-            document.getElementById('sendChatMessageBtn').addEventListener('click', sendChatMessage);
-            document.getElementById('chatMessageInput').addEventListener('keydown', e => {
-                if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-            });
-            document.getElementById('chatWithSellerModal').addEventListener('hidden.bs.modal', () => {
-                if (chatInterval) clearInterval(chatInterval);
-                chatInterval = null; chatSellerId = null;
-            });
-        </script>
-
-        <style>
+<style>
     .bg-success-soft {
         background-color: rgba(25, 135, 84, 0.1);
     }
@@ -732,6 +849,3 @@
 </style>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
-
-
-

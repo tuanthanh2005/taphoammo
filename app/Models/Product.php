@@ -32,6 +32,8 @@ class Product extends Model {
             if ($filters['status'] !== 'all') {
                 $where[] = 'p.status = :status';
                 $params['status'] = $filters['status'];
+            } else {
+                $where[] = "p.status != 'deleted'";
             }
         } else {
             $where[] = "p.status IN ('active', 'approved')";
@@ -39,31 +41,25 @@ class Product extends Model {
         
         if (!empty($filters['search'])) {
             $raw = trim($filters['search']);
-            // Build tokens: full keyword + individual words + bigrams from words
-            $tokens = [];
-            $tokens[] = $raw; // full phrase
-            $words = preg_split('/\s+/', $raw);
-            foreach ($words as $w) {
-                if (strlen($w) >= 2) {
-                    $tokens[] = $w;
-                    // bigrams: "chatgpt" → "ch","ha","at","tg","gp","pt"
-                    for ($i = 0; $i < strlen($w) - 1; $i++) {
-                        $tokens[] = substr($w, $i, 2);
-                    }
-                }
+            $whereSearch = [];
+            
+            // Tìm theo ID nếu là số
+            if (is_numeric($raw)) {
+                $whereSearch[] = "p.id = :search_id";
+                $params['search_id'] = intval($raw);
             }
-            $tokens = array_unique(array_filter($tokens));
-
-            // Build OR conditions, one per token
-            $likeConditions = [];
-            foreach ($tokens as $i => $token) {
-                $k1 = 'stok_n' . $i;
-                $k2 = 'stok_d' . $i;
-                $likeConditions[] = "(p.name LIKE :$k1 OR p.description LIKE :$k2)";
-                $params[$k1] = '%' . $token . '%';
-                $params[$k2] = '%' . $token . '%';
-            }
-            $where[] = '(' . implode(' OR ', $likeConditions) . ')';
+            
+            // Tìm theo tên sản phẩm, mô tả hoặc tên seller
+            $whereSearch[] = "p.name LIKE :s_name";
+            $whereSearch[] = "p.description LIKE :s_desc";
+            $whereSearch[] = "u.name LIKE :s_uname";
+            $whereSearch[] = "u.username LIKE :s_user";
+            $params['s_name'] = '%' . $raw . '%';
+            $params['s_desc'] = '%' . $raw . '%';
+            $params['s_uname'] = '%' . $raw . '%';
+            $params['s_user'] = '%' . $raw . '%';
+            
+            $where[] = '(' . implode(' OR ', $whereSearch) . ')';
         }
 
         
@@ -75,7 +71,7 @@ class Product extends Model {
         $whereClause = implode(' AND ', $where);
         $offset = ($page - 1) * $perPage;
         
-        $sql = "SELECT p.*, u.name as seller_name, c.name as category_name 
+        $sql = "SELECT p.*, u.name as seller_name, u.username as seller_username, c.name as category_name 
                 FROM {$this->table} p
                 LEFT JOIN users u ON p.seller_id = u.id
                 LEFT JOIN categories c ON p.category_id = c.id

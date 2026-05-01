@@ -23,8 +23,9 @@ class Withdrawal extends Model {
         ]);
     }
     
-    public function getUserWithdrawals($userId) {
-        $sql = "SELECT * FROM {$this->table} WHERE user_id = ? ORDER BY created_at DESC";
+    public function getUserWithdrawals($userId, $page = 1, $perPage = 10) {
+        $offset = ($page - 1) * $perPage;
+        $sql = "SELECT * FROM {$this->table} WHERE user_id = ? ORDER BY created_at DESC LIMIT {$perPage} OFFSET {$offset}";
         return $this->db->fetchAll($sql, [$userId]);
     }
     
@@ -37,15 +38,26 @@ class Withdrawal extends Model {
         return $this->db->fetchAll($sql);
     }
     
-    public function getAllWithdrawals($page = 1, $perPage = 50) {
+    public function getAllWithdrawals($page = 1, $perPage = 50, $search = '') {
         $offset = ($page - 1) * $perPage;
         
-        $sql = "SELECT w.*, u.name as user_name, u.email as user_email
+        $where = "1=1";
+        $params = [];
+        if (!empty($search)) {
+            $where .= " AND (u.name LIKE ? OR u.email LIKE ? OR w.account_info LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        $sql = "SELECT w.*, u.name as user_name, u.email as user_email,
+                       (SELECT COUNT(*) FROM disputes WHERE seller_id = w.user_id AND status IN ('open', 'under_review')) as active_disputes
                 FROM {$this->table} w
                 LEFT JOIN users u ON w.user_id = u.id
+                WHERE {$where}
                 ORDER BY w.created_at DESC
                 LIMIT {$perPage} OFFSET {$offset}";
         
-        return $this->db->fetchAll($sql);
+        return $this->db->fetchAll($sql, $params);
     }
 }

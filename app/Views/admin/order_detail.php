@@ -32,6 +32,7 @@ ob_start();
                             <tr>
                                 <td>
                                     <strong><?= e($item['product_name']) ?></strong>
+                                    <div><span class="badge bg-secondary"><?= e($item['item_status'] ?? 'processing') ?></span></div>
                                 </td>
                                 <td><?= e($item['seller_name']) ?></td>
                                 <td><?= money($item['price']) ?></td>

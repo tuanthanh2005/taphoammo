@@ -1,4 +1,11 @@
 <?php ob_start(); ?>
+<?php
+$bankName = trim($walletSettings['deposit_bank_name'] ?? 'MB Bank');
+$accountName = trim($walletSettings['deposit_account_name'] ?? 'TRAN THANH TUAN');
+$accountNumber = trim($walletSettings['deposit_account_number'] ?? '0783704196');
+$walletSupportTelegram = trim($walletSettings['wallet_telegram_support_username'] ?? '@specademy');
+$walletSupportTelegramUrl = trim($walletSettings['wallet_telegram_support_url'] ?? 'https://t.me/specademy');
+?>
 
 <div class="row mb-4">
     <div class="col-12 d-flex justify-content-between align-items-center">
@@ -190,10 +197,11 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                         <strong><i class="fas fa-university"></i> Thông tin chuyển khoản:</strong>
                         <hr class="my-2">
                         <div>
-                            Ngân hàng: <strong>MB Bank</strong><br>
-                            STK: <strong class="text-primary fs-6">0783704196</strong><br>
-                            Chủ TK: <strong>TRAN THANH TUAN</strong><br>
-                            Nội dung: <strong class="text-danger">NAPSELLER</strong>
+                            Ngân hàng: <strong><?= e($bankName) ?></strong><br>
+                            STK: <strong class="text-primary fs-6"><?= e($accountNumber) ?></strong><br>
+                            Chủ TK: <strong><?= e($accountName) ?></strong><br>
+                            Nội dung: <strong class="text-danger">NAPSELLER + ID seller</strong><br>
+                            Telegram ví: <a href="<?= e($walletSupportTelegramUrl) ?>" target="_blank" class="fw-bold text-decoration-none"><?= e($walletSupportTelegram) ?></a>
                         </div>
                         <hr class="my-2">
                         <small class="text-muted"><i class="fas fa-info-circle"></i> Sau khi chuyển khoản, admin sẽ xác nhận và cộng tiền vào ví của bạn.</small>

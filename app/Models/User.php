@@ -7,7 +7,7 @@ class User extends Model {
     public function createUser($data) {
         // Generate referral code
         if (!isset($data['referral_code'])) {
-            $data['referral_code'] = strtoupper(substr($data['username'], 0, 3) . rand(1000, 9999));
+            $data['referral_code'] = strtoupper(mb_substr($data['username'], 0, 3, 'UTF-8') . rand(1000, 9999));
         }
         
         // Hash password

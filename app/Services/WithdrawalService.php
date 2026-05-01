@@ -34,6 +34,10 @@ class WithdrawalService {
                 throw new Exception('Số dư không đủ');
             }
             
+            if (($wallet['balance'] - $amount) < $minBalance) {
+                throw new Exception('Người bán phải giữ lại tối thiểu ' . number_format($minBalance) . 'đ làm quỹ bảo chứng sau khi rút.');
+            }
+
             // Calculate fee
             $feeAmount = $amount * ($feePercent / 100);
             $receiveAmount = $amount - $feeAmount;
@@ -59,6 +63,25 @@ class WithdrawalService {
                 "UPDATE transactions SET reference_id = ? WHERE user_id = ? AND type = 'withdrawal' AND reference_id IS NULL ORDER BY id DESC LIMIT 1",
                 [$withdrawalId, $userId]
             );
+
+            $walletTelegram = Helper::getWalletTelegramSettings();
+            if ($walletTelegram['chat_id'] !== '' && $walletTelegram['bot_token'] !== '') {
+                $user = $this->db->fetchOne("SELECT name, username, email FROM users WHERE id = ?", [$userId]);
+                $message = implode("\n", [
+                    'YEU CAU RUT TIEN SELLER',
+                    'Request ID: ' . $withdrawalId,
+                    'User ID: ' . $userId,
+                    'Ten: ' . ($user['name'] ?? ''),
+                    'Username: ' . ($user['username'] ?? ''),
+                    'Email: ' . ($user['email'] ?? ''),
+                    'So tien rut: ' . number_format($amount, 0, ',', '.') . 'd',
+                    'Phi: ' . number_format($feeAmount, 0, ',', '.') . 'd',
+                    'Thuc nhan: ' . number_format($receiveAmount, 0, ',', '.') . 'd',
+                    'Phuong thuc: ' . $method,
+                    'Tai khoan: ' . preg_replace('/\s+/', ' ', trim((string)$accountInfo)),
+                ]);
+                Helper::sendTelegramMessage($walletTelegram['chat_id'], $message, $walletTelegram['bot_token']);
+            }
             
             $this->db->commit();
             
@@ -92,7 +115,7 @@ class WithdrawalService {
             ], 'id = :id', ['id' => $withdrawalId]);
             
             // Add withdrawal fee to admin wallet
-            $this->walletService->addMoney(1, $withdrawal['fee_amount'], 'withdrawal_fee', 'withdrawal', $withdrawalId,
+            $this->walletService->addMoney(Helper::getSystemUserId(), $withdrawal['fee_amount'], 'withdrawal_fee', 'withdrawal', $withdrawalId,
                 'Phí rút tiền từ yêu cầu #' . $withdrawalId);
             
             // Update wallet total_withdrawn

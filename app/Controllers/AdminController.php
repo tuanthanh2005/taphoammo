@@ -15,10 +15,14 @@ class AdminController extends Controller {
             'total_revenue' => $db->fetchOne("SELECT SUM(total_amount) as total FROM orders WHERE payment_status = 'paid'")['total'] ?? 0,
             'admin_revenue' => $db->fetchOne("SELECT SUM(admin_fee_amount) as total FROM order_items")['total'] ?? 0,
             'pending_products' => $db->fetchOne("SELECT COUNT(*) as total FROM products WHERE status = 'pending'")['total'],
-            'pending_withdrawals' => $db->fetchOne("SELECT COUNT(*) as total FROM withdrawals WHERE status = 'pending'")['total']
+            'pending_withdrawals' => $db->fetchOne("SELECT COUNT(*) as total FROM withdrawals WHERE status = 'pending'")['total'],
+            'pending_deposits' => $db->fetchOne("SELECT COUNT(*) as total FROM deposit_requests WHERE status = 'pending'")['total'],
+            'open_disputes' => $db->fetchOne("SELECT COUNT(*) as total FROM disputes WHERE status IN ('open', 'under_review')")['total'],
+            'revenue_today' => $db->fetchOne("SELECT SUM(admin_fee_amount) as total FROM order_items oi JOIN orders o ON oi.order_id = o.id WHERE o.payment_status = 'paid' AND DATE(o.created_at) = CURDATE()")['total'] ?? 0,
+            'deposit_approved_today' => $db->fetchOne("SELECT SUM(amount) as total FROM deposit_requests WHERE status = 'approved' AND DATE(processed_at) = CURDATE()")['total'] ?? 0
         ];
         
-        // Get recent orders
+        // Get recent orders (Last 10)
         $recentOrders = $db->fetchAll(
             "SELECT o.*, u.name as user_name 
              FROM orders o
@@ -27,27 +31,51 @@ class AdminController extends Controller {
              LIMIT 10"
         );
         
-        // Get pending withdrawals
+        // Get pending withdrawals (First 5)
         $pendingWithdrawals = $db->fetchAll(
             "SELECT w.*, u.name as user_name, u.email
              FROM withdrawals w
              LEFT JOIN users u ON w.user_id = u.id
              WHERE w.status = 'pending'
              ORDER BY w.created_at ASC
-             LIMIT 10"
+             LIMIT 5"
+        );
+
+        // Get open disputes
+        $recentDisputes = $db->fetchAll(
+            "SELECT d.*, u.name as buyer_name, p.name as product_name
+             FROM disputes d
+             LEFT JOIN users u ON d.user_id = u.id
+             LEFT JOIN order_items oi ON d.order_item_id = oi.id
+             LEFT JOIN products p ON oi.product_id = p.id
+             WHERE d.status IN ('open', 'under_review')
+             ORDER BY d.created_at DESC
+             LIMIT 5"
+        );
+
+        // Get top 5 sellers by revenue
+        $topSellers = $db->fetchAll(
+            "SELECT u.name, u.email, SUM(oi.seller_amount) as total_revenue
+             FROM order_items oi
+             JOIN users u ON oi.seller_id = u.id
+             GROUP BY oi.seller_id
+             ORDER BY total_revenue DESC
+             LIMIT 5"
         );
         
         $this->view('admin/dashboard', [
             'stats' => $stats,
             'recentOrders' => $recentOrders,
-            'pendingWithdrawals' => $pendingWithdrawals
+            'pendingWithdrawals' => $pendingWithdrawals,
+            'recentDisputes' => $recentDisputes,
+            'topSellers' => $topSellers
         ]);
     }
     
     public function users() {
         $db = Database::getInstance();
         $page = $_GET['page'] ?? 1;
-        $perPage = 50;
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
         
         $search = $_GET['search'] ?? '';
@@ -57,70 +85,378 @@ class AdminController extends Controller {
         $params = [];
         
         if (!empty($search)) {
-            $where[] = '(name LIKE :search1 OR email LIKE :search2 OR username LIKE :search3)';
+            $where[] = '(u.name LIKE :search1 OR u.email LIKE :search2 OR u.username LIKE :search3)';
             $params['search1'] = '%' . $search . '%';
             $params['search2'] = '%' . $search . '%';
             $params['search3'] = '%' . $search . '%';
         }
         
         if (!empty($role)) {
-            $where[] = 'role = :role';
+            $where[] = 'u.role = :role';
             $params['role'] = $role;
         }
         
         $whereClause = implode(' AND ', $where);
         
         $users = $db->fetchAll(
-            "SELECT * FROM users WHERE {$whereClause} ORDER BY created_at DESC LIMIT {$perPage} OFFSET {$offset}",
+            "SELECT u.*, COALESCE(w.balance, 0) as wallet_balance
+             FROM users u
+             LEFT JOIN wallets w ON w.user_id = u.id
+             WHERE {$whereClause}
+             ORDER BY u.created_at DESC
+             LIMIT {$perPage} OFFSET {$offset}",
             $params
         );
         
         $this->view('admin/users', [
             'users' => $users,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'totalUsers' => $db->fetchOne("SELECT COUNT(*) as total FROM users u WHERE {$whereClause}", $params)['total'],
+            'pendingSellerRequests' => $db->fetchOne("SELECT COUNT(*) as total FROM users WHERE is_seller_requested = 1")['total']
         ]);
     }
-    
-    public function sellers() {
+
+    public function spamUsers() {
         $db = Database::getInstance();
-        $page = $_GET['page'] ?? 1;
-        $perPage = 50;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
         
+        $search = trim($_GET['search'] ?? '');
+        $where = "1=1";
+        $params = [];
+        
+        if (!empty($search)) {
+            $where .= " AND (u.name LIKE ? OR u.email LIKE ? OR u.username LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        // Users with 3 or more spam alerts (of any type)
+        $users = $db->fetchAll(
+            "SELECT u.*, 
+                    COUNT(s.id) as total_alerts,
+                    MAX(s.created_at) as last_alert_at,
+                    GROUP_CONCAT(DISTINCT s.type) as alert_types
+             FROM users u
+             JOIN spam_alerts s ON u.id = s.user_id
+             WHERE {$where}
+             GROUP BY u.id
+             HAVING total_alerts >= 3
+             ORDER BY total_alerts DESC, last_alert_at DESC
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+
+        $totalCount = $db->fetchOne("
+            SELECT COUNT(*) as total FROM (
+                SELECT u.id, COUNT(s.id) as total_alerts
+                FROM users u
+                JOIN spam_alerts s ON u.id = s.user_id
+                WHERE {$where}
+                GROUP BY u.id
+                HAVING total_alerts >= 3
+            ) as t
+        ", $params)['total'] ?? 0;
+
+        $this->view('admin/spam_users', [
+            'users' => $users,
+            'currentPage' => $page,
+            'totalPages' => ceil($totalCount / $perPage),
+            'search' => $search
+        ]);
+    }
+
+    public function approveSeller() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/users');
+            return;
+        }
+        CSRF::check();
+        
+        $userId = $_POST['user_id'] ?? null;
+        if (!$userId) {
+            Session::setFlash('error', 'Thiếu ID người dùng');
+            $this->redirect('/admin/users');
+            return;
+        }
+
+        $db = Database::getInstance();
+        $user = $db->fetchOne("SELECT * FROM users WHERE id = ?", [$userId]);
+        
+        if (!$user) {
+            Session::setFlash('error', 'Người dùng không tồn tại');
+            $this->redirect('/admin/users');
+            return;
+        }
+
+        $db->update('users', [
+            'role' => 'seller',
+            'is_seller_requested' => 0,
+            'max_products' => 10 // Giới hạn mặc định khi mới lên Seller
+        ], 'id = :id', ['id' => $userId]);
+
+        // Gửi thông báo trong app
+        require_once __DIR__ . '/../Models/Notification.php';
+        $notifModel = new Notification();
+        $notifMsg = 'Chúc mừng! Bạn đã trở thành Nhà bán hàng. Bây giờ bạn có thể đăng bán sản phẩm tại trang Quản lý shop.';
+        $notifModel->send($userId, 'Chúc mừng! Bạn đã trở thành Nhà bán hàng', $notifMsg, 'success');
+        Helper::sendSystemMessage($userId, $notifMsg);
+
+        // Gửi email thông báo
+        $subject = "[{$user['name']}] Chúc mừng! Bạn đã trở thành Nhà bán hàng tại AI CỦA TÔI";
+        $emailMsg = "<h3>Chào {$user['name']},</h3>";
+        $emailMsg .= "<p>Yêu cầu trở thành Nhà bán hàng của bạn đã được Admin phê duyệt thành công.</p>";
+        $emailMsg .= "<p>Bây giờ bạn có thể truy cập vào <b>Quản lý shop</b> để đăng sản phẩm và bắt đầu kinh doanh.</p>";
+        $emailMsg .= "<p>Chúc bạn buôn may bán đắt!</p>";
+        Helper::sendEmail($user['email'], $subject, $emailMsg);
+
+        Session::setFlash('success', "Đã duyệt người dùng {$user['name']} lên làm Nhà bán hàng.");
+        $this->redirect('/admin/users');
+    }
+
+    public function rejectSeller() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/users');
+            return;
+        }
+        CSRF::check();
+        
+        $userId = $_POST['user_id'] ?? null;
+        if (!$userId) {
+            Session::setFlash('error', 'Thiếu ID người dùng');
+            $this->redirect('/admin/users');
+            return;
+        }
+
+        $db = Database::getInstance();
+        $db->update('users', ['is_seller_requested' => 0], 'id = :id', ['id' => $userId]);
+
+        // Gửi thông báo trong app
+        require_once __DIR__ . '/../Models/Notification.php';
+        $notifModel = new Notification();
+        $notifMsg = 'Rất tiếc, yêu cầu trở thành Nhà bán hàng của bạn chưa đủ điều kiện. Vui lòng liên hệ Admin để biết thêm chi tiết.';
+        $notifModel->send($userId, 'Yêu cầu làm Nhà bán hàng bị từ chối', $notifMsg, 'danger');
+        Helper::sendSystemMessage($userId, $notifMsg);
+
+        // Gửi email thông báo
+        $user = $db->fetchOne("SELECT * FROM users WHERE id = ?", [$userId]);
+        $subject = "[{$user['name']}] Thông báo về yêu cầu làm Nhà bán hàng";
+        $emailMsg = "<h3>Chào {$user['name']},</h3>";
+        $emailMsg .= "<p>Chúng tôi rất tiếc phải thông báo rằng yêu cầu trở thành Nhà bán hàng của bạn đã bị từ chối.</p>";
+        $emailMsg .= "<p>Lý do có thể do thông tin chưa đầy đủ hoặc không phù hợp với quy định của sàn.</p>";
+        $emailMsg .= "<p>Bạn có thể liên hệ trực tiếp với Admin qua Telegram để được hỗ trợ cụ thể hơn.</p>";
+        Helper::sendEmail($user['email'], $subject, $emailMsg);
+
+        Session::setFlash('success', "Đã từ chối yêu cầu làm Nhà bán hàng.");
+        $this->redirect('/admin/users');
+    }
+
+    public function updateUserRole($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/users');
+            return;
+        }
+        CSRF::check();
+        $role = $_POST['role'] ?? '';
+        if (!in_array($role, ['user', 'seller', 'affiliate', 'admin'])) {
+            Session::setFlash('error', 'Vai trò không hợp lệ');
+            $this->redirect('/admin/users');
+            return;
+        }
+        Database::getInstance()->update('users', ['role' => $role], 'id = :id', ['id' => $id]);
+        Session::setFlash('success', 'Cập nhật vai trò thành công');
+        $this->redirect('/admin/users');
+    }
+
+    public function resetUserPassword($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/users');
+            return;
+        }
+        CSRF::check();
+        $newPassword = $_POST['password'] ?? '';
+        if (strlen($newPassword) < 6) {
+            Session::setFlash('error', 'Mật khẩu phải từ 6 ký tự trở lên');
+            $this->redirect('/admin/users');
+            return;
+        }
+        $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+        Database::getInstance()->update('users', ['password' => $hashedPassword], 'id = :id', ['id' => $id]);
+        Session::setFlash('success', 'Đã đặt lại mật khẩu thành công cho người dùng');
+        $this->redirect('/admin/users');
+    }
+
+    public function sellers() {
+        $db = Database::getInstance();
+        $search = trim($_GET['search'] ?? '');
+        $page = (int)($_GET['page'] ?? 1);
+        $perPage = 10;
+        $offset = ($page - 1) * $perPage;
+        
+        $where = "u.role = 'seller'";
+        $params = [];
+        if ($search !== '') {
+            $where .= " AND (u.name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
         $sellers = $db->fetchAll(
             "SELECT u.*, w.balance, w.total_earned, w.total_withdrawn,
                     (SELECT COUNT(*) FROM products WHERE seller_id = u.id) as total_products,
-                    (SELECT COUNT(DISTINCT order_id) FROM order_items WHERE seller_id = u.id) as total_orders
+                    (SELECT COUNT(DISTINCT order_id) FROM order_items WHERE seller_id = u.id) as total_orders,
+                    (SELECT COUNT(*) FROM order_items WHERE seller_id = u.id AND item_status NOT IN ('delivered', 'refunded', 'released')) as open_order_items
              FROM users u
              LEFT JOIN wallets w ON u.id = w.user_id
-             WHERE u.role = 'seller'
+             WHERE {$where}
              ORDER BY u.created_at DESC
-             LIMIT {$perPage} OFFSET {$offset}"
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
         );
         
         $this->view('admin/sellers', [
             'sellers' => $sellers,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'search' => $search
         ]);
+    }
+    
+    public function updateSellerLimit($id) {
+        CSRF::check();
+        $db = Database::getInstance();
+        $maxProducts = (int)($_POST['max_products'] ?? 10);
+        $db->update('users', ['max_products' => $maxProducts], 'id = :id AND role = "seller"', ['id' => $id]);
+        Session::setFlash('success', 'Đã cập nhật giới hạn sản phẩm cho seller.');
+        $this->redirect('/admin/sellers');
+    }
+
+    public function toggleSellerStatus($id) {
+        CSRF::check();
+
+        require_once __DIR__ . '/../Services/AdminSellerService.php';
+        $sellerService = new AdminSellerService();
+        $summary = $sellerService->getSellerSummary($id);
+
+        if (!$summary) {
+            Session::setFlash('error', 'Khong tim thay seller.');
+            $this->redirect('/admin/sellers');
+            return;
+        }
+
+        if ($summary['status'] === 'active') {
+            $result = $sellerService->banSellerIfSettled(Auth::id(), $id);
+        } else {
+            $result = $sellerService->restoreSeller(Auth::id(), $id);
+        }
+
+        Session::setFlash($result['success'] ? 'success' : 'error', $result['message']);
+        $this->redirect('/admin/sellers');
+    }
+
+    public function refundSellerOrdersAndBan($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/sellers');
+            return;
+        }
+
+        CSRF::check();
+
+        require_once __DIR__ . '/../Services/AdminSellerService.php';
+        $sellerService = new AdminSellerService();
+        $note = trim($_POST['admin_note'] ?? '');
+        $result = $sellerService->refundOpenOrdersAndBanSeller(Auth::id(), $id, $note);
+
+        Session::setFlash($result['success'] ? 'success' : 'error', $result['message']);
+        $this->redirect('/admin/sellers');
+    }
+
+    public function disputes() {
+        require_once __DIR__ . '/../Models/Dispute.php';
+        $disputeModel = new Dispute();
+        
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $status = $_GET['status'] ?? '';
+        $search = trim($_GET['search'] ?? '');
+        
+        $disputes = $disputeModel->getAllDisputes($page, 10, $status, $search);
+        $counts = $disputeModel->countByStatus();
+        
+        // Fetch events for these disputes to show timeline
+        $disputeIds = array_column($disputes, 'id');
+        $events = [];
+        if (!empty($disputeIds)) {
+            $placeholders = str_repeat('?,', count($disputeIds) - 1) . '?';
+            $eventsRaw = Database::getInstance()->fetchAll(
+                "SELECT de.*, u.name as actor_name 
+                 FROM dispute_events de
+                 LEFT JOIN users u ON de.actor_id = u.id
+                 WHERE de.dispute_id IN ($placeholders)
+                 ORDER BY de.created_at ASC",
+                $disputeIds
+            );
+            foreach ($eventsRaw as $e) {
+                $events[$e['dispute_id']][] = $e;
+            }
+        }
+        
+        $this->view('admin/disputes', [
+            'disputes' => $disputes,
+            'counts' => $counts,
+            'currentPage' => $page,
+            'currentStatus' => $status,
+            'search' => $search,
+            'events' => $events
+        ]);
+    }
+
+    public function resolveDispute($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/disputes');
+            return;
+        }
+
+        CSRF::check();
+        
+        $decision = $_POST['decision'] ?? '';
+        $refundAmount = (float)($_POST['refund_amount'] ?? 0);
+        $penaltyAmount = (float)($_POST['penalty_amount'] ?? 0);
+        $adminNote = trim($_POST['admin_note'] ?? '');
+
+        require_once __DIR__ . '/../Services/DisputeService.php';
+        $disputeService = new DisputeService();
+        $result = $disputeService->resolveDispute(Auth::id(), $id, $decision, $refundAmount, $penaltyAmount, $adminNote);
+
+        if ($result['success']) {
+            Session::setFlash('success', 'Đã xử lý khiếu nại.');
+        } else {
+            Session::setFlash('error', $result['message']);
+        }
+
+        $this->redirect('/admin/disputes');
     }
     
     public function products() {
         $productModel = new Product();
-        $page = $_GET['page'] ?? 1;
-        $status = $_GET['status'] ?? '';
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $status = $_GET['status'] ?? 'all';
+        if ($status === '') $status = 'all';
+        $search = trim($_GET['search'] ?? '');
         
-        $filters = [];
-        if (!empty($status)) {
-            $filters['status'] = $status;
-        } else {
-            $filters['status'] = 'all'; // By default admin should see everything
-        }
+        $filters = [
+            'status' => $status,
+            'search' => $search
+        ];
         
-        $products = $productModel->getAll($filters, $page, 50);
+        $perPage = 10;
+        $products = $productModel->getAll($filters, $page, $perPage);
         
         $this->view('admin/products', [
             'products' => $products,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'currentStatus' => $status,
+            'currentSearch' => $search
         ]);
     }
     
@@ -156,45 +492,95 @@ class AdminController extends Controller {
     
     public function orders() {
         $db = Database::getInstance();
-        $page = $_GET['page'] ?? 1;
-        $perPage = 50;
+        $search = trim($_GET['search'] ?? '');
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
         
+        $where = "1=1";
+        $params = [];
+        if ($search !== '') {
+            $where .= " AND (o.order_code LIKE ? OR u.name LIKE ? OR u.email LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        // Thống kê tổng quan (giữ nguyên không đổi theo filter tìm kiếm để admin biết tổng sàn)
+        $stats = $db->fetchOne("
+            SELECT 
+                COUNT(*) as total_orders,
+                SUM(total_amount) as total_revenue,
+                (SELECT SUM(admin_fee_amount) FROM order_items) as total_admin_fees
+            FROM orders 
+            WHERE payment_status = 'paid'
+        ");
+
+        // Đếm tổng số để phân trang
+        $totalCount = $db->fetchOne("
+            SELECT COUNT(*) as count 
+            FROM orders o 
+            LEFT JOIN users u ON o.user_id = u.id 
+            WHERE {$where}
+        ", $params)['count'] ?? 0;
+        $totalPages = ceil($totalCount / $perPage);
+
+        // Danh sách đơn hàng kèm phí admin sum
         $orders = $db->fetchAll(
-            "SELECT o.*, u.name as user_name, u.email as user_email
+            "SELECT o.*, u.name as user_name, u.email as user_email,
+                    (SELECT SUM(admin_fee_amount) FROM order_items WHERE order_id = o.id) as admin_fee
              FROM orders o
              LEFT JOIN users u ON o.user_id = u.id
+             WHERE {$where}
              ORDER BY o.created_at DESC
-             LIMIT {$perPage} OFFSET {$offset}"
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
         );
         
         $this->view('admin/orders', [
             'orders' => $orders,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'search' => $search,
+            'stats' => $stats
         ]);
     }
     
     public function withdrawals() {
         $withdrawalModel = new Withdrawal();
         $page = $_GET['page'] ?? 1;
+        $search = trim($_GET['search'] ?? '');
         
-        $withdrawals = $withdrawalModel->getAllWithdrawals($page, 50);
+        $withdrawals = $withdrawalModel->getAllWithdrawals($page, 10, $search);
         
         $this->view('admin/withdrawals', [
             'withdrawals' => $withdrawals,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'search' => $search
         ]);
     }
 
     public function deposits() {
-        $depositRequestModel = new DepositRequest();
-        $page = $_GET['page'] ?? 1;
+        $db = Database::getInstance();
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
+        
+        // Thống kê nạp tiền
+        $stats = $db->fetchOne("
+            SELECT 
+                COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_count,
+                SUM(CASE WHEN status = 'pending' THEN amount ELSE 0 END) as pending_amount,
+                SUM(CASE WHEN status = 'approved' AND DATE(processed_at) = CURDATE() THEN amount ELSE 0 END) as approved_today
+            FROM deposit_requests
+        ");
 
-        $depositRequests = $depositRequestModel->getAllRequests($page, 50);
+        $depositRequestModel = new DepositRequest();
+        $depositRequests = $depositRequestModel->getAllRequests($page, $perPage);
 
         $this->view('admin/deposits', [
             'depositRequests' => $depositRequests,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'stats' => $stats
         ]);
     }
 
@@ -258,6 +644,13 @@ class AdminController extends Controller {
             'admin_note' => trim($_POST['reason'] ?? 'Từ chối yêu cầu nạp tiền'),
             'processed_by' => Auth::id(),
             'processed_at' => date('Y-m-d H:i:s')
+        ]);
+
+        $db = Database::getInstance();
+        $db->insert('spam_alerts', [
+            'user_id' => $deposit['user_id'],
+            'type' => 'deposit_rejected',
+            'description' => 'Yêu cầu nạp tiền bị từ chối: ' . (trim($_POST['reason'] ?? 'Từ chối yêu cầu nạp tiền'))
         ]);
 
         Session::setFlash('success', 'Đã từ chối yêu cầu nạp tiền');
@@ -487,27 +880,75 @@ class AdminController extends Controller {
             }
         }
         
+        // Xử lý upload Banner Trái
+        if (isset($_FILES['home_banner_left_file']) && $_FILES['home_banner_left_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadResult = Helper::uploadFile($_FILES['home_banner_left_file'], 'images');
+            if ($uploadResult['success']) {
+                $path = $uploadResult['path']; // Lưu đường dẫn tương đối
+                $db->fetchOne("SELECT * FROM settings WHERE key_name = 'home_banner_left'") 
+                    ? $db->update('settings', ['value' => $path], 'key_name = :key_name', ['key_name' => 'home_banner_left'])
+                    : $db->insert('settings', ['key_name' => 'home_banner_left', 'value' => $path]);
+            }
+        }
+
+        // Xử lý upload Banner Phải
+        if (isset($_FILES['home_banner_right_file']) && $_FILES['home_banner_right_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadResult = Helper::uploadFile($_FILES['home_banner_right_file'], 'images');
+            if ($uploadResult['success']) {
+                $path = $uploadResult['path']; // Lưu đường dẫn tương đối
+                $db->fetchOne("SELECT * FROM settings WHERE key_name = 'home_banner_right'")
+                    ? $db->update('settings', ['value' => $path], 'key_name = :key_name', ['key_name' => 'home_banner_right'])
+                    : $db->insert('settings', ['key_name' => 'home_banner_right', 'value' => $path]);
+            }
+        }
+        
         Session::setFlash('success', 'Cập nhật cài đặt thành công');
         $this->redirect('/admin/settings');
     }
     
     public function transactions() {
         $db = Database::getInstance();
-        $page = $_GET['page'] ?? 1;
-        $perPage = 100;
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
+        
+        $search = trim($_GET['search'] ?? '');
+        $type = $_GET['type'] ?? 'all';
+        
+        $where = ['1=1'];
+        $params = [];
+        
+        if ($type !== 'all') {
+            $where[] = "t.type = :type";
+            $params['type'] = $type;
+        }
+        
+        if (!empty($search)) {
+            $where[] = "(u.name LIKE :search OR u.email LIKE :search OR t.description LIKE :search)";
+            $params['search'] = '%' . $search . '%';
+        }
+        
+        $whereClause = implode(' AND ', $where);
         
         $transactions = $db->fetchAll(
             "SELECT t.*, u.name as user_name, u.email as user_email
              FROM transactions t
              LEFT JOIN users u ON t.user_id = u.id
+             WHERE $whereClause
              ORDER BY t.created_at DESC
-             LIMIT {$perPage} OFFSET {$offset}"
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
         );
+        
+        $total = $db->fetchOne("SELECT COUNT(*) as total FROM transactions t LEFT JOIN users u ON t.user_id = u.id WHERE $whereClause", $params)['total'];
+        $totalPages = ceil($total / $perPage);
         
         $this->view('admin/transactions', [
             'transactions' => $transactions,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'currentType' => $type,
+            'currentSearch' => $search
         ]);
     }
     public function menus() {

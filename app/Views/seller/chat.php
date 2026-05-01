@@ -17,7 +17,7 @@
                     <?php else: ?>
                         <?php foreach ($conversations as $conv): ?>
                             <div class="conversation-item p-3 d-flex align-items-center border-bottom cursor-pointer transition-all"
-                                onclick="loadConversation(<?= $conv['id'] ?>, '<?= e($conv['other_username']) ?>')"
+                                onclick="loadConversation('<?= $conv['id'] ?>', '<?= e($conv['other_name'] ?? $conv['other_username']) ?>')"
                                 data-id="<?= $conv['id'] ?>">
                                 <div class="position-relative me-3">
                                     <div class="rounded-circle bg-primary-soft text-primary d-flex align-items-center justify-content-center fw-bold"
@@ -35,7 +35,7 @@
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="fw-bold mb-0 text-dark"><?= e($conv['other_username']) ?></h6>
+                                        <h6 class="fw-bold mb-0 text-dark"><?= e($conv['other_name'] ?? $conv['other_username']) ?></h6>
                                         <small class="text-muted"
                                             style="font-size: 0.65rem;"><?= date('H:i', strtotime($conv['updated_at'])) ?></small>
                                     </div>
@@ -90,16 +90,47 @@
                     </div>
                 </div>
 
-                <div id="chatInputArea" class="card-footer bg-white border-0 p-3 d-none">
-                    <div class="d-flex align-items-end bg-light rounded-4 p-2">
-                        <textarea id="sellerMessageInput" class="form-control border-0 bg-transparent flex-grow-1"
-                            placeholder="Nhập tin nhắn..."
-                            style="box-shadow: none; resize: none; min-height: 40px; max-height: 140px;"
-                            rows="1"
-                            oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'"></textarea>
-                        <button class="btn btn-primary rounded-circle ms-2 d-flex align-items-center justify-content-center mb-1"
-                            id="sendSellerMessageBtn" style="width: 40px; height: 40px; flex-shrink:0;">
-                            <i class="fas fa-paper-plane"></i>
+                <div id="chatInputArea" class="card-footer bg-white border-0 p-3 d-none position-relative">
+                    <!-- Attachment Preview Card (Telegram-style) -->
+                    <div id="chatImagePreviewContainer" class="d-none mb-2">
+                        <div class="d-flex align-items-center bg-white border rounded-3 p-2 shadow-sm position-relative" style="max-width: 320px; gap: 10px;">
+                            <div class="flex-shrink-0" style="width: 54px; height: 54px; border-radius: 6px; overflow: hidden; background: #f0f0f0;">
+                                <img id="chatImagePreview" src="" style="width: 100%; height: 100%; object-fit: cover;">
+                            </div>
+                            <div class="flex-grow-1 overflow-hidden">
+                                <div id="chatAttachFileName" class="fw-semibold text-dark text-truncate" style="font-size: 0.85rem;"></div>
+                                <div id="chatAttachFileSize" class="text-muted" style="font-size: 0.75rem;"></div>
+                            </div>
+                            <button class="btn btn-danger rounded-circle p-0 d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width: 24px; height: 24px; border: 2px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.2);"
+                                    onclick="removeChatAttachment()" title="Xóa ảnh">
+                                <i class="fas fa-times" style="font-size: 9px;"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Input Row -->
+                    <div class="d-flex align-items-end gap-2">
+                        <input type="file" id="chatAttachmentInput" accept="image/*" data-skip-default-preview="true" class="d-none" onchange="previewChatAttachment(this)">
+                        <button class="btn btn-light rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            onclick="document.getElementById('chatAttachmentInput').click()"
+                            title="Đính kèm ảnh"
+                            style="width: 42px; height: 42px; border: 1.5px solid #dee2e6;">
+                            <i class="fas fa-paperclip text-secondary fs-6"></i>
+                        </button>
+                        <div class="flex-grow-1 position-relative">
+                            <textarea id="sellerMessageInput"
+                                class="form-control"
+                                placeholder="Nhập tin nhắn..."
+                                style="resize: none; min-height: 44px; max-height: 140px; border-radius: 22px; padding: 10px 16px; border: 1.5px solid #dee2e6; box-shadow: none; line-height: 1.5; transition: border-color 0.2s;"
+                                rows="1"
+                                oninput="this.style.height = ''; this.style.height = Math.min(this.scrollHeight, 140) + 'px'"
+                                onfocus="this.style.borderColor='#198754'" onblur="this.style.borderColor='#dee2e6'"></textarea>
+                        </div>
+                        <button class="btn rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                            id="sendSellerMessageBtn"
+                            style="width: 44px; height: 44px; background: #198754; color: white; border: none; flex-shrink:0; box-shadow: 0 2px 8px rgba(25,135,84,0.4); transition: background 0.2s;"
+                            onmouseover="this.style.background='#157347'" onmouseout="this.style.background='#198754'">
+                            <i class="fas fa-paper-plane" style="font-size: 0.9rem; transform: rotate(-10deg);"></i>
                         </button>
                     </div>
                 </div>
@@ -138,6 +169,36 @@
 <script>
     let activeConversationId = null;
     let chatPollInterval = null;
+    let selectedAttachment = null;
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function previewChatAttachment(input) {
+        if (input.files && input.files[0]) {
+            selectedAttachment = input.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('chatImagePreview').src = e.target.result;
+                document.getElementById('chatAttachFileName').textContent = selectedAttachment.name;
+                document.getElementById('chatAttachFileSize').textContent = formatFileSize(selectedAttachment.size);
+                document.getElementById('chatImagePreviewContainer').classList.remove('d-none');
+            };
+            reader.readAsDataURL(selectedAttachment);
+        }
+    }
+
+    function removeChatAttachment() {
+        selectedAttachment = null;
+        document.getElementById('chatAttachmentInput').value = '';
+        document.getElementById('chatImagePreviewContainer').classList.add('d-none');
+        document.getElementById('chatImagePreview').src = '';
+        document.getElementById('chatAttachFileName').textContent = '';
+        document.getElementById('chatAttachFileSize').textContent = '';
+    }
 
     function timeAgo(dateString) {
         if (!dateString) return '';
@@ -203,17 +264,17 @@
 
                         html += `
                             <div class="conversation-item p-3 d-flex align-items-center border-bottom cursor-pointer transition-all ${isActive ? 'active' : ''}" 
-                                 onclick="loadConversation(${conv.id}, '${conv.other_username.replace(/'/g, "\\'")}')"
+                                 onclick="loadConversation('${conv.id}', '${(conv.other_name || conv.other_username).replace(/'/g, "\\'")}')"
                                  data-id="${conv.id}">
                                 <div class="position-relative me-3">
                                     <div class="rounded-circle bg-primary-soft text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px; flex-shrink: 0;">
-                                        ${conv.other_username.charAt(0).toUpperCase()}
+                                        ${(conv.other_name || conv.other_username).charAt(0).toUpperCase()}
                                     </div>
                                     ${isOnline ? '<span class="position-absolute bottom-0 end-0 bg-success border border-white border-2 rounded-circle" style="width: 12px; height: 12px;"></span>' : ''}
                                 </div>
                                 <div class="flex-grow-1 overflow-hidden">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="fw-bold mb-0 text-dark">${conv.other_username}</h6>
+                                        <h6 class="fw-bold mb-0 text-dark">${conv.other_name || conv.other_username}</h6>
                                         <small class="text-muted" style="font-size: 0.65rem;">${new Date(updatedAtStr).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-1">
@@ -254,10 +315,21 @@
         let html = '';
         messages.forEach(msg => {
             const isMe = msg.sender_id == currentUserId;
-            const msgContent = msg.message ? `<div style="font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;">${msg.message}</div>` : '';
+            let attachHtml = '';
+            if (msg.attachment) {
+                attachHtml = `<div class="mb-2"><img src="<?= asset('') ?>${msg.attachment}" class="img-fluid rounded border shadow-sm" style="max-height: 200px; cursor:pointer;" onclick="window.open(this.src)"></div>`;
+            }
+            let msgContent = '';
+            if (msg.message && msg.message !== '[Tệp đính kèm]') {
+                msgContent = `<div style="font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;">${msg.message}</div>`;
+            } else if (msg.message === '[Tệp đính kèm]' && !msg.attachment) {
+                msgContent = `<div style="font-size: 0.9rem; font-style: italic; opacity: 0.8;">[Tệp đính kèm]</div>`;
+            }
+
             html += `
                 <div class="d-flex ${isMe ? 'justify-content-end' : 'justify-content-start'}">
                     <div class="p-2 px-3 shadow-sm" style="max-width: 75%; border-radius: 18px; ${isMe ? 'background: #8b5cf6; color: #fff; border-bottom-right-radius: 4px;' : 'background: #fff; color: #333; border-bottom-left-radius: 4px;'}">
+                        ${attachHtml}
                         ${msgContent}
                         <div class="text-end mt-1" style="font-size: 0.65rem; opacity: 0.7;">
                             ${new Date(msg.created_at.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -294,7 +366,7 @@
         const input = document.getElementById('sellerMessageInput');
         const btn = document.getElementById('sendSellerMessageBtn');
         const message = input.value.trim();
-        if (!message) return;
+        if (!message && !selectedAttachment) return;
 
         input.disabled = true;
         btn.disabled = true;
@@ -305,12 +377,16 @@
             const formData = new FormData();
             formData.append('conversation_id', activeConversationId);
             formData.append('message', message);
+            if (selectedAttachment) {
+                formData.append('attachment', selectedAttachment);
+            }
             formData.append('csrf_token', '<?= csrf_token() ?>');
 
             const response = await fetch('<?= url('/api/chat/send') ?>', { method: 'POST', body: formData });
             const data = await response.json();
 
             if (data.success) {
+                removeChatAttachment();
                 renderMessages(data.messages, data.current_user_id);
                 fetchConversations();
                 setTimeout(() => { document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight; }, 50);

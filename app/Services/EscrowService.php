@@ -14,159 +14,156 @@ class EscrowService {
         $this->heldFundModel = new HeldFund();
     }
 
-    /**
-     * Tính tiền cọc = 100% giá trị stock (số lượng × giá)
-     * Ví dụ: 5 con × 100k = 500k → trừ 500k từ ví seller
-     */
-    public function calculateDepositRequired($productPrice, $quantity) {
-        return $productPrice * $quantity; // 100% giá trị
+    public function calculateDepositRequired($productPrice, $quantity, $sellerId = null, $productId = null) {
+        $percent = $this->getDepositPercent($sellerId, $productId);
+        return (float)$productPrice * (int)$quantity * ($percent / 100);
     }
 
-    /**
-     * Tạo và thanh toán tiền cọc khi seller nhập stock
-     * Trả về ['success', 'message', 'deposit_amount']
-     */
     public function processStockDeposit($sellerId, $productId, $quantity, $productPrice) {
-        $depositAmount = $this->calculateDepositRequired($productPrice, $quantity);
-        $totalValue    = $depositAmount; // 100%
+        $depositPercent = $this->getDepositPercent($sellerId, $productId);
+        $depositAmount = $this->calculateDepositRequired($productPrice, $quantity, $sellerId, $productId);
+        $totalValue = (float)$productPrice * (int)$quantity;
 
-        // Kiểm tra số dư
         $wallet = $this->walletService->getWallet($sellerId);
         if (($wallet['balance'] ?? 0) < $depositAmount) {
             $needed = $depositAmount - ($wallet['balance'] ?? 0);
             return [
                 'success' => false,
-                'message' => "Số dư không đủ! Cần " . money($depositAmount) . " để nhập {$quantity} sản phẩm (100% giá trị). Vui lòng nạp thêm " . money($needed) . "."
+                'message' => "So du khong du! Can " . money($depositAmount) . " de nhap {$quantity} san pham ({$depositPercent}% gia tri). Vui long nap them " . money($needed) . "."
             ];
         }
 
+        $startedTransaction = false;
         try {
-            $this->db->beginTransaction();
+            $startedTransaction = !$this->db->inTransaction();
+            if ($startedTransaction) {
+                $this->db->beginTransaction();
+            }
 
-            // Tạo bản ghi deposit
             $depositId = $this->depositModel->create([
-                'seller_id'          => $sellerId,
-                'product_id'         => $productId,
-                'stock_quantity'     => $quantity,
-                'product_value'      => $totalValue,
-                'deposit_amount'     => $depositAmount,
-                'deposit_percentage' => 100,
-                'status'             => 'paid',
-                'paid_at'            => date('Y-m-d H:i:s')
+                'seller_id' => $sellerId,
+                'product_id' => $productId,
+                'stock_quantity' => $quantity,
+                'product_value' => $totalValue,
+                'deposit_amount' => $depositAmount,
+                'deposit_percentage' => $depositPercent,
+                'status' => 'paid',
+                'paid_at' => date('Y-m-d H:i:s')
             ]);
 
-            // Trừ tiền từ balance → deposit_balance
             $this->walletService->deductMoney(
                 $sellerId,
                 $depositAmount,
                 'withdrawal',
                 'deposit',
                 $depositId,
-                "Tiền cọc nhập {$quantity} stock sản phẩm #{$productId}"
+                "Tien coc nhap {$quantity} stock san pham #{$productId}"
             );
 
-            // Cộng vào deposit_balance
             $this->db->query(
                 "UPDATE wallets SET deposit_balance = deposit_balance + ? WHERE user_id = ?",
                 [$depositAmount, $sellerId]
             );
 
-            $this->db->commit();
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
 
             return [
-                'success'        => true,
+                'success' => true,
                 'deposit_amount' => $depositAmount,
-                'message'        => 'Đã trừ tiền cọc thành công'
+                'message' => 'Da tru tien coc thanh cong'
             ];
 
         } catch (Exception $e) {
-            $this->db->rollBack();
-            return ['success' => false, 'message' => 'Lỗi: ' . $e->getMessage()];
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'message' => 'Loi: ' . $e->getMessage()];
         }
     }
 
-    /**
-     * Khi khách mua hàng: tiền seller nhận vào held_balance (giữ 7 ngày)
-     * Đồng thời hoàn lại tiền cọc tương ứng từ deposit_balance → balance
-     */
-    public function holdFundsFromOrder($orderId, $sellerId, $amount, $productId = null, $quantity = 1) {
-        $holdDays  = $this->getHoldDays();
-        $holdUntil = date('Y-m-d H:i:s', strtotime("+{$holdDays} days"));
+    public function holdFundsFromOrder($orderId, $orderItemId, $sellerId, $amount, $productId = null, $quantity = 1) {
+        $holdDays = $this->getHoldDays($productId);
 
+        $startedTransaction = false;
         try {
-            $this->db->beginTransaction();
+            $startedTransaction = !$this->db->inTransaction();
+            if ($startedTransaction) {
+                $this->db->beginTransaction();
+            }
 
-            // Tạo held_fund record
+            $this->releaseDepositForSale($sellerId, $productId, $quantity);
+
+            if ($holdDays <= 0) {
+                $this->walletService->addMoney(
+                    $sellerId,
+                    $amount,
+                    'sale_income',
+                    'order_item',
+                    $orderItemId,
+                    "Tien tu don hang #{$orderId} (khong giu do san pham khong bao hanh)"
+                );
+
+                if ($startedTransaction) {
+                    $this->db->commit();
+                }
+
+                return ['success' => true, 'held_fund_id' => null];
+            }
+
+            $holdUntil = date('Y-m-d H:i:s', strtotime("+{$holdDays} days"));
             $heldFundId = $this->heldFundModel->create([
-                'order_id'   => $orderId,
-                'seller_id'  => $sellerId,
-                'amount'     => $amount,
+                'order_id' => $orderId,
+                'order_item_id' => $orderItemId,
+                'seller_id' => $sellerId,
+                'amount' => $amount,
                 'hold_until' => $holdUntil,
-                'status'     => 'holding'
+                'status' => 'holding'
             ]);
 
-            // Cộng vào held_balance
             $this->db->query(
                 "UPDATE wallets SET held_balance = held_balance + ? WHERE user_id = ?",
                 [$amount, $sellerId]
             );
 
-            // Hoàn lại tiền cọc tương ứng (deposit_balance → balance)
-            // Tìm deposit gần nhất của sản phẩm này
-            if ($productId) {
-                $depositPerUnit = 0;
-                $deposit = $this->db->fetchOne(
-                    "SELECT deposit_amount, stock_quantity FROM seller_deposits
-                     WHERE seller_id = ? AND product_id = ? AND status = 'paid'
-                     ORDER BY created_at DESC LIMIT 1",
-                    [$sellerId, $productId]
-                );
-                if ($deposit && $deposit['stock_quantity'] > 0) {
-                    $depositPerUnit = $deposit['deposit_amount'] / $deposit['stock_quantity'];
-                    $refundDeposit  = $depositPerUnit * $quantity;
-
-                    // Trừ deposit_balance, cộng balance
-                    $this->db->query(
-                        "UPDATE wallets SET deposit_balance = GREATEST(0, deposit_balance - ?), balance = balance + ? WHERE user_id = ?",
-                        [$refundDeposit, $refundDeposit, $sellerId]
-                    );
-                }
-            }
-
-            // Ghi log transaction
             $this->db->insert('transactions', [
-                'user_id'          => $sellerId,
-                'type'             => 'sale_income',
-                'amount'           => $amount,
-                'description'      => "Tiền từ đơn hàng #{$orderId} (giữ {$holdDays} ngày, tự động chuyển vào số dư sau {$holdDays} ngày)",
+                'user_id' => $sellerId,
+                'type' => 'sale_income',
+                'amount' => $amount,
+                'description' => "Tien tu don hang #{$orderId} (giu {$holdDays} ngay theo bao hanh san pham)",
                 'transaction_type' => 'fund_hold',
-                'related_id'       => $heldFundId
+                'related_id' => $heldFundId
             ]);
 
-            $this->db->commit();
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
 
             return ['success' => true, 'held_fund_id' => $heldFundId];
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * Release tiền sau 7 ngày: held_balance → balance
-     */
     public function releaseFunds($heldFundId) {
         $heldFund = $this->heldFundModel->find($heldFundId);
 
         if (!$heldFund || $heldFund['status'] != 'holding') {
-            return ['success' => false, 'message' => 'Không tìm thấy tiền đang giữ'];
+            return ['success' => false, 'message' => 'Khong tim thay tien dang giu'];
         }
 
+        $startedTransaction = false;
         try {
-            $this->db->beginTransaction();
+            $startedTransaction = !$this->db->inTransaction();
+            if ($startedTransaction) {
+                $this->db->beginTransaction();
+            }
 
-            // held_balance → balance (100%, seller rút được trừ 5% phí rút)
             $this->db->query(
                 "UPDATE wallets SET held_balance = GREATEST(0, held_balance - ?), balance = balance + ? WHERE user_id = ?",
                 [$heldFund['amount'], $heldFund['amount'], $heldFund['seller_id']]
@@ -175,27 +172,28 @@ class EscrowService {
             $this->heldFundModel->release($heldFundId);
 
             $this->db->insert('transactions', [
-                'user_id'          => $heldFund['seller_id'],
-                'type'             => 'sale_income',
-                'amount'           => $heldFund['amount'],
-                'description'      => "Đã release tiền từ đơn hàng #{$heldFund['order_id']} (hết thời gian giữ)",
+                'user_id' => $heldFund['seller_id'],
+                'type' => 'sale_income',
+                'amount' => $heldFund['amount'],
+                'description' => "Da release tien tu don hang #{$heldFund['order_id']}",
                 'transaction_type' => 'fund_release',
-                'related_id'       => $heldFundId
+                'related_id' => $heldFundId
             ]);
 
-            $this->db->commit();
+            if ($startedTransaction) {
+                $this->db->commit();
+            }
 
-            return ['success' => true, 'message' => 'Đã release tiền thành công'];
+            return ['success' => true, 'message' => 'Da release tien thanh cong'];
 
         } catch (Exception $e) {
-            $this->db->rollBack();
+            if ($startedTransaction && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
 
-    /**
-     * Auto-release tất cả tiền đã hết hạn giữ (chạy bằng cron)
-     */
     public function autoReleaseExpiredFunds() {
         $expiredFunds = $this->heldFundModel->getExpiredHolds();
         $released = 0;
@@ -210,7 +208,22 @@ class EscrowService {
         return ['success' => true, 'released_count' => $released];
     }
 
-    private function getHoldDays() {
+    private function getDepositPercent($sellerId = null, $productId = null) {
+        $setting = $this->db->fetchOne("SELECT setting_value FROM system_settings WHERE setting_key = 'deposit_percentage'");
+        $percent = $setting ? (float)$setting['setting_value'] : 30;
+        return max(0, min(100, $percent));
+    }
+
+    private function getHoldDays($productId = null) {
+        if ($productId) {
+            $product = $this->db->fetchOne("SELECT warranty_days FROM products WHERE id = ?", [$productId]);
+            if ($product && array_key_exists('warranty_days', $product)) {
+                $warrantyDays = max(0, (int)$product['warranty_days']);
+                $minimumHoldDays = (int)ceil(Helper::getMinimumDisputeHours() / 24);
+                return max($minimumHoldDays, $warrantyDays);
+            }
+        }
+
         $setting = $this->db->fetchOne("SELECT setting_value FROM system_settings WHERE setting_key = 'hold_days'");
         return $setting ? (int)$setting['setting_value'] : 7;
     }
@@ -218,5 +231,68 @@ class EscrowService {
     public function isEscrowEnabled() {
         $setting = $this->db->fetchOne("SELECT setting_value FROM system_settings WHERE setting_key = 'enable_escrow'");
         return $setting && $setting['setting_value'] == '1';
+    }
+
+    private function releaseDepositForSale($sellerId, $productId, $quantity) {
+        if (!$productId || $quantity <= 0) {
+            return;
+        }
+
+        $remainingQuantity = (int)$quantity;
+        $deposits = $this->db->fetchAll(
+            "SELECT id, stock_quantity, released_quantity, deposit_amount, released_deposit_amount
+             FROM seller_deposits
+             WHERE seller_id = ? AND product_id = ? AND status IN ('paid', 'released')
+             ORDER BY created_at ASC, id ASC",
+            [$sellerId, $productId]
+        );
+
+        foreach ($deposits as $deposit) {
+            if ($remainingQuantity <= 0) {
+                break;
+            }
+
+            $stockQuantity = max(0, (int)($deposit['stock_quantity'] ?? 0));
+            $releasedQuantity = max(0, (int)($deposit['released_quantity'] ?? 0));
+            $availableQuantity = max(0, $stockQuantity - $releasedQuantity);
+            if ($availableQuantity <= 0) {
+                continue;
+            }
+
+            $useQuantity = min($remainingQuantity, $availableQuantity);
+            $depositAmount = (float)($deposit['deposit_amount'] ?? 0);
+            $releasedAmount = (float)($deposit['released_deposit_amount'] ?? 0);
+            $perUnitDeposit = $stockQuantity > 0 ? ($depositAmount / $stockQuantity) : 0;
+            $wallet = $this->walletService->getWallet($sellerId);
+            $walletDepositBalance = max(0, (float)($wallet['deposit_balance'] ?? 0));
+            $releaseAmount = min($depositAmount - $releasedAmount, $perUnitDeposit * $useQuantity, $walletDepositBalance);
+
+            if ($releaseAmount > 0) {
+                $newReleasedQuantity = $releasedQuantity + $useQuantity;
+                $newReleasedAmount = $releasedAmount + $releaseAmount;
+                $newStatus = $newReleasedQuantity >= $stockQuantity ? 'released' : 'paid';
+
+                $this->db->query(
+                    "UPDATE seller_deposits
+                     SET released_quantity = ?, released_deposit_amount = ?, status = ?, released_at = ?
+                     WHERE id = ?",
+                    [
+                        $newReleasedQuantity,
+                        $newReleasedAmount,
+                        $newStatus,
+                        $newStatus === 'released' ? date('Y-m-d H:i:s') : null,
+                        $deposit['id']
+                    ]
+                );
+                $this->db->query(
+                    "UPDATE wallets
+                     SET deposit_balance = GREATEST(0, deposit_balance - ?), balance = balance + ?
+                     WHERE user_id = ?",
+                    [$releaseAmount, $releaseAmount, $sellerId]
+                );
+            }
+
+            $remainingQuantity -= $useQuantity;
+        }
     }
 }

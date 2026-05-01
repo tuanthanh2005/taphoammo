@@ -19,8 +19,10 @@ class HomeController extends Controller {
         $sponsoredProducts = [];
         
         if (!empty(trim($sponsoredIdsStr))) {
-            $ids = array_map('intval', explode(',', $sponsoredIdsStr));
-            $ids = array_filter($ids);
+            $ids = array_map('trim', explode(',', $sponsoredIdsStr));
+            $ids = array_filter($ids, function($v) { return is_numeric($v) && intval($v) > 0; });
+            $ids = array_map('intval', $ids);
+            
             if (!empty($ids)) {
                 $placeholders = str_repeat('?,', count($ids) - 1) . '?';
                 $sql = "SELECT p.*, u.name as seller_name 
@@ -68,6 +70,12 @@ class HomeController extends Controller {
         $this->view('home/2fa', [
             'title' => 'Công cụ 2FA - AI CỦA TÔI',
             'meta_description' => 'Công cụ tạo mã xác thực 2 bước (2FA) trực tuyến an toàn và nhanh chóng.'
+        ]);
+    }
+
+    public function sellerRegistration() {
+        $this->view('home/seller-registration', [
+            'title' => 'Trở thành Nhà bán hàng - AI CỦA TÔI'
         ]);
     }
 }

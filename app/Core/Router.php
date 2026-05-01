@@ -95,8 +95,8 @@ class Router {
     private function convertToRegex($path) {
         // Escape forward slashes
         $pattern = str_replace('/', '\/', $path);
-        // Convert {param} to regex capture group
-        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([a-zA-Z0-9_-]+)', $pattern);
-        return '#^' . $pattern . '$#';
+        // Convert {param} to regex capture group (allow more characters including spaces and unicode)
+        $pattern = preg_replace('/\{([a-zA-Z0-9_]+)\}/', '([^/]+)', $pattern);
+        return '#^' . $pattern . '$#u'; // Added 'u' flag for unicode support
     }
 }

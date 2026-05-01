@@ -28,6 +28,30 @@ class SellerDeactivationService {
             }
 
             // Lấy số dư ví
+            $activeDispute = $this->db->fetchOne(
+                "SELECT id FROM disputes WHERE seller_id = ? AND status IN ('open', 'under_review') LIMIT 1",
+                [$sellerId]
+            );
+            if ($activeDispute) {
+                throw new Exception('Ban con khieu nai chua xu ly xong, khong the huy tai khoan.');
+            }
+
+            $activeStock = $this->db->fetchOne(
+                "SELECT ps.id FROM product_stocks ps JOIN products p ON p.id = ps.product_id WHERE ps.seller_id = ? AND ps.status = 'available' AND p.status IN ('active','approved') LIMIT 1",
+                [$sellerId]
+            );
+            if ($activeStock) {
+                throw new Exception('Ban con stock dang ban. Vui long an san pham hoac xu ly kho truoc khi huy tai khoan.');
+            }
+
+            $heldFund = $this->db->fetchOne(
+                "SELECT id FROM held_funds WHERE seller_id = ? AND status IN ('holding','disputed') LIMIT 1",
+                [$sellerId]
+            );
+            if ($heldFund) {
+                throw new Exception('Ban con tien dang bi giu/khieu nai. Vui long doi release truoc khi huy tai khoan.');
+            }
+
             $wallet = $this->walletService->getWallet($sellerId);
             $totalBalance = $wallet['balance'] + ($wallet['deposit_balance'] ?? 0);
 

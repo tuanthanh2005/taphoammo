@@ -3,7 +3,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     
     // Auto dismiss alerts after 5 seconds
-    const alerts = document.querySelectorAll('.alert');
+    const alerts = document.querySelectorAll('.alert-dismissible');
     alerts.forEach(alert => {
         setTimeout(() => {
             const bsAlert = new bootstrap.Alert(alert);
@@ -90,6 +90,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const imageInputs = document.querySelectorAll('input[type="file"][accept*="image"]');
     imageInputs.forEach(input => {
         input.addEventListener('change', function() {
+            if (input.dataset.skipDefaultPreview === 'true') {
+                return;
+            }
             const file = this.files[0];
             if (file) {
                 const reader = new FileReader();

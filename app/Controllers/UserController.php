@@ -12,6 +12,10 @@ class UserController extends Controller {
                 'deposit_account_number',
                 'telegram_support_username',
                 'telegram_support_url',
+                'wallet_telegram_support_username',
+                'wallet_telegram_support_url',
+                'wallet_telegram_bot_token',
+                'wallet_telegram_chat_id',
                 'telegram_bot_token',
                 'telegram_chat_id'
             )"
@@ -21,6 +25,12 @@ class UserController extends Controller {
         foreach ($rows as $row) {
             $settings[$row['key_name']] = $row['value'];
         }
+
+        $walletTelegram = Helper::getWalletTelegramSettings();
+        $settings['wallet_telegram_support_username'] = $walletTelegram['support_username'];
+        $settings['wallet_telegram_support_url'] = $walletTelegram['support_url'];
+        $settings['wallet_telegram_bot_token'] = $walletTelegram['bot_token'];
+        $settings['wallet_telegram_chat_id'] = $walletTelegram['chat_id'];
 
         return $settings;
     }
@@ -148,7 +158,7 @@ class UserController extends Controller {
         $orderModel = new Order();
         $page = $_GET['page'] ?? 1;
         
-        $orders = $orderModel->getUserOrders(Auth::id(), $page, 20);
+        $orders = $orderModel->getUserOrders(Auth::id(), $page, 10);
         
         $this->view('user/orders', [
             'orders' => $orders,
@@ -165,15 +175,156 @@ class UserController extends Controller {
             echo "404 - Order Not Found";
             return;
         }
+
+        // Lấy thông tin khiếu nại (nếu có)
+        $db = Database::getInstance();
+        $disputes = $db->fetchAll("SELECT * FROM disputes WHERE order_id = ?", [$id]);
+        $disputeCountsByItem = [];
+        foreach ($disputes as $d) {
+            $itemId = (int)($d['order_item_id'] ?? 0);
+            if ($itemId > 0) {
+                $disputeCountsByItem[$itemId] = ($disputeCountsByItem[$itemId] ?? 0) + 1;
+            }
+        }
+        $activeDispute = null;
+        foreach ($disputes as $d) {
+            if (in_array($d['status'], ['open', 'under_review'])) {
+                $activeDispute = $d;
+                break;
+            }
+        }
+
+        // Lấy thông tin đánh giá
+        $reviews = $db->fetchAll("SELECT * FROM reviews WHERE order_id = ? AND user_id = ?", [$id, Auth::id()]);
+        $reviewsByProduct = [];
+        foreach ($reviews as $r) {
+            $reviewsByProduct[$r['product_id']] = $r;
+        }
+
+        $this->view('user/order-detail', [
+            'order' => $order,
+            'disputes' => $disputes,
+            'disputeCount' => count($disputes),
+            'disputeCountsByItem' => $disputeCountsByItem,
+            'activeDispute' => $activeDispute,
+            'reviewsByProduct' => $reviewsByProduct
+        ]);
+    }
+    
+    public function submitDispute($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/user/orders/' . $id);
+            return;
+        }
+
+        CSRF::check();
         
-        $this->view('user/order-detail', ['order' => $order]);
+        $reason = $_POST['reason'] ?? 'other';
+        $description = trim($_POST['description'] ?? '');
+        $orderItemId = (int)($_POST['order_item_id'] ?? 0);
+
+        if (empty($description)) {
+            Session::setFlash('error', 'Vui lòng nhập chi tiết vấn đề.');
+            $this->redirect('/user/orders/' . $id);
+            return;
+        }
+
+        $evidenceImages = [];
+        if (isset($_FILES['evidence_images']) && !empty($_FILES['evidence_images']['name'][0])) {
+            $files = $_FILES['evidence_images'];
+            $count = count($files['name']);
+            if ($count > 3) {
+                Session::setFlash('error', 'Chỉ được upload tối đa 3 ảnh.');
+                $this->redirect('/user/orders/' . $id);
+                return;
+            }
+            
+            for ($i = 0; $i < $count; $i++) {
+                if ($files['error'][$i] === UPLOAD_ERR_OK) {
+                    $fileArray = [
+                        'name' => $files['name'][$i],
+                        'type' => $files['type'][$i],
+                        'tmp_name' => $files['tmp_name'][$i],
+                        'error' => $files['error'][$i],
+                        'size' => $files['size'][$i]
+                    ];
+                    $upload = Helper::uploadFile($fileArray, 'disputes');
+                    if (is_array($upload) && $upload['success']) {
+                        $evidenceImages[] = $upload['path'];
+                    }
+                }
+            }
+        }
+
+        require_once __DIR__ . '/../Services/DisputeService.php';
+        $disputeService = new DisputeService();
+        $result = $disputeService->createDispute(Auth::id(), $id, $reason, $description, $evidenceImages, $orderItemId ?: null);
+
+        if ($result['success']) {
+            Session::setFlash('success', 'Đã gửi khiếu nại. Admin sẽ sớm xử lý.');
+        } else {
+            Session::setFlash('error', $result['message']);
+        }
+
+        $this->redirect('/user/orders/' . $id);
+    }
+
+    public function submitReview($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/user/orders/' . $id);
+            return;
+        }
+
+        CSRF::check();
+
+        $rating = (int)($_POST['rating'] ?? 5);
+        $comment = trim($_POST['comment'] ?? '');
+        $productId = (int)($_POST['product_id'] ?? 0);
+
+        if ($rating < 1 || $rating > 5) {
+            Session::setFlash('error', 'Số sao không hợp lệ.');
+            $this->redirect('/user/orders/' . $id);
+            return;
+        }
+
+        $db = Database::getInstance();
+        
+        // Check if already reviewed
+        $exists = $db->fetchOne("SELECT id FROM reviews WHERE user_id = ? AND order_id = ? AND product_id = ?", [Auth::id(), $id, $productId]);
+        if ($exists) {
+            Session::setFlash('error', 'Bạn đã đánh giá sản phẩm này rồi.');
+            $this->redirect('/user/orders/' . $id);
+            return;
+        }
+
+        $db->query(
+            "INSERT INTO reviews (user_id, product_id, order_id, rating, comment, status) VALUES (?, ?, ?, ?, ?, 'approved')",
+            [Auth::id(), $productId, $id, $rating, $comment]
+        );
+
+        // Update product rating_avg and rating_count
+        $stats = $db->fetchOne("SELECT AVG(rating) as avg_r, COUNT(*) as cnt FROM reviews WHERE product_id = ? AND status = 'approved'", [$productId]);
+        $db->query("UPDATE products SET rating_avg = ?, rating_count = ? WHERE id = ?", [$stats['avg_r'], $stats['cnt'], $productId]);
+
+        Session::setFlash('success', 'Cảm ơn bạn đã đánh giá sản phẩm!');
+        $this->redirect('/user/orders/' . $id);
+    }
+
+    public function disputes() {
+        require_once __DIR__ . '/../Models/Dispute.php';
+        $disputeModel = new Dispute();
+        $disputes = $disputeModel->getByUser(Auth::id());
+        
+        $this->view('user/disputes', [
+            'disputes' => $disputes
+        ]);
     }
     
     public function wallet() {
         $walletService = new WalletService();
         $depositRequestModel = new DepositRequest();
         $wallet = $walletService->getWallet(Auth::id());
-        $transactions = $walletService->getTransactions(Auth::id(), 50);
+        $transactions = $walletService->getTransactions(Auth::id(), 10);
         $depositRequests = $depositRequestModel->getUserRequests(Auth::id());
         $walletSettings = $this->getWalletSettings();
         
@@ -197,17 +348,35 @@ class UserController extends Controller {
             $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
         }
 
+        $db = Database::getInstance();
+        $countLastHour = $db->fetchOne(
+            "SELECT COUNT(*) as total FROM deposit_requests WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)",
+            [Auth::id()]
+        )['total'];
+
+        if ($countLastHour >= 5) {
+            $db->insert('spam_alerts', [
+                'user_id' => Auth::id(),
+                'type' => 'rate_limit_exceeded',
+                'description' => 'Người dùng vượt quá giới hạn nạp tiền (5 lần/giờ)'
+            ]);
+            $this->json(['success' => false, 'message' => 'Bạn đã nạp tối đa 5 lần trong vòng 1 tiếng. Vui lòng thử lại sau.'], 429);
+        }
+
         $settings = $this->getWalletSettings();
-        $botToken = trim($settings['telegram_bot_token'] ?? '');
-        $chatId = trim($settings['telegram_chat_id'] ?? '');
+        $botToken = trim($settings['wallet_telegram_bot_token'] ?? $settings['telegram_bot_token'] ?? '');
+        $chatId = trim($settings['wallet_telegram_chat_id'] ?? $settings['telegram_chat_id'] ?? '');
 
         if ($botToken === '' || $chatId === '') {
             $this->json(['success' => false, 'message' => 'Telegram bot token hoặc chat id chưa được cấu hình'], 422);
         }
 
         $user = Auth::user();
-        $transferContent = 'NAP' . str_pad((string)Auth::id(), 4, '0', STR_PAD_LEFT);
-        $supportTelegram = trim($settings['telegram_support_username'] ?? '@specademy');
+        $transferContent = trim($_POST['transfer_code'] ?? '');
+        if (empty($transferContent)) {
+            $transferContent = 'NAP' . str_pad((string)Auth::id(), 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time()), 0, 4));
+        }
+        $supportTelegram = trim($settings['wallet_telegram_support_username'] ?? $settings['telegram_support_username'] ?? '@specademy');
         $depositRequestModel = new DepositRequest();
 
         $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);

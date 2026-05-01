@@ -94,7 +94,7 @@ class Auth {
             return ['success' => false, 'message' => 'Email hoặc mật khẩu không đúng.'];
         }
         
-        if ($user['status'] === 'banned') {
+        if (in_array($user['status'], ['banned', 'suspended'], true)) {
             return ['success' => false, 'message' => 'Tài khoản của bạn đã bị khóa.'];
         }
         

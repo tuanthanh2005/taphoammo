@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS `seller_deposits` (
   `stock_quantity` int(11) NOT NULL COMMENT 'Số lượng stock nhập',
   `product_value` decimal(15,2) NOT NULL COMMENT 'Tổng giá trị stock',
   `deposit_amount` decimal(15,2) NOT NULL COMMENT 'Số tiền cọc phải trả',
-  `deposit_percentage` decimal(5,2) DEFAULT 10.00 COMMENT 'Phần trăm cọc (mặc định 10%)',
+  `deposit_percentage` decimal(5,2) DEFAULT 30.00 COMMENT 'Phần trăm cọc mặc định',
   `status` enum('pending','paid','released','refunded') DEFAULT 'pending',
   `paid_at` datetime DEFAULT NULL,
   `released_at` datetime DEFAULT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `held_funds` (
   `seller_id` int(11) NOT NULL,
   `amount` decimal(15,2) NOT NULL COMMENT 'Số tiền bị giữ',
   `hold_until` datetime NOT NULL COMMENT 'Giữ đến ngày',
-  `status` enum('holding','released','refunded') DEFAULT 'holding',
+  `status` enum('holding','disputed','released','refunded') DEFAULT 'holding',
   `released_at` datetime DEFAULT NULL,
   `reason` varchar(255) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `system_settings` (
 
 -- Thêm các cấu hình mặc định
 INSERT INTO system_settings (setting_key, setting_value, description) VALUES
-('deposit_percentage', '10', 'Phần trăm tiền cọc seller phải trả khi nhập stock (%)'),
+('deposit_percentage', '30', 'Phần trăm tiền cọc seller phải trả khi nhập stock (%)'),
 ('hold_days', '7', 'Số ngày giữ tiền sau khi khách mua hàng'),
 ('min_deposit_amount', '50000', 'Số tiền cọc tối thiểu (VNĐ)'),
 ('enable_escrow', '1', 'Bật/tắt hệ thống escrow (1=bật, 0=tắt)')

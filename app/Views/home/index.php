@@ -7,6 +7,11 @@ $bannerRight = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'home_
 $bannerLeftLink = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'home_banner_left_link'")['value'] ?? '#';
 $bannerRightLink = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'home_banner_right_link'")['value'] ?? '#';
 $heroBg = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'home_hero_bg'")['value'] ?? '';
+$favoriteProductIds = [];
+if (Auth::check()) {
+    $favoriteRows = $db->fetchAll("SELECT product_id FROM user_favorites WHERE user_id = ?", [Auth::id()]);
+    $favoriteProductIds = array_map('intval', array_column($favoriteRows, 'product_id'));
+}
 ?>
 
 <!-- Hero Section -->
@@ -93,6 +98,13 @@ $heroBg = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'home_hero_
                                     <div class="product-badges">
                                         <span class="badge bg-danger">HOT</span>
                                     </div>
+                                    <button class="btn btn-fav btn-sm rounded-circle shadow-sm position-absolute top-0 end-0 m-2 z-3 bg-white" 
+                                            data-id="<?= $product['id'] ?>" onclick="toggleFavorite(this, event)" style="width:32px; height:32px; display:flex; align-items:center; justify-content:center; border:none;">
+                                        <?php
+                                        $isFav = in_array((int)$product['id'], $favoriteProductIds, true);
+                                        ?>
+                                        <i class="<?= $isFav ? 'fas text-danger' : 'far' ?> fa-heart"></i>
+                                    </button>
                                     <div class="product-action-overlay d-flex align-items-center justify-content-center">
                                         <a href="<?= url('/product/' . $product['slug']) ?>"
                                             class="btn btn-light btn-sm rounded-pill px-3 fw-bold text-primary">

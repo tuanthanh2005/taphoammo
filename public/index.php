@@ -28,6 +28,8 @@ if (($_ENV['APP_DEBUG'] ?? false) === 'true') {
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 
 // Start session
+ini_set('session.cookie_lifetime', 31536000); // 1 year
+ini_set('session.gc_maxlifetime', 31536000);  // 1 year
 session_start();
 
 // Autoload core classes

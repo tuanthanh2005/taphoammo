@@ -53,22 +53,31 @@ class SellerController extends Controller {
     
     public function products() {
         $productModel = new Product();
-        $page = $_GET['page'] ?? 1;
+        $page = (int)($_GET['page'] ?? 1);
+        $search = trim($_GET['search'] ?? '');
         
-        $products = $productModel->getAll(['seller_id' => Auth::id(), 'status' => 'all'], $page, 20);
+        $filters = ['seller_id' => Auth::id(), 'status' => 'all'];
+        if ($search !== '') {
+            $filters['search'] = $search;
+        }
+
+        $products = $productModel->getAll($filters, $page, 10);
         
         $this->view('seller/products', [
             'products' => $products,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'search' => $search
         ]);
     }
     
     public function createProduct() {
         $db = Database::getInstance();
+        $user = $db->fetchOne("SELECT max_products FROM users WHERE id = ?", [Auth::id()]);
+        $maxProducts = $user['max_products'] ?? 10;
         $totalProducts = $db->fetchOne("SELECT COUNT(*) as count FROM products WHERE seller_id = ?", [Auth::id()])['count'] ?? 0;
         
-        if ($totalProducts >= 10) {
-            Session::setFlash('error', 'Bạn đã đạt giới hạn 10 sản phẩm. Vui lòng liên hệ Admin qua Telegram hoặc Email để nâng cấp.');
+        if ($totalProducts >= $maxProducts) {
+            Session::setFlash('error', "Bạn đã đạt giới hạn {$maxProducts} sản phẩm. Vui lòng liên hệ Admin để nâng cấp.");
             $this->redirect('/seller/products');
             return;
         }
@@ -88,10 +97,12 @@ class SellerController extends Controller {
         CSRF::check();
         
         $db = Database::getInstance();
+        $user = $db->fetchOne("SELECT max_products FROM users WHERE id = ?", [Auth::id()]);
+        $maxProducts = $user['max_products'] ?? 10;
         $totalProducts = $db->fetchOne("SELECT COUNT(*) as count FROM products WHERE seller_id = ?", [Auth::id()])['count'] ?? 0;
         
-        if ($totalProducts >= 10) {
-            Session::setFlash('error', 'Bạn đã đạt giới hạn 10 sản phẩm. Vui lòng liên hệ Admin qua Telegram hoặc Email để nâng cấp.');
+        if ($totalProducts >= $maxProducts) {
+            Session::setFlash('error', "Bạn đã đạt giới hạn {$maxProducts} sản phẩm. Vui lòng liên hệ Admin để nâng cấp.");
             $this->redirect('/seller/products');
             return;
         }
@@ -103,6 +114,14 @@ class SellerController extends Controller {
         $price = $_POST['price'] ?? 0;
         $salePrice = $_POST['sale_price'] ?? null;
         $productType = $_POST['product_type'] ?? 'key';
+        $warrantyDays = max(0, (int)($_POST['warranty_days'] ?? 0));
+        $warrantyNote = trim($_POST['warranty_note'] ?? '');
+        $categoryModel = new Category();
+        $category = $categoryModel->find($categoryId);
+        $profile = Helper::getCategoryProductProfile($category ?: []);
+        if (empty($productType) || !in_array($productType, $profile['allowed_product_types'], true)) {
+            $productType = $profile['suggested_product_type'];
+        }
         
         // Validation
         if (empty($name) || empty($categoryId) || empty($price)) {
@@ -111,6 +130,10 @@ class SellerController extends Controller {
             return;
         }
         
+        if ($warrantyNote === '') {
+            $warrantyNote = $warrantyDays > 0 ? "Bao hanh {$warrantyDays} ngay" : 'Khong bao hanh';
+        }
+
         $data = [
             'seller_id' => Auth::id(),
             'category_id' => $categoryId,
@@ -121,6 +144,8 @@ class SellerController extends Controller {
             'price' => $price,
             'sale_price' => $salePrice ?: null,
             'product_type' => $productType,
+            'warranty_days' => $warrantyDays,
+            'warranty_note' => $warrantyNote,
             'require_note' => isset($_POST['require_note']) ? 1 : 0,
             'status' => 'pending',
             'stock_quantity' => 0
@@ -157,10 +182,12 @@ class SellerController extends Controller {
         
         $categoryModel = new Category();
         $categories = $categoryModel->getActive();
+        $selectedCategory = $categoryModel->find($product['category_id']);
         
         $this->view('seller/product-edit', [
             'product' => $product,
-            'categories' => $categories
+            'categories' => $categories,
+            'categoryProfile' => Helper::getCategoryProductProfile($selectedCategory ?: [])
         ]);
     }
     
@@ -187,6 +214,15 @@ class SellerController extends Controller {
         $price = $_POST['price'] ?? 0;
         $salePrice = $_POST['sale_price'] ?? null;
         $status = $_POST['status'] ?? 'active';
+        $productType = $_POST['product_type'] ?? ($product['product_type'] ?? 'key');
+        $warrantyDays = max(0, (int)($_POST['warranty_days'] ?? 0));
+        $warrantyNote = trim($_POST['warranty_note'] ?? '');
+        $categoryModel = new Category();
+        $category = $categoryModel->find($categoryId);
+        $profile = Helper::getCategoryProductProfile($category ?: []);
+        if (empty($productType) || !in_array($productType, $profile['allowed_product_types'], true)) {
+            $productType = $profile['suggested_product_type'];
+        }
         
         $data = [
             'category_id' => $categoryId,
@@ -195,6 +231,9 @@ class SellerController extends Controller {
             'description' => $description,
             'price' => $price,
             'sale_price' => $salePrice ?: null,
+            'product_type' => $productType,
+            'warranty_days' => $warrantyDays,
+            'warranty_note' => $warrantyNote !== '' ? $warrantyNote : ($warrantyDays > 0 ? "Bao hanh {$warrantyDays} ngay" : 'Khong bao hanh'),
             'require_note' => isset($_POST['require_note']) ? 1 : 0,
             'status' => $status
         ];
@@ -213,6 +252,65 @@ class SellerController extends Controller {
         $this->redirect('/seller/products');
     }
     
+    public function deleteProduct($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/seller/products');
+            return;
+        }
+
+        CSRF::check();
+        
+        $db = Database::getInstance();
+        $sellerId = Auth::id();
+
+        $product = $db->fetchOne("SELECT * FROM products WHERE id = ? AND seller_id = ?", [$id, $sellerId]);
+        if (!$product) {
+            Session::setFlash('error', 'Sản phẩm không tồn tại.');
+            $this->redirect('/seller/products');
+            return;
+        }
+
+        // 1. Kiểm tra xem có đơn hàng nào đang trong trạng thái xử lý hoặc khiếu nại không
+        $pendingOrders = $db->fetchAll("
+            SELECT oi.order_id, o.order_code, u.name as buyer_name, oi.item_status
+            FROM order_items oi
+            JOIN orders o ON oi.order_id = o.id
+            JOIN users u ON o.user_id = u.id
+            LEFT JOIN disputes d ON oi.order_id = d.order_id AND oi.product_id = d.product_id
+            WHERE oi.product_id = ? 
+            AND (oi.item_status = 'processing' OR (d.id IS NOT NULL AND d.status IN ('open', 'under_review')))
+            GROUP BY oi.order_id
+        ", [$id]);
+
+        if (!empty($pendingOrders)) {
+            $orderList = [];
+            foreach ($pendingOrders as $po) {
+                $statusText = ($po['item_status'] === 'processing') ? 'Đang xử lý' : 'Đang khiếu nại';
+                $orderList[] = "#" . $po['order_code'] . " (" . $po['buyer_name'] . " - " . $statusText . ")";
+            }
+            $msg = "Không thể xóa/ẩn sản phẩm này vì còn các đơn hàng chưa hoàn tất: " . implode(', ', $orderList) . ". Vui lòng xử lý xong trước khi xóa.";
+            Session::setFlash('error', $msg);
+            $this->redirect('/seller/products');
+            return;
+        }
+
+        // 2. Kiểm tra lịch sử đơn hàng cũ (đã hoàn thành)
+        $orderCount = $db->fetchOne("SELECT COUNT(*) as total FROM order_items WHERE product_id = ?", [$id])['total'];
+        
+        if ($orderCount > 0) {
+            // Nếu đã có đơn hàng cũ, chỉ đổi trạng thái sang 'deleted' để ẩn hoàn toàn khỏi Seller
+            $db->update('products', ['status' => 'deleted'], 'id = :id', ['id' => $id]);
+            Session::setFlash('success', 'Sản phẩm đã có lịch sử đơn hàng nên hệ thống đã đánh dấu Xóa và ẩn khỏi danh sách của bạn.');
+        } else {
+            // Nếu chưa có đơn hàng nào, xóa sạch 100%
+            $db->query("DELETE FROM product_stocks WHERE product_id = ?", [$id]);
+            $db->query("DELETE FROM products WHERE id = ?", [$id]);
+            Session::setFlash('success', 'Đã xóa sản phẩm thành công.');
+        }
+
+        $this->redirect('/seller/products');
+    }
+
     public function manageStock($id) {
         $productModel = new Product();
         $product = $productModel->find($id);
@@ -222,6 +320,8 @@ class SellerController extends Controller {
             die('403 - Forbidden');
         }
         
+        $categoryModel = new Category();
+        $category = $categoryModel->find($product['category_id']);
         $db = Database::getInstance();
         $stocks = $db->fetchAll(
             "SELECT * FROM product_stocks WHERE product_id = ? ORDER BY created_at DESC",
@@ -230,7 +330,8 @@ class SellerController extends Controller {
         
         $this->view('seller/product-stock', [
             'product' => $product,
-            'stocks' => $stocks
+            'stocks' => $stocks,
+            'categoryProfile' => Helper::getCategoryProductProfile($category ?: [])
         ]);
     }
     
@@ -243,7 +344,7 @@ class SellerController extends Controller {
         CSRF::check();
         
         $productId = $_POST['product_id'] ?? 0;
-        $stockContent = $_POST['stock_content'] ?? '';
+        $stockContent = trim($_POST['stock_content'] ?? '');
         
         $productModel = new Product();
         $product = $productModel->find($productId);
@@ -252,26 +353,85 @@ class SellerController extends Controller {
             http_response_code(403);
             die('403 - Forbidden');
         }
-        
-        // Split by lines
-        $lines = explode("\n", trim($stockContent));
-        $stockCount = count(array_filter(array_map('trim', $lines)));
-        
-        if ($stockCount == 0) {
-            Session::setFlash('error', 'Vui lòng nhập ít nhất 1 mã hàng');
+
+        $categoryModel = new Category();
+        $category = $categoryModel->find($product['category_id']);
+        $profile = Helper::getCategoryProductProfile($category ?: []);
+        $stockEntries = [];
+
+        if (($profile['stock_mode'] ?? 'lines') === 'file') {
+            $uploadedFiles = $_FILES['stock_files'] ?? null;
+            if (empty($uploadedFiles) || empty($uploadedFiles['name']) || !is_array($uploadedFiles['name'])) {
+                Session::setFlash('error', 'Vui lòng chọn ít nhất 1 file tải lên');
+                $this->redirect('/seller/products/stock/' . $productId);
+                return;
+            }
+
+            foreach ($uploadedFiles['name'] as $index => $originalName) {
+                if (($uploadedFiles['error'][$index] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $singleFile = [
+                    'name' => $uploadedFiles['name'][$index],
+                    'type' => $uploadedFiles['type'][$index],
+                    'tmp_name' => $uploadedFiles['tmp_name'][$index],
+                    'error' => $uploadedFiles['error'][$index],
+                    'size' => $uploadedFiles['size'][$index],
+                ];
+
+                $upload = Helper::uploadDocumentFile($singleFile, 'downloads');
+                if (!$upload['success']) {
+                    Session::setFlash('error', $upload['message']);
+                    $this->redirect('/seller/products/stock/' . $productId);
+                    return;
+                }
+
+                $stockEntries[] = Helper::encodeStockContent('file', [
+                    'path' => $upload['path'],
+                    'name' => $upload['original_name'] ?? $upload['filename']
+                ]);
+            }
+        } else {
+            $importType = $_POST['import_type'] ?? 'list';
+            if ($importType === 'quantity') {
+                $quantity = (int)($_POST['stock_quantity'] ?? 0);
+                if ($quantity <= 0) {
+                    Session::setFlash('error', 'Vui lòng nhập số lượng hợp lệ');
+                    $this->redirect('/seller/products/stock/' . $productId);
+                    return;
+                }
+                for ($i = 0; $i < $quantity; $i++) {
+                    $stockEntries[] = Helper::encodeStockContent('manual_delivery', [
+                        'message' => 'San pham ban giao thu cong. Vui long lien he Nguoi ban qua muc Chat.'
+                    ]);
+                }
+            } else {
+                $lines = preg_split('/\r\n|\r|\n/', $stockContent);
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if ($line !== '') {
+                        $stockEntries[] = $line;
+                    }
+                }
+            }
+        }
+
+        $stockCount = count($stockEntries);
+        if ($stockCount === 0) {
+            Session::setFlash('error', ($profile['stock_mode'] ?? 'lines') === 'file'
+                ? 'Vui lòng tải lên ít nhất 1 file'
+                : 'Vui lòng nhập ít nhất 1 mục kho hàng');
             $this->redirect('/seller/products/stock/' . $productId);
             return;
         }
         
-        // Kiểm tra hệ thống escrow có bật không
         $escrowService = new EscrowService();
         $escrowEnabled = $escrowService->isEscrowEnabled();
         $depositRequired = 0;
         
         if ($escrowEnabled) {
             $productPrice = $product['sale_price'] ?? $product['price'];
-            
-            // processStockDeposit = tính + kiểm tra + trừ tiền luôn
             $depositResult = $escrowService->processStockDeposit(
                 Auth::id(),
                 $productId,
@@ -288,24 +448,19 @@ class SellerController extends Controller {
             $depositRequired = $depositResult['deposit_amount'];
         }
         
-        // Nhập stock
         $imported = 0;
         $db = Database::getInstance();
         
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if (!empty($line)) {
-                $db->insert('product_stocks', [
-                    'product_id' => $productId,
-                    'seller_id' => Auth::id(),
-                    'content' => $line,
-                    'status' => 'available'
-                ]);
-                $imported++;
-            }
+        foreach ($stockEntries as $entry) {
+            $db->insert('product_stocks', [
+                'product_id' => $productId,
+                'seller_id' => Auth::id(),
+                'content' => $entry,
+                'status' => 'available'
+            ]);
+            $imported++;
         }
         
-        // Update product stock quantity
         $productModel->updateStock($productId);
         
         if ($escrowEnabled) {
@@ -319,26 +474,56 @@ class SellerController extends Controller {
     
     public function orders() {
         $db = Database::getInstance();
-        $page = $_GET['page'] ?? 1;
-        $perPage = 20;
+        $search = trim($_GET['search'] ?? '');
+        
+        // Đánh dấu tất cả đơn hàng là đã đọc sau khi đã lấy dữ liệu để hiển thị (để vẫn hiện badge "Mới" lần đầu)
+        $db->query("UPDATE order_items SET is_read = 1 WHERE seller_id = ? AND is_read = 0", [Auth::id()]);
+
+        $page = (int)($_GET['page'] ?? 1);
+        if ($page < 1) $page = 1;
+        $perPage = 10;
         $offset = ($page - 1) * $perPage;
         
-        $orders = $db->fetchAll(
-            "SELECT oi.*, o.order_code, o.created_at, o.payment_status, 
-                    p.name as product_name, u.name as buyer_name
+        $where = "oi.seller_id = ?";
+        $params = [Auth::id()];
+        
+        if ($search !== '') {
+            $where .= " AND (o.order_code LIKE ? OR p.name LIKE ? OR u.name LIKE ?)";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+            $params[] = "%$search%";
+        }
+
+        // Đếm tổng số để phân trang
+        $totalCount = $db->fetchOne(
+            "SELECT COUNT(*) as count 
              FROM order_items oi
              LEFT JOIN orders o ON oi.order_id = o.id
              LEFT JOIN products p ON oi.product_id = p.id
              LEFT JOIN users u ON o.user_id = u.id
-             WHERE oi.seller_id = ?
+             WHERE {$where}",
+            $params
+        )['count'] ?? 0;
+        $totalPages = ceil($totalCount / $perPage);
+
+        $orders = $db->fetchAll(
+            "SELECT oi.*, o.order_code, o.created_at, o.payment_status, 
+                    p.name as product_name, u.name as buyer_name, o.id as order_id
+             FROM order_items oi
+             LEFT JOIN orders o ON oi.order_id = o.id
+             LEFT JOIN products p ON oi.product_id = p.id
+             LEFT JOIN users u ON o.user_id = u.id
+             WHERE {$where}
              ORDER BY o.created_at DESC
              LIMIT {$perPage} OFFSET {$offset}",
-            [Auth::id()]
+            $params
         );
         
         $this->view('seller/orders', [
             'orders' => $orders,
-            'currentPage' => $page
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'search' => $search
         ]);
     }
     
@@ -415,6 +600,16 @@ class SellerController extends Controller {
             [$status, $note, $orderId, $sellerId]
         );
 
+        // Kiểm tra xem tất cả items trong đơn đã hoàn thành chưa để cập nhật orders.order_status
+        $remainingItems = $db->fetchOne(
+            "SELECT COUNT(*) as count FROM order_items WHERE order_id = ? AND item_status NOT IN ('delivered', 'refunded')",
+            [$orderId]
+        )['count'];
+
+        if ($remainingItems == 0) {
+            $db->update('orders', ['order_status' => 'completed'], 'id = :id', ['id' => $orderId]);
+        }
+
         Session::setFlash('success', 'Đã cập nhật trạng thái đơn hàng');
         $this->redirect('/seller/orders/' . $orderId);
     }
@@ -422,11 +617,20 @@ class SellerController extends Controller {
     public function wallet() {
         $walletService = new WalletService();
         $wallet = $walletService->getWallet(Auth::id());
-        $transactions = $walletService->getTransactions(Auth::id(), 50);
+        $transactions = $walletService->getTransactions(Auth::id(), 10);
+        $walletSettings = [
+            'deposit_bank_code' => Helper::getSettingValue('deposit_bank_code', 'mb'),
+            'deposit_bank_name' => Helper::getSettingValue('deposit_bank_name', 'MB Bank'),
+            'deposit_account_name' => Helper::getSettingValue('deposit_account_name', 'TRAN THANH TUAN'),
+            'deposit_account_number' => Helper::getSettingValue('deposit_account_number', '0783704196'),
+            'wallet_telegram_support_username' => Helper::getWalletTelegramSettings()['support_username'],
+            'wallet_telegram_support_url' => Helper::getWalletTelegramSettings()['support_url'],
+        ];
         
         $this->view('seller/wallet', [
             'wallet' => $wallet,
-            'transactions' => $transactions
+            'transactions' => $transactions,
+            'walletSettings' => $walletSettings
         ]);
     }
     
@@ -484,8 +688,13 @@ class SellerController extends Controller {
         
         // Tạo yêu cầu nạp tiền
         $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);
-        $transferCode = 'NAPSELLER';
+        $transferCode = 'NAPSELLER' . str_pad((string)$userId, 4, '0', STR_PAD_LEFT);
         $remaining = 5 - ($recentCount['cnt'] + 1); // Số lần còn lại sau khi tạo
+        $walletTelegram = Helper::getWalletTelegramSettings();
+        $bankCode = Helper::getSettingValue('deposit_bank_code', 'mb');
+        $bankName = Helper::getSettingValue('deposit_bank_name', 'MB Bank');
+        $accountName = Helper::getSettingValue('deposit_account_name', 'TRAN THANH TUAN');
+        $accountNumber = Helper::getSettingValue('deposit_account_number', '0783704196');
         
         $depositId = $db->insert('deposit_requests', [
             'user_id'        => $userId,
@@ -493,14 +702,30 @@ class SellerController extends Controller {
             'transfer_code'  => $transferCode,
             'amount'         => $amount,
             'note'           => $note,
-            'bank_code'      => 'mb',
-            'bank_name'      => 'MB Bank',
-            'account_name'   => 'TRAN THANH TUAN',
-            'account_number' => '0783704196',
+            'bank_code'      => $bankCode,
+            'bank_name'      => $bankName,
+            'account_name'   => $accountName,
+            'account_number' => $accountNumber,
             'status'         => 'pending'
         ]);
+
+        if ($walletTelegram['chat_id'] !== '' && $walletTelegram['bot_token'] !== '') {
+            $seller = Auth::user();
+            $telegramMessage = implode("\n", [
+                'YEU CAU NAP TIEN SELLER',
+                'Request ID: ' . $depositId,
+                'Ma don: ' . $depositCode,
+                'Seller ID: ' . $userId,
+                'Ten: ' . ($seller['name'] ?? ''),
+                'Username: ' . ($seller['username'] ?? ''),
+                'So tien: ' . number_format($amount, 0, ',', '.') . 'd',
+                'Noi dung CK: ' . $transferCode,
+                'Ghi chu: ' . ($note !== '' ? $note : '(trong)')
+            ]);
+            Helper::sendTelegramMessage($walletTelegram['chat_id'], $telegramMessage, $walletTelegram['bot_token']);
+        }
         
-        $msg = "✅ Đã gửi yêu cầu nạp " . money($amount) . ". Mã đơn: {$depositCode}. Vui lòng chuyển khoản MB Bank STK 0783704196 - TRAN THANH TUAN với nội dung: NAPSELLER";
+        $msg = "✅ Đã gửi yêu cầu nạp " . money($amount) . ". Mã đơn: {$depositCode}. Vui lòng chuyển khoản {$bankName} STK {$accountNumber} - {$accountName} với nội dung: {$transferCode}";
         if ($remaining > 0) {
             $msg .= " (Còn {$remaining} lần nạp trong 2 tiếng này)";
         } else {
@@ -563,15 +788,44 @@ class SellerController extends Controller {
         $db = Database::getInstance();
         $minAmountSetting = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'min_withdraw_amount'");
         $feePercentSetting = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'seller_withdraw_fee_percent'");
+        $minBalanceSetting = $db->fetchOne("SELECT setting_value FROM system_settings WHERE setting_key = 'seller_minimum_balance'");
         
         $minAmount = $minAmountSetting ? (int)$minAmountSetting['value'] : 50000;
         $feePercent = $feePercentSetting ? (float)$feePercentSetting['value'] : 5;
+        $minBalance = $minBalanceSetting ? (int)$minBalanceSetting['setting_value'] : 500000;
+
+        // Tính tổng tiền các đơn hàng đang có khiếu nại
+        $disputeAmount = $db->fetchOne(
+            "SELECT SUM(oi.seller_amount) as total 
+             FROM disputes d 
+             JOIN order_items oi ON d.order_item_id = oi.id 
+             WHERE d.seller_id = ? AND d.status IN ('open', 'under_review')",
+            [Auth::id()]
+        )['total'] ?? 0;
+
+        // Tính tổng tiền các đơn hàng đang trong thời gian bảo hành (chưa hết hạn khiếu nại)
+        $minimumDisputeHours = Helper::getMinimumDisputeHours();
+        $warrantyAmount = $db->fetchOne(
+            "SELECT SUM(oi.seller_amount) as total 
+             FROM order_items oi 
+             JOIN products p ON oi.product_id = p.id 
+             WHERE oi.seller_id = ? 
+             AND oi.item_status = 'delivered' 
+             AND DATE_ADD(
+                    COALESCE(oi.status_updated_at, oi.created_at),
+                    INTERVAL GREATEST(?, COALESCE(p.warranty_days, 0) * 24) HOUR
+                 ) > NOW()",
+            [Auth::id(), $minimumDisputeHours]
+        )['total'] ?? 0;
         
         $this->view('seller/withdrawals', [
             'withdrawals' => $withdrawals,
             'wallet' => $wallet,
             'minAmount' => $minAmount,
-            'feePercent' => $feePercent
+            'feePercent' => $feePercent,
+            'minBalance' => $minBalance,
+            'disputeAmount' => $disputeAmount,
+            'warrantyAmount' => $warrantyAmount
         ]);
     }
     
@@ -587,6 +841,51 @@ class SellerController extends Controller {
         $method = $_POST['method'] ?? '';
         $accountInfo = $_POST['account_info'] ?? '';
         
+        $db = Database::getInstance();
+        $disputeAmount = $db->fetchOne(
+            "SELECT SUM(oi.seller_amount) as total 
+             FROM disputes d 
+             JOIN order_items oi ON d.order_item_id = oi.id 
+             WHERE d.seller_id = ? AND d.status IN ('open', 'under_review')",
+            [Auth::id()]
+        )['total'] ?? 0;
+
+        $minimumDisputeHours = Helper::getMinimumDisputeHours();
+        $warrantyAmount = $db->fetchOne(
+            "SELECT SUM(oi.seller_amount) as total 
+             FROM order_items oi 
+             JOIN products p ON oi.product_id = p.id 
+             WHERE oi.seller_id = ? 
+             AND oi.item_status = 'delivered' 
+             AND DATE_ADD(
+                    COALESCE(oi.status_updated_at, oi.created_at),
+                    INTERVAL GREATEST(?, COALESCE(p.warranty_days, 0) * 24) HOUR
+                 ) > NOW()",
+            [Auth::id(), $minimumDisputeHours]
+        )['total'] ?? 0;
+        
+        $minBalanceSetting = $db->fetchOne("SELECT setting_value FROM system_settings WHERE setting_key = 'seller_minimum_balance'");
+        $minBalance = $minBalanceSetting ? (int)$minBalanceSetting['setting_value'] : 500000;
+        
+        $walletService = new WalletService();
+        $wallet = $walletService->getWallet(Auth::id());
+        
+        $riskAmount = $disputeAmount + $warrantyAmount;
+        $heldAmount = max($minBalance, $riskAmount);
+        $withdrawable = max(0, $wallet['balance'] - $heldAmount);
+        
+        if ($amount > $withdrawable) {
+            $msg = '⚠️ Số tiền rút vượt quá hạn mức cho phép. ';
+            if ($riskAmount > $minBalance) {
+                $msg .= 'Hệ thống đang giữ lại ' . money($riskAmount) . ' (bao gồm ' . money($disputeAmount) . ' khiếu nại và ' . money($warrantyAmount) . ' tiền bảo hành đơn hàng) để đảm bảo an toàn.';
+            } else {
+                $msg .= 'Bạn cần giữ lại ít nhất ' . money($minBalance) . ' (Quỹ bảo chứng) để duy trì tài khoản.';
+            }
+            Session::setFlash('error', $msg);
+            $this->redirect('/seller/withdrawals');
+            return;
+        }
+
         if (empty($amount) || empty($method) || empty($accountInfo)) {
             Session::setFlash('error', 'Vui lòng nhập đầy đủ thông tin');
             $this->redirect('/seller/withdrawals');
@@ -603,6 +902,94 @@ class SellerController extends Controller {
         }
         
         $this->redirect('/seller/withdrawals');
+    }
+
+    public function refundOrder($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/seller/orders/' . $id);
+            return;
+        }
+
+        CSRF::check();
+        
+        $orderItemId = $_POST['order_item_id'] ?? 0;
+        $note = trim($_POST['seller_note'] ?? '');
+
+        if (!$orderItemId) {
+            Session::setFlash('error', 'Sản phẩm không hợp lệ.');
+            $this->redirect('/seller/orders/' . $id);
+            return;
+        }
+
+        require_once __DIR__ . '/../Services/DisputeService.php';
+        $disputeService = new DisputeService();
+        $result = $disputeService->sellerRefundBuyer(Auth::id(), $id, $orderItemId, $note);
+
+        if ($result['success']) {
+            Session::setFlash('success', 'Đã hoàn tiền cho khách hàng thành công.');
+        } else {
+            Session::setFlash('error', $result['message']);
+        }
+
+        $this->redirect('/seller/orders/' . $id);
+    }
+
+    public function disputes() {
+        require_once __DIR__ . '/../Models/Dispute.php';
+        $disputeModel = new Dispute();
+        $disputes = $disputeModel->getBySeller(Auth::id());
+        
+        $this->view('seller/disputes', [
+            'disputes' => $disputes
+        ]);
+    }
+
+    public function respondDispute($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/seller/disputes');
+            return;
+        }
+
+        CSRF::check();
+
+        $response = trim($_POST['seller_response'] ?? '');
+        $evidenceImages = [];
+
+        if (!empty($_FILES['seller_evidence_images']['name']) && is_array($_FILES['seller_evidence_images']['name'])) {
+            foreach ($_FILES['seller_evidence_images']['name'] as $index => $name) {
+                if (($name ?? '') === '') {
+                    continue;
+                }
+
+                $fileArray = [
+                    'name' => $_FILES['seller_evidence_images']['name'][$index],
+                    'type' => $_FILES['seller_evidence_images']['type'][$index],
+                    'tmp_name' => $_FILES['seller_evidence_images']['tmp_name'][$index],
+                    'error' => $_FILES['seller_evidence_images']['error'][$index],
+                    'size' => $_FILES['seller_evidence_images']['size'][$index],
+                ];
+
+                if (($fileArray['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+
+                $upload = Helper::uploadFile($fileArray, 'disputes');
+                if (!$upload['success']) {
+                    Session::setFlash('error', $upload['message']);
+                    $this->redirect('/seller/disputes');
+                    return;
+                }
+
+                $evidenceImages[] = $upload['path'];
+            }
+        }
+
+        require_once __DIR__ . '/../Services/DisputeService.php';
+        $disputeService = new DisputeService();
+        $result = $disputeService->sellerRespond(Auth::id(), (int)$id, $response, $evidenceImages);
+
+        Session::setFlash($result['success'] ? 'success' : 'error', $result['message']);
+        $this->redirect('/seller/disputes');
     }
     
     public function updateTelegram() {

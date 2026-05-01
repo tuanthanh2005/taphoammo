@@ -241,4 +241,76 @@ class AuthController extends Controller {
         Auth::login($user);
         $this->redirect('/user/dashboard');
     }
+
+    public function registerAsSeller() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/nha-ban-hang');
+            return;
+        }
+        
+        CSRF::check();
+        
+        $name = $_POST['name'] ?? '';
+        $username = $_POST['username'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        
+        if (empty($name) || empty($username) || empty($email) || empty($password)) {
+            Session::setFlash('error', 'Vui lòng nhập đầy đủ thông tin');
+            $this->redirect('/nha-ban-hang');
+            return;
+        }
+        
+        if (strlen($password) < 6) {
+            Session::setFlash('error', 'Mật khẩu phải có ít nhất 6 ký tự');
+            $this->redirect('/nha-ban-hang');
+            return;
+        }
+        
+        $userModel = new User();
+        if ($userModel->findByEmail($email)) {
+            Session::setFlash('error', 'Email đã được sử dụng');
+            $this->redirect('/nha-ban-hang');
+            return;
+        }
+        if ($userModel->findByUsername($username)) {
+            Session::setFlash('error', 'Username đã được sử dụng');
+            $this->redirect('/nha-ban-hang');
+            return;
+        }
+        
+        $userId = $userModel->createUser([
+            'name' => $name,
+            'username' => $username,
+            'email' => $email,
+            'password' => $password,
+            'role' => 'user', // Ban đầu là user
+            'status' => 'active',
+            'email_verified_at' => date('Y-m-d H:i:s'),
+            'is_seller_requested' => 1 // Đánh dấu yêu cầu làm Seller
+        ]);
+        
+        if ($userId) {
+            // Thông báo Telegram cho Admin
+            $db = Database::getInstance();
+            $adminChatId = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'telegram_chat_id'")['value'] ?? '';
+            if (!empty($adminChatId)) {
+                $msg = "🚀 <b>Yêu cầu làm Seller mới!</b>\n\n";
+                $msg .= "👤 Tên: " . Helper::telegramEscape($name) . "\n";
+                $msg .= "📧 Email: " . Helper::telegramEscape($email) . "\n";
+                $msg .= "🔗 Username: " . Helper::telegramEscape($username) . "\n\n";
+                $msg .= "Vui lòng vào trang quản trị để duyệt.";
+                Helper::sendTelegramMessage($adminChatId, $msg);
+            }
+
+            // Thông báo hệ thống qua Chat (NPC Admin)
+            Helper::sendSystemMessage($userId, "Chào bạn! Yêu cầu làm Nhà bán hàng của bạn đã được gửi thành công. Admin sẽ kiểm tra và phê duyệt sớm nhất có thể. Bạn có thể liên hệ Admin qua Telegram để được hỗ trợ nhanh hơn.");
+
+            Session::setFlash('success', 'Đã gửi yêu cầu đăng ký Nhà bán hàng! Vui lòng chờ Admin phê duyệt.');
+            $this->redirect('/nha-ban-hang?success=1');
+        } else {
+            Session::setFlash('error', 'Có lỗi xảy ra, vui lòng thử lại');
+            $this->redirect('/nha-ban-hang');
+        }
+    }
 }
