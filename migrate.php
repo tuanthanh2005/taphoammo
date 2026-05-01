@@ -1,56 +1,62 @@
 <?php
 /**
- * Simple Database Migration Script
+ * Simple Database Migration Script - Fixed for Hosting
  */
 
-// Load .env
 define('ROOT_PATH', __DIR__);
+
+// Load .env một cách chắc chắn hơn
 if (file_exists(ROOT_PATH . '/.env')) {
-    $lines = file(ROOT_PATH . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $envFile = file_get_contents(ROOT_PATH . '/.env');
+    $lines = explode("\n", str_replace("\r", "", $envFile));
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0)
+        $line = trim($line);
+        if (empty($line) || strpos($line, '#') === 0)
             continue;
         if (strpos($line, '=') !== false) {
             list($key, $value) = explode('=', $line, 2);
-            $_ENV[trim($key)] = trim($value, '"');
+            $key = trim($key);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+            $_ENV[$key] = $value;
         }
     }
 }
 
+// Lấy thông tin từ ENV hoặc báo lỗi nếu thiếu
 $host = $_ENV['DB_HOST'] ?? 'localhost';
-$dbname = $_ENV['DB_NAME'] ?? 'mmo_marketplace';
-$username = $_ENV['DB_USER'] ?? 'root';
+$dbname = $_ENV['DB_NAME'] ?? '';
+$username = $_ENV['DB_USER'] ?? '';
 $password = $_ENV['DB_PASS'] ?? '';
 
+if (empty($dbname) || empty($username)) {
+    die("Lỗi: Không tìm thấy thông tin Database trong file .env!\n");
+}
+
 try {
-    // 1. Connect to MySQL
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
+    echo "--- Bắt đầu quá trình import database ---\n";
+    echo "Đang kết nối tới Database: $dbname...\n";
+
+    // 1. Connect trực tiếp tới Database
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    echo "--- Bắt đầu quá trình import database ---\n";
+    echo "1. Đã kết nối thành công!\n";
 
-    // 2. Create database (Bỏ qua trên hosting vì đã tạo sẵn)
-    // $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    echo "1. Đã kết nối thành công tới server MySQL\n";
-
-    // 3. Connect to the database
-    $pdo->exec("USE `$dbname`");
-
-    // 4. Read SQL file
+    // 2. Đọc file SQL
     $sqlFile = ROOT_PATH . '/database.sql';
     if (!file_exists($sqlFile)) {
-        die("Lỗi: Không tìm thấy file database.sql tại " . $sqlFile);
+        die("Lỗi: Không tìm thấy file database.sql tại " . $sqlFile . "\n");
     }
 
     $sql = file_get_contents($sqlFile);
 
-    // 5. Execute SQL
-    // Note: This works for the provided database.sql which has standard formatting
+    // 3. Thực thi SQL
+    echo "2. Đang import dữ liệu (vui lòng đợi)...\n";
     $pdo->exec($sql);
 
-    echo "2. Đã import dữ liệu từ file database.sql Thành công!\n";
-    echo "--- Hoàn tất! Bây giờ bạn có thể đăng nhập vào trang admin! ---\n";
+    echo "3. Đã import dữ liệu Thành công!\n";
+    echo "--- HOÀN TẤT! ---\n";
 
 } catch (PDOException $e) {
-    die("Lỗi: " . $e->getMessage());
+    die("Lỗi: " . $e->getMessage() . "\n");
 }
