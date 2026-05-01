@@ -1,62 +1,71 @@
 <?php
 /**
- * Simple Database Migration Script - Fixed for Hosting
+ * Simple database migration script for shared hosting.
  */
 
 define('ROOT_PATH', __DIR__);
 
-// Load .env một cách chắc chắn hơn
 if (file_exists(ROOT_PATH . '/.env')) {
     $envFile = file_get_contents(ROOT_PATH . '/.env');
-    $lines = explode("\n", str_replace("\r", "", $envFile));
+    $lines = explode("\n", str_replace("\r", '', $envFile));
+
     foreach ($lines as $line) {
         $line = trim($line);
-        if (empty($line) || strpos($line, '#') === 0)
+        if ($line === '' || strpos($line, '#') === 0) {
             continue;
-        if (strpos($line, '=') !== false) {
-            list($key, $value) = explode('=', $line, 2);
-            $key = trim($key);
-            $value = trim($value, " \t\n\r\0\x0B\"'");
-            $_ENV[$key] = $value;
         }
+
+        if (strpos($line, '=') === false) {
+            continue;
+        }
+
+        [$key, $value] = explode('=', $line, 2);
+        $_ENV[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
     }
 }
 
-// Lấy thông tin từ ENV hoặc báo lỗi nếu thiếu
 $host = $_ENV['DB_HOST'] ?? 'localhost';
 $dbname = $_ENV['DB_NAME'] ?? '';
 $username = $_ENV['DB_USER'] ?? '';
 $password = $_ENV['DB_PASS'] ?? '';
 
-if (empty($dbname) || empty($username)) {
-    die("Lỗi: Không tìm thấy thông tin Database trong file .env!\n");
+if ($dbname === '' || $username === '') {
+    die("Loi: Khong tim thay thong tin database trong file .env\n");
 }
 
 try {
-    echo "--- Bắt đầu quá trình import database ---\n";
-    echo "Đang kết nối tới Database: $dbname...\n";
+    echo "--- Bat dau qua trinh import database ---\n";
+    echo "Dang ket noi toi database: {$dbname}...\n";
 
-    // 1. Connect trực tiếp tới Database
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
+    $pdo = new PDO("mysql:host={$host};dbname={$dbname};charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    echo "1. Đã kết nối thành công!\n";
+    echo "1. Da ket noi thanh cong!\n";
 
-    // 2. Đọc file SQL
     $sqlFile = ROOT_PATH . '/database.sql';
     if (!file_exists($sqlFile)) {
-        die("Lỗi: Không tìm thấy file database.sql tại " . $sqlFile . "\n");
+        die("Loi: Khong tim thay file database.sql tai {$sqlFile}\n");
     }
 
     $sql = file_get_contents($sqlFile);
 
-    // 3. Thực thi SQL
-    echo "2. Đang import dữ liệu (vui lòng đợi)...\n";
-    $pdo->exec($sql);
+    // Strip hard-coded database directives so the import targets DB_NAME from .env.
+    $sql = preg_replace('/^\s*CREATE\s+DATABASE\b.*?;\s*$/mi', '', $sql);
+    $sql = preg_replace('/^\s*USE\s+`?.+?`?\s*;\s*$/mi', '', $sql);
 
-    echo "3. Đã import dữ liệu Thành công!\n";
-    echo "--- HOÀN TẤT! ---\n";
+    echo "2. Dang import du lieu, vui long doi...\n";
 
+    $statements = array_filter(array_map('trim', explode(';', $sql)));
+    foreach ($statements as $statement) {
+        if ($statement === '') {
+            continue;
+        }
+
+        $pdo->exec($statement);
+    }
+
+    echo "3. Da import du lieu thanh cong!\n";
+    echo "--- HOAN TAT! ---\n";
 } catch (PDOException $e) {
-    die("Lỗi: " . $e->getMessage() . "\n");
+    die("Loi: " . $e->getMessage() . "\n");
 }

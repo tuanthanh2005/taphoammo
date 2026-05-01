@@ -1,7 +1,7 @@
 -- Hệ thống đặt cọc cho seller
 -- Chạy SQL này để thêm các bảng và cột mới
 
-USE mmo_marketplace;
+-- Run this on the currently selected database.
 
 -- Thêm cột vào bảng products để theo dõi deposit
 ALTER TABLE products 

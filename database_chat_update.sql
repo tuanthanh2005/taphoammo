@@ -1,7 +1,7 @@
 -- Thêm bảng messages cho hệ thống chat
 -- Chạy SQL này trong phpMyAdmin hoặc MySQL
 
-USE mmo_marketplace;
+-- Run this on the currently selected database.
 
 -- Bảng conversations (cuộc hội thoại)
 CREATE TABLE IF NOT EXISTS `conversations` (
