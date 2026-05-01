@@ -23,15 +23,15 @@ $username = $_ENV['DB_USER'] ?? 'root';
 $password = $_ENV['DB_PASS'] ?? '';
 
 try {
-    // 1. Connect to MySQL (without DB)
-    $pdo = new PDO("mysql:host=$host", $username, $password);
+    // 1. Connect to MySQL
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
     echo "--- Bắt đầu quá trình import database ---\n";
 
-    // 2. Create database
-    $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-    echo "1. Đã tạo/kiểm tra database: $dbname\n";
+    // 2. Create database (Bỏ qua trên hosting vì đã tạo sẵn)
+    // $pdo->exec("CREATE DATABASE IF NOT EXISTS `$dbname` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+    echo "1. Đã kết nối thành công tới server MySQL\n";
 
     // 3. Connect to the database
     $pdo->exec("USE `$dbname`");
