@@ -43,10 +43,20 @@ class Auth {
         }
         
         $db = Database::getInstance();
-        $db->query(
-            "UPDATE users SET last_active_at = NOW() WHERE id = ?",
-            [self::id()]
-        );
+        
+        try {
+            $column = $db->fetchOne("SHOW COLUMNS FROM users LIKE 'last_active_at'");
+            if (!$column) {
+                return;
+            }
+
+            $db->query(
+                "UPDATE users SET last_active_at = NOW() WHERE id = ?",
+                [self::id()]
+            );
+        } catch (Exception $e) {
+            return;
+        }
     }
     
     public static function logout() {
