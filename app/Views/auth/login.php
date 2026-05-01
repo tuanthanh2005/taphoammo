@@ -7,8 +7,8 @@
             <div class="card border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="card-body p-5">
                     <div class="text-center mb-4">
-                        <div class="d-inline-flex align-items-center justify-content-center bg-success bg-opacity-10 text-success rounded-circle mb-3" style="width: 60px; height: 60px;">
-                            <i class="fas fa-user-lock fs-3"></i>
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-4 mb-3 shadow-sm" style="width: 72px; height: 72px; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);">
+                            <span class="fw-bold text-white" style="font-size: 28px; letter-spacing: 1px;">AI</span>
                         </div>
                         <h3 class="fw-bold">Đăng nhập</h3>
                         <p class="text-muted small">Chào mừng bạn quay trở lại với AI CỦA TÔI</p>
