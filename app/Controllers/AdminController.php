@@ -901,6 +901,17 @@ class AdminController extends Controller {
                     : $db->insert('settings', ['key_name' => 'home_banner_right', 'value' => $path]);
             }
         }
+
+        // Xử lý upload Favicon
+        if (isset($_FILES['site_favicon_file']) && $_FILES['site_favicon_file']['error'] === UPLOAD_ERR_OK) {
+            $uploadResult = Helper::uploadFile($_FILES['site_favicon_file'], 'images');
+            if ($uploadResult['success']) {
+                $path = $uploadResult['path'];
+                $db->fetchOne("SELECT * FROM settings WHERE key_name = 'site_favicon'")
+                    ? $db->update('settings', ['value' => $path], 'key_name = :key_name', ['key_name' => 'site_favicon'])
+                    : $db->insert('settings', ['key_name' => 'site_favicon', 'value' => $path]);
+            }
+        }
         
         Session::setFlash('success', 'Cập nhật cài đặt thành công');
         $this->redirect('/admin/settings');

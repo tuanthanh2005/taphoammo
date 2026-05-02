@@ -23,9 +23,18 @@ ob_start();
                             <label class="form-label small fw-semibold">Email liên hệ</label>
                             <input type="email" name="site_email" class="form-control" value="<?= e($settings['site_email'] ?? '') ?>">
                         </div>
-                        <div class="col-md-12">
+                        <div class="col-md-6">
                             <label class="form-label small fw-semibold">Số điện thoại</label>
                             <input type="text" name="site_phone" class="form-control" value="<?= e($settings['site_phone'] ?? '') ?>">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Favicon (32x32 hoặc 180x180)</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <input type="file" name="site_favicon_file" class="form-control" accept="image/x-icon,image/png,image/jpeg">
+                                <?php if (!empty($settings['site_favicon'])): ?>
+                                    <img src="<?= asset($settings['site_favicon']) ?>" class="rounded border shadow-sm" style="width: 32px; height: 32px; object-fit: contain;">
+                                <?php endif; ?>
+                            </div>
                         </div>
                     </div>
                 </div>

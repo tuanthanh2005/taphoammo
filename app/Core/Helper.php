@@ -275,9 +275,9 @@ class Helper
         if (!isset($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
             return ['success' => false, 'message' => 'Không có file được upload'];
         }
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
         if (!in_array($file['type'], $allowedTypes)) {
-            return ['success' => false, 'message' => 'Chỉ chấp nhận file ảnh JPG, PNG, GIF, WEBP'];
+            return ['success' => false, 'message' => 'Chỉ chấp nhận file ảnh JPG, PNG, GIF, WEBP, ICO'];
         }
         $maxSize = 5 * 1024 * 1024; // 5MB
         if ($file['size'] > $maxSize) {
