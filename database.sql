@@ -199,6 +199,7 @@ CREATE TABLE `deposit_requests` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) NOT NULL,
   `amount` decimal(15,2) NOT NULL DEFAULT 0.00,
+  `deposit_code` varchar(50) DEFAULT NULL,
   `transfer_code` varchar(50) NOT NULL,
   `bank_code` varchar(50) DEFAULT NULL,
   `bank_name` varchar(255) DEFAULT NULL,
@@ -319,6 +320,25 @@ CREATE TABLE `logs` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` int(11) DEFAULT NULL,
   `action` varchar(255) NOT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  KEY `created_at` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Bảng error_logs
+CREATE TABLE `error_logs` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `user_id` int(11) DEFAULT NULL,
+  `error_message` text NOT NULL,
+  `error_code` varchar(50) DEFAULT NULL,
+  `file` varchar(255) DEFAULT NULL,
+  `line` int(11) DEFAULT NULL,
+  `trace` longtext,
+  `url` varchar(255) DEFAULT NULL,
+  `method` varchar(10) DEFAULT NULL,
   `ip_address` varchar(45) DEFAULT NULL,
   `user_agent` text,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
