@@ -341,82 +341,86 @@ class UserController extends Controller {
             $this->json(['success' => false, 'message' => 'Phương thức không hợp lệ'], 405);
         }
 
-        CSRF::check();
+        try {
+            Logger::activity('Yêu cầu nạp tiền: ' . ($_POST['amount'] ?? 0) . 'đ');
+            CSRF::check();
 
-        $amount = (int)($_POST['amount'] ?? 0);
-        if ($amount < 50000 || $amount > 5000000) {
-            $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
-        }
+            $amount = (int)($_POST['amount'] ?? 0);
+            if ($amount < 50000 || $amount > 5000000) {
+                $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
+            }
 
-        $db = Database::getInstance();
-        $countLastHour = $db->fetchOne(
-            "SELECT COUNT(*) as total FROM deposit_requests WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)",
-            [Auth::id()]
-        )['total'];
+            $db = Database::getInstance();
+            $countLastHour = $db->fetchOne(
+                "SELECT COUNT(*) as total FROM deposit_requests WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)",
+                [Auth::id()]
+            )['total'];
 
-        if ($countLastHour >= 5) {
-            $db->insert('spam_alerts', [
+            if ($countLastHour >= 5) {
+                $db->insert('spam_alerts', [
+                    'user_id' => Auth::id(),
+                    'type' => 'rate_limit_exceeded',
+                    'description' => 'Người dùng vượt quá giới hạn nạp tiền (5 lần/giờ)'
+                ]);
+                $this->json(['success' => false, 'message' => 'Bạn đã nạp tối đa 5 lần trong vòng 1 tiếng. Vui lòng thử lại sau.'], 429);
+            }
+
+            $settings = $this->getWalletSettings();
+            $botToken = trim($settings['wallet_telegram_bot_token'] ?? $settings['telegram_bot_token'] ?? '');
+            $chatId = trim($settings['wallet_telegram_chat_id'] ?? $settings['telegram_chat_id'] ?? '');
+
+            if ($botToken === '' || $chatId === '') {
+                // Chúng ta vẫn cho phép tạo yêu cầu dù không có telegram
+                // Logger::error('Telegram bot token hoặc chat id chưa được cấu hình cho việc nạp tiền');
+            }
+
+            $user = Auth::user();
+            $transferContent = trim($_POST['transfer_code'] ?? '');
+            if (empty($transferContent)) {
+                $transferContent = 'NAP' . str_pad((string)Auth::id(), 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time()), 0, 4));
+            }
+            $supportTelegram = trim($settings['wallet_telegram_support_username'] ?? $settings['telegram_support_username'] ?? '@specademy');
+            $depositRequestModel = new DepositRequest();
+
+            $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);
+
+            $depositRequestId = $depositRequestModel->create([
                 'user_id' => Auth::id(),
-                'type' => 'rate_limit_exceeded',
-                'description' => 'Người dùng vượt quá giới hạn nạp tiền (5 lần/giờ)'
+                'deposit_code' => $depositCode,
+                'amount' => $amount,
+                'transfer_code' => $transferContent,
+                'bank_code' => trim($settings['deposit_bank_code'] ?? 'mb'),
+                'bank_name' => trim($settings['deposit_bank_name'] ?? ''),
+                'account_name' => trim($settings['deposit_account_name'] ?? ''),
+                'account_number' => trim($settings['deposit_account_number'] ?? ''),
+                'status' => 'pending'
             ]);
-            $this->json(['success' => false, 'message' => 'Bạn đã nạp tối đa 5 lần trong vòng 1 tiếng. Vui lòng thử lại sau.'], 429);
-        }
 
-        $settings = $this->getWalletSettings();
-        $botToken = trim($settings['wallet_telegram_bot_token'] ?? $settings['telegram_bot_token'] ?? '');
-        $chatId = trim($settings['wallet_telegram_chat_id'] ?? $settings['telegram_chat_id'] ?? '');
+            $message = implode("\n", [
+                'YEU CAU XAC NHAN NAP TIEN',
+                'Request ID: ' . $depositRequestId,
+                'User ID: ' . Auth::id(),
+                'Ten: ' . ($user['name'] ?? ''),
+                'Username: ' . ($user['username'] ?? ''),
+                'Email: ' . ($user['email'] ?? ''),
+                'So tien: ' . number_format($amount, 0, ',', '.') . 'đ',
+                'Noi dung CK: ' . $transferContent,
+                'Telegram ho tro: ' . $supportTelegram
+            ]);
 
-        if ($botToken === '' || $chatId === '') {
-            $this->json(['success' => false, 'message' => 'Telegram bot token hoặc chat id chưa được cấu hình'], 422);
-        }
+            $sent = $this->sendTelegramMessage($message, $botToken, $chatId);
 
-        $user = Auth::user();
-        $transferContent = trim($_POST['transfer_code'] ?? '');
-        if (empty($transferContent)) {
-            $transferContent = 'NAP' . str_pad((string)Auth::id(), 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time()), 0, 4));
-        }
-        $supportTelegram = trim($settings['wallet_telegram_support_username'] ?? $settings['telegram_support_username'] ?? '@specademy');
-        $depositRequestModel = new DepositRequest();
-
-        $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);
-
-        $depositRequestId = $depositRequestModel->create([
-            'user_id' => Auth::id(),
-            'deposit_code' => $depositCode,
-            'amount' => $amount,
-            'transfer_code' => $transferContent,
-            'bank_code' => trim($settings['deposit_bank_code'] ?? 'mb'),
-            'bank_name' => trim($settings['deposit_bank_name'] ?? ''),
-            'account_name' => trim($settings['deposit_account_name'] ?? ''),
-            'account_number' => trim($settings['deposit_account_number'] ?? ''),
-            'status' => 'pending'
-        ]);
-
-        $message = implode("\n", [
-            'YEU CAU XAC NHAN NAP TIEN',
-            'Request ID: ' . $depositRequestId,
-            'User ID: ' . Auth::id(),
-            'Ten: ' . ($user['name'] ?? ''),
-            'Username: ' . ($user['username'] ?? ''),
-            'Email: ' . ($user['email'] ?? ''),
-            'So tien: ' . number_format($amount, 0, ',', '.') . 'đ',
-            'Noi dung CK: ' . $transferContent,
-            'Telegram ho tro: ' . $supportTelegram
-        ]);
-
-        $sent = $this->sendTelegramMessage($message, $botToken, $chatId);
-
-        if (!$sent) {
             $this->json([
                 'success' => true,
                 'message' => 'Yêu cầu nạp tiền đã được tạo và đang chờ admin duyệt.'
             ]);
-        }
 
-        $this->json([
-            'success' => true,
-            'message' => 'Admin đã nhận được thông tin nạp tiền. Yêu cầu của bạn đang chờ duyệt.'
-        ]);
+        } catch (Exception $e) {
+            Logger::logException($e);
+            $this->json([
+                'success' => false, 
+                'message' => 'Đã xảy ra lỗi hệ thống: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

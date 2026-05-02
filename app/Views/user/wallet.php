@@ -369,10 +369,11 @@ document.addEventListener('DOMContentLoaded', function () {
                         location.reload();
                     });
                 } else {
-                    Swal.fire('Lỗi', result.message, 'error');
+                    Swal.fire('Lỗi', result.message || 'Đã xảy ra lỗi không xác định', 'error');
                 }
             } catch (err) {
-                Swal.fire('Lỗi', 'Không thể kết nối máy chủ', 'error');
+                console.error(err);
+                Swal.fire('Lỗi', 'Không thể kết nối máy chủ hoặc phản hồi không hợp lệ', 'error');
             }
         }
     });

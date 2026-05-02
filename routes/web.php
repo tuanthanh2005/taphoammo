@@ -118,10 +118,11 @@ $router->post('/admin/users/toggle-status/{id}', [AdminController::class, 'toggl
 $router->get('/admin/orders', [AdminController::class, 'orders'], [AdminMiddleware::class]);
 $router->get('/admin/orders/{id}', [AdminController::class, 'orderDetail'], [AdminMiddleware::class]);
 
-$router->get('/admin/settings', [AdminController::class, 'settings'], [AdminMiddleware::class]);
-$router->post('/admin/settings/update', [AdminController::class, 'updateSettings'], [AdminMiddleware::class]);
-$router->get('/admin/transactions', [AdminController::class, 'transactions'], [AdminMiddleware::class]);
-$router->get('/admin/bai-viet', [ArticleController::class, 'adminIndex'], [AdminMiddleware::class]);
+    $router->get('/admin/settings', [AdminController::class, 'settings'], [AdminMiddleware::class]);
+    $router->post('/admin/settings/update', [AdminController::class, 'updateSettings'], [AdminMiddleware::class]);
+    $router->get('/admin/transactions', [AdminController::class, 'transactions'], [AdminMiddleware::class]);
+    $router->get('/admin/error-logs', [AdminController::class, 'errorLogs'], [AdminMiddleware::class]);
+    $router->get('/admin/bai-viet', [ArticleController::class, 'adminIndex'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/store', [ArticleController::class, 'store'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/update/{id}', [ArticleController::class, 'update'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/upload-image', [ArticleController::class, 'uploadImage'], [AdminMiddleware::class]);

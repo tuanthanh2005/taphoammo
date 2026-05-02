@@ -1006,4 +1006,42 @@ class AdminController extends Controller {
         Session::setFlash('success', 'Xóa menu thành công');
         $this->redirect('/admin/menus');
     }
+
+    public function errorLogs() {
+        $db = Database::getInstance();
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+        
+        $search = trim($_GET['search'] ?? '');
+        $where = ['1=1'];
+        $params = [];
+        
+        if (!empty($search)) {
+            $where[] = "(e.error_message LIKE :search OR e.file LIKE :search OR e.url LIKE :search OR u.name LIKE :search)";
+            $params['search'] = '%' . $search . '%';
+        }
+        
+        $whereClause = implode(' AND ', $where);
+        
+        $logs = $db->fetchAll(
+            "SELECT e.*, u.name as user_name 
+             FROM error_logs e
+             LEFT JOIN users u ON e.user_id = u.id
+             WHERE $whereClause
+             ORDER BY e.created_at DESC
+             LIMIT {$perPage} OFFSET {$offset}",
+            $params
+        );
+        
+        $total = $db->fetchOne("SELECT COUNT(*) as total FROM error_logs e LEFT JOIN users u ON e.user_id = u.id WHERE $whereClause", $params)['total'];
+        $totalPages = ceil($total / $perPage);
+        
+        $this->view('admin/error-logs', [
+            'logs' => $logs,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
+            'currentSearch' => $search
+        ]);
+    }
 }

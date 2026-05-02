@@ -132,6 +132,11 @@ $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_req
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="<?= url('/admin/error-logs') ?>">
+                                <i class="fas fa-bug text-warning"></i> Nhật ký lỗi
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="<?= url('/') ?>">
                                 <i class="fas fa-home"></i> Về trang chủ
                             </a>
