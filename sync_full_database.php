@@ -340,6 +340,7 @@ try {
     ensureColumn($pdo, 'users', 'is_seller_requested', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `status`');
     ensureColumn($pdo, 'users', 'max_products', 'INT(11) NOT NULL DEFAULT 10 AFTER `is_seller_requested`');
     ensureColumn($pdo, 'order_items', 'is_read', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER `seller_amount`');
+    ensureColumn($pdo, 'deposit_requests', 'deposit_code', 'VARCHAR(50) DEFAULT NULL AFTER `user_id`');
     ensureMenus($pdo);
     ensureExtraTables($pdo);
     ensureSystemSettings($pdo);
