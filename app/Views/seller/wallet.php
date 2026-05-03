@@ -152,66 +152,111 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
 <!-- Modal Nạp Tiền -->
 <div class="modal fade" id="depositModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="fas fa-wallet"></i> Nạp tiền vào ví</h5>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-wallet text-success me-2"></i> Nạp tiền vào ví</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form action="<?= url('/seller/wallet/deposit') ?>" method="POST" id="depositForm">
                 <?= csrf_field() ?>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Chọn số tiền cần nạp. Admin sẽ xác nhận sau khi bạn chuyển khoản.
-                        <hr class="my-2 opacity-50">
-                        <small>
-                            <i class="fas fa-clock"></i> <strong>Giới hạn:</strong> Tối đa <strong>5 lần</strong> nạp mỗi <strong>2 tiếng</strong>.<br>
-                            <i class="fas fa-exclamation-triangle text-warning"></i> Không tạo nhiều yêu cầu cho cùng 1 lần chuyển khoản. Mỗi yêu cầu tương ứng 1 lần chuyển khoản thực tế.
-                        </small>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Số tiền nạp <span class="text-danger">*</span></label>
-                        <div class="input-group input-group-lg">
-                            <input type="number" name="amount" class="form-control" placeholder="Nhập số tiền" min="100000" step="1000" required>
-                            <span class="input-group-text">VNĐ</span>
+                <div class="modal-body p-4">
+                    <div id="depositStep1">
+                        <div class="alert alert-info border-0 bg-info bg-opacity-10 text-info small mb-4">
+                            <i class="fas fa-info-circle me-1"></i> Nhập số tiền cần nạp để tạo mã QR chuyển khoản tự động.
                         </div>
-                        <small class="text-danger fw-bold">⚠️ Tối thiểu: 100,000 VNĐ. Không chấp nhận nạp dưới 100k.</small>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Số tiền nạp <span class="text-danger">*</span></label>
+                            <div class="input-group input-group-lg shadow-sm rounded-3 overflow-hidden">
+                                <input type="number" name="amount" id="depositAmount" class="form-control border-0 bg-light" placeholder="0" min="100000" step="1000" required>
+                                <span class="input-group-text border-0 bg-light fw-bold text-muted">VNĐ</span>
+                            </div>
+                            <div class="mt-2 text-danger small fw-semibold">
+                                <i class="fas fa-exclamation-circle"></i> Tối thiểu: 100,000 VNĐ
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Chọn nhanh:</label>
+                            <div class="row g-2">
+                                <div class="col-6"><button type="button" class="btn btn-outline-success w-100 py-2 rounded-3" onclick="setAmount(100000)">100,000 đ</button></div>
+                                <div class="col-6"><button type="button" class="btn btn-outline-success w-100 py-2 rounded-3" onclick="setAmount(500000)">500,000 đ</button></div>
+                                <div class="col-6"><button type="button" class="btn btn-outline-success w-100 py-2 rounded-3" onclick="setAmount(1000000)">1,000,000 đ</button></div>
+                                <div class="col-6"><button type="button" class="btn btn-outline-success w-100 py-2 rounded-3" onclick="setAmount(5000000)">5,000,000 đ</button></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-uppercase text-muted">Ghi chú (tùy chọn)</label>
+                            <textarea name="note" class="form-control border-0 bg-light rounded-3" rows="2" placeholder="Ví dụ: Nạp tiền để trả cọc stock"></textarea>
+                        </div>
+
+                        <div class="d-grid pt-2">
+                            <button type="button" class="btn btn-success btn-lg fw-bold shadow-sm py-3 rounded-3" onclick="generateQR()">
+                                XÁC NHẬN & LẤY MÃ QR <i class="fas fa-arrow-right ms-2"></i>
+                            </button>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Chọn nhanh:</label>
+                    <div id="depositStep2" class="d-none text-center animate__animated animate__fadeIn">
+                        <div class="alert alert-success border-0 bg-success bg-opacity-10 text-success py-2 mb-3 small fw-bold">
+                            <i class="fas fa-check-circle me-1"></i> ĐÃ TẠO MÃ THANH TOÁN
+                        </div>
+                        
+                        <div class="qr-container p-2 border rounded-4 bg-white shadow-sm mb-3 mx-auto" style="max-width: 280px;">
+                            <img id="qrImage" src="" alt="VietQR" class="img-fluid rounded-3">
+                        </div>
+                        <div class="mb-3 small text-muted"><i class="fas fa-mobile-alt me-1"></i> Mở App ngân hàng quét mã để thanh toán</div>
+
+                        <div class="payment-info text-start border-0 rounded-4 p-3 mb-4 bg-light shadow-sm">
+                            <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                                <span class="text-muted small">Ngân hàng</span>
+                                <span class="fw-bold"><?= e($bankName) ?></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                                <span class="text-muted small">Số tài khoản</span>
+                                <span class="fw-bold text-primary"><?= e($accountNumber) ?> <i class="far fa-copy ms-1 cursor-pointer text-muted" onclick="copyText('<?= e($accountNumber) ?>')"></i></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-3 pb-2 border-bottom">
+                                <span class="text-muted small">Số tiền</span>
+                                <span class="fw-bold text-danger fs-5" id="displayAmount">0 đ</span>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted small">Nội dung</span>
+                                <span class="fw-bold text-danger" id="displayMemo">NAPSELLER <?= Auth::id() ?> <i class="far fa-copy ms-1 cursor-pointer text-muted" onclick="copyText('NAPSELLER <?= Auth::id() ?>')"></i></span>
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-primary" onclick="setAmount(100000)">100,000 đ</button>
-                            <button type="button" class="btn btn-outline-primary" onclick="setAmount(500000)">500,000 đ</button>
-                            <button type="button" class="btn btn-outline-primary" onclick="setAmount(1000000)">1,000,000 đ</button>
-                            <button type="button" class="btn btn-outline-primary" onclick="setAmount(5000000)">5,000,000 đ</button>
+                            <button type="button" class="btn btn-success fw-bold p-3 rounded-3 shadow-sm" onclick="showConfirmDeposit()">
+                                <i class="fas fa-paper-plane me-2"></i> XÁC NHẬN ĐÃ CHUYỂN TIỀN
+                            </button>
+                            <button type="button" class="btn btn-link text-muted text-decoration-none small" onclick="backToStep1()">
+                                <i class="fas fa-arrow-left me-1"></i> Quay lại sửa số tiền
+                            </button>
                         </div>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Ghi chú (tùy chọn)</label>
-                        <textarea name="note" class="form-control" rows="2" placeholder="Ví dụ: Nạp tiền để trả cọc stock"></textarea>
-                    </div>
-
-                    <div class="alert alert-warning mb-0">
-                        <strong><i class="fas fa-university"></i> Thông tin chuyển khoản:</strong>
-                        <hr class="my-2">
-                        <div>
-                            Ngân hàng: <strong><?= e($bankName) ?></strong><br>
-                            STK: <strong class="text-primary fs-6"><?= e($accountNumber) ?></strong><br>
-                            Chủ TK: <strong><?= e($accountName) ?></strong><br>
-                            Nội dung: <strong class="text-danger">NAPSELLER + ID seller</strong><br>
-                            Telegram ví: <a href="<?= e($walletSupportTelegramUrl) ?>" target="_blank" class="fw-bold text-decoration-none"><?= e($walletSupportTelegram) ?></a>
-                        </div>
-                        <hr class="my-2">
-                        <small class="text-muted"><i class="fas fa-info-circle"></i> Sau khi chuyển khoản, admin sẽ xác nhận và cộng tiền vào ví của bạn.</small>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">Gửi yêu cầu nạp tiền</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Xác nhận nạp tiền -->
+<div class="modal fade" id="confirmDepositModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3 text-warning">
+                    <i class="fas fa-exclamation-circle fa-4x"></i>
+                </div>
+                <h5 class="fw-bold mb-3">Xác nhận chuyển khoản</h5>
+                <p class="text-muted small mb-4">Bạn chắc chắn đã chuyển khoản đúng số tiền và nội dung yêu cầu chưa?</p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-success py-2 fw-bold rounded-3" onclick="submitDepositForm()">Đã chuyển, gửi yêu cầu</button>
+                    <button type="button" class="btn btn-light py-2 fw-bold rounded-3" data-bs-dismiss="modal">Chưa, để tôi kiểm tra lại</button>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -267,9 +312,62 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
 
 <script>
 function setAmount(amount) {
-    document.querySelector('input[name="amount"]').value = amount;
+    document.getElementById('depositAmount').value = amount;
+}
+
+function generateQR() {
+    const amount = document.getElementById('depositAmount').value;
+    if (!amount || amount < 100000) {
+        alert('Vui lòng nhập số tiền tối thiểu 100,000đ');
+        return;
+    }
+
+    const sellerId = '<?= Auth::id() ?>';
+    const memo = 'NAPSELLER ' + sellerId;
+    const accountNumber = '<?= e($accountNumber) ?>';
+    const accountName = '<?= e($accountName) ?>';
+    const bankId = 'MB'; // Mặc định MB Bank
+
+    // URL VietQR: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NUMBER>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>&accountName=<ACCOUNT_NAME>
+    const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
+    
+    document.getElementById('qrImage').src = qrUrl;
+    document.getElementById('displayAmount').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    
+    document.getElementById('depositStep1').classList.add('d-none');
+    document.getElementById('depositStep2').classList.remove('d-none');
+}
+
+function backToStep1() {
+    document.getElementById('depositStep1').classList.remove('d-none');
+    document.getElementById('depositStep2').classList.add('d-none');
+}
+
+function copyText(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert('Đã sao chép: ' + text);
+    });
+}
+
+function showConfirmDeposit() {
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmDepositModal'));
+    confirmModal.show();
+}
+
+function submitDepositForm() {
+    document.getElementById('depositForm').submit();
 }
 </script>
+
+<style>
+.cursor-pointer { cursor: pointer; }
+.qr-container img {
+    border-radius: 15px;
+}
+.animate__animated {
+    animation-duration: 0.5s;
+}
+</style>
 
 <?php
 $content = ob_get_clean();
