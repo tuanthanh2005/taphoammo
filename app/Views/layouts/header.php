@@ -7,7 +7,7 @@ if (Auth::check()) {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="<?= $meta_description ?? 'AI CỦA TÔI - Nền tảng mua bán sản phẩm số uy tín #1 Việt Nam. Chuyên cung cấp tài khoản, key phần mềm, khóa học với giá tốt nhất.' ?>">
     <meta name="keywords" content="<?= $meta_keywords ?? 'mmo, sản phẩm số, tài khoản game, key phần mềm, khóa học online, marketplace' ?>">
     <meta name="author" content="AI CỦA TÔI">
@@ -77,7 +77,7 @@ if (Auth::check()) {
                     ?>
                 </ul>
 
-                <ul class="navbar-nav align-items-center">
+                <ul class="navbar-nav align-items-center d-none d-lg-flex">
                     <?php if (Auth::check()): ?>
                         <?php
                         $headerWalletService = new WalletService();
@@ -128,6 +128,28 @@ if (Auth::check()) {
                         <li class="nav-item">
                             <a class="nav-link btn btn-success text-white ms-2" href="<?= url('/register') ?>">Đăng ký</a>
                         </li>
+                    <?php endif; ?>
+                </ul>
+
+                <ul class="navbar-nav d-lg-none border-top mt-2 pt-3">
+                    <?php if (Auth::check()): ?>
+                        <li class="nav-item">
+                            <span class="nav-link fw-bold text-dark text-uppercase small opacity-50 mb-2">Tài khoản</span>
+                        </li>
+                        <?php if (Auth::isAdmin()): ?>
+                            <li class="nav-item"><a class="nav-link py-2" href="<?= url('/admin/dashboard') ?>"><i class="fas fa-user-shield me-2 text-primary"></i> Quản trị Admin</a></li>
+                        <?php endif; ?>
+                        <?php if (Auth::isSeller()): ?>
+                            <li class="nav-item"><a class="nav-link py-2" href="<?= url('/seller/dashboard') ?>"><i class="fas fa-store me-2 text-success"></i> Kênh Nhà bán hàng</a></li>
+                        <?php endif; ?>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/user/dashboard') ?>"><i class="fas fa-user-circle me-2"></i> Trang cá nhân</a></li>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/user/orders') ?>"><i class="fas fa-box me-2 text-success"></i> Đơn hàng đã mua</a></li>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/user/favorites') ?>"><i class="fas fa-heart me-2 text-danger"></i> Sản phẩm yêu thích</a></li>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/user/disputes') ?>"><i class="fas fa-balance-scale me-2 text-warning"></i> Khiếu nại</a></li>
+                        <li class="nav-item mt-2"><a class="nav-link py-2 text-danger fw-bold" href="<?= url('/logout') ?>"><i class="fas fa-sign-out-alt me-2"></i> Đăng xuất</a></li>
+                    <?php else: ?>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/login') ?>"><i class="fas fa-sign-in-alt me-2 text-success"></i> Đăng nhập</a></li>
+                        <li class="nav-item"><a class="nav-link py-2" href="<?= url('/register') ?>"><i class="fas fa-user-plus me-2 text-primary"></i> Đăng ký tài khoản</a></li>
                     <?php endif; ?>
                 </ul>
             </div>

@@ -80,6 +80,7 @@
 .article-media-frame img { width: 100%; height: auto; display: block; }
 
 @media (max-width: 768px) {
+    .floating-chat-bubble { bottom: 85px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
     #inboxWidget { 
         bottom: 0; 
         right: 0; 

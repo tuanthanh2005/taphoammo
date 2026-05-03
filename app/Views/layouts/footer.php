@@ -1,3 +1,67 @@
+    <style>
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 65px;
+        background: #fff;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        box-shadow: 0 -5px 15px rgba(0,0,0,0.05);
+        z-index: 9997;
+        padding-bottom: env(safe-area-inset-bottom);
+        border-top: 1px solid #eee;
+    }
+    .mobile-bottom-nav .nav-item {
+        text-decoration: none;
+        color: #94a3b8;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        font-size: 0.7rem;
+        gap: 5px;
+        flex: 1;
+        transition: all 0.2s;
+    }
+    .mobile-bottom-nav .nav-item i {
+        font-size: 1.2rem;
+    }
+    .mobile-bottom-nav .nav-item.active {
+        color: #28a745;
+    }
+    @media (min-width: 992px) {
+        .mobile-bottom-nav { display: none; }
+    }
+    @media (max-width: 991px) {
+        body { padding-bottom: 70px !important; }
+    }
+    </style>
+
+    <div class="mobile-bottom-nav">
+        <a href="<?= url('/') ?>" class="nav-item <?= $_SERVER['REQUEST_URI'] == '/' || $_SERVER['REQUEST_URI'] == '' ? 'active' : '' ?>">
+            <i class="fas fa-home"></i>
+            <span>Trang Chủ</span>
+        </a>
+        <a href="<?= url('/products') ?>" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], '/products') !== false ? 'active' : '' ?>">
+            <i class="fas fa-box"></i>
+            <span>Sản Phẩm</span>
+        </a>
+        <a href="<?= url('/user/orders') ?>" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], '/user/orders') !== false ? 'active' : '' ?>">
+            <i class="fas fa-shopping-basket"></i>
+            <span>Đơn Hàng</span>
+        </a>
+        <a href="<?= url('/user/favorites') ?>" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], '/user/favorites') !== false ? 'active' : '' ?>">
+            <i class="fas fa-heart"></i>
+            <span>Yêu Thích</span>
+        </a>
+        <a href="<?= url('/user/wallet') ?>" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], '/user/wallet') !== false ? 'active' : '' ?>">
+            <i class="fas fa-wallet"></i>
+            <span>Ví Tiền</span>
+        </a>
+    </div>
+
     <footer class="bg-dark text-white mt-5 py-4">
         <div class="container">
             <div class="row">

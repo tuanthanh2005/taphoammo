@@ -363,3 +363,40 @@ footer a:hover {
 .animate__fadeInUp {
     animation: fadeInUp 0.3s ease-out;
 }
+
+/* Global Mobile Optimizations */
+html, body {
+    overflow-x: hidden;
+    width: 100%;
+    position: relative;
+    touch-action: manipulation;
+}
+
+input, textarea, select {
+    font-size: 16px !important;
+}
+
+.table-responsive {
+    border-radius: 12px;
+    border: 1px solid #edf2f7;
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 991px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+    
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    h1, .h1 { font-size: 1.75rem; }
+    h2, .h2 { font-size: 1.5rem; }
+    h3, .h3 { font-size: 1.25rem; }
+}
