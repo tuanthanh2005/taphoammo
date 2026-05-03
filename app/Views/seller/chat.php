@@ -43,7 +43,7 @@
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-1">
                                         <p class="text-muted small mb-0 text-truncate me-2">
-                                            <?= e($conv['last_message'] ?? 'Bắt đầu trò chuyện') ?></p>
+                                            <?= strip_tags($conv['last_message'] ?? 'Bắt đầu trò chuyện') ?></p>
                                         <?php
                                         $isBuyer = ($conv['buyer_id'] == Auth::id());
                                         $unread = $isBuyer ? $conv['unread_count_buyer'] : $conv['unread_count_seller'];

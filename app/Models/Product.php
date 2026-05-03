@@ -7,83 +7,169 @@ class Product extends Model {
     public function getAll($filters = [], $page = 1, $perPage = 20) {
         $where = ['1=1'];
         $params = [];
-        
+
         if (!empty($filters['category_id'])) {
             if (is_array($filters['category_id'])) {
-                $placeholders = [];
-                foreach ($filters['category_id'] as $k => $v) {
-                    $key = 'cat_in_' . $k;
-                    $placeholders[] = ':' . $key;
-                    $params[$key] = $v;
+                $ids = array_values(array_filter($filters['category_id'], static fn($v) => $v !== '' && $v !== null));
+                if (!empty($ids)) {
+                    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+                    $where[] = "p.category_id IN ({$placeholders})";
+                    foreach ($ids as $id) {
+                        $params[] = $id;
+                    }
                 }
-                $where[] = "p.category_id IN (" . implode(',', $placeholders) . ")";
             } else {
-                $where[] = 'p.category_id = :category_id';
-                $params['category_id'] = $filters['category_id'];
+                $where[] = 'p.category_id = ?';
+                $params[] = $filters['category_id'];
             }
         }
-        
+
         if (!empty($filters['seller_id'])) {
-            $where[] = 'p.seller_id = :seller_id';
-            $params['seller_id'] = $filters['seller_id'];
+            $where[] = 'p.seller_id = ?';
+            $params[] = $filters['seller_id'];
         }
-        
+
         if (!empty($filters['status'])) {
             if ($filters['status'] !== 'all') {
-                $where[] = 'p.status = :status';
-                $params['status'] = $filters['status'];
+                $where[] = 'p.status = ?';
+                $params[] = $filters['status'];
             } else {
                 $where[] = "p.status != 'deleted'";
             }
         } else {
             $where[] = "p.status IN ('active', 'approved')";
         }
-        
+
         if (!empty($filters['search'])) {
             $raw = trim($filters['search']);
             $whereSearch = [];
-            
-            // Tìm theo ID nếu là số
+
             if (is_numeric($raw)) {
-                $whereSearch[] = "p.id = :search_id";
-                $params['search_id'] = intval($raw);
+                $whereSearch[] = "p.id = ?";
+                $params[] = (int)$raw;
             }
-            
-            // Tìm theo tên sản phẩm, mô tả hoặc tên seller
-            $whereSearch[] = "p.name LIKE :s_name";
-            $whereSearch[] = "p.description LIKE :s_desc";
-            $whereSearch[] = "u.name LIKE :s_uname";
-            $whereSearch[] = "u.username LIKE :s_user";
-            $params['s_name'] = '%' . $raw . '%';
-            $params['s_desc'] = '%' . $raw . '%';
-            $params['s_uname'] = '%' . $raw . '%';
-            $params['s_user'] = '%' . $raw . '%';
-            
+
+            $whereSearch[] = "p.name LIKE ?";
+            $params[] = '%' . $raw . '%';
+
+            $whereSearch[] = "p.description LIKE ?";
+            $params[] = '%' . $raw . '%';
+
+            $whereSearch[] = "u.name LIKE ?";
+            $params[] = '%' . $raw . '%';
+
+            $whereSearch[] = "u.username LIKE ?";
+            $params[] = '%' . $raw . '%';
+
+            $compact = preg_replace('/\s+/u', '', mb_strtolower($raw, 'UTF-8'));
+            if (!empty($compact)) {
+                $whereSearch[] = "REPLACE(LOWER(p.name), ' ', '') LIKE ?";
+                $params[] = '%' . $compact . '%';
+
+                $whereSearch[] = "REPLACE(LOWER(p.description), ' ', '') LIKE ?";
+                $params[] = '%' . $compact . '%';
+
+                $whereSearch[] = "REPLACE(LOWER(u.name), ' ', '') LIKE ?";
+                $params[] = '%' . $compact . '%';
+
+                $whereSearch[] = "REPLACE(LOWER(u.username), ' ', '') LIKE ?";
+                $params[] = '%' . $compact . '%';
+            }
+
+            $tokens = preg_split('/\s+/u', mb_strtolower($raw, 'UTF-8'), -1, PREG_SPLIT_NO_EMPTY);
+            $tokens = array_values(array_unique($tokens));
+
+            if (!empty($tokens)) {
+                $tokenGroups = [];
+                foreach ($tokens as $token) {
+                    if ($token === '') {
+                        continue;
+                    }
+                    $tokenGroups[] = "(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(u.name) LIKE ? OR LOWER(u.username) LIKE ?)";
+                    $params[] = '%' . $token . '%';
+                    $params[] = '%' . $token . '%';
+                    $params[] = '%' . $token . '%';
+                    $params[] = '%' . $token . '%';
+                }
+
+                if (!empty($tokenGroups)) {
+                    $whereSearch[] = '(' . implode(' OR ', $tokenGroups) . ')';
+                }
+            }
+
             $where[] = '(' . implode(' OR ', $whereSearch) . ')';
         }
 
-        
         if (!empty($filters['is_featured'])) {
-            $where[] = 'p.is_featured = :is_featured';
-            $params['is_featured'] = $filters['is_featured'];
+            $where[] = 'p.is_featured = ?';
+            $params[] = $filters['is_featured'];
         }
-        
+
         $whereClause = implode(' AND ', $where);
         $offset = ($page - 1) * $perPage;
-        
-        $sql = "SELECT p.*, u.name as seller_name, u.username as seller_username, c.name as category_name 
+
+        $sql = "SELECT p.*, u.name as seller_name, u.username as seller_username, u.status as seller_status, c.name as category_name 
                 FROM {$this->table} p
                 LEFT JOIN users u ON p.seller_id = u.id
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE {$whereClause}
                 ORDER BY p.created_at DESC
                 LIMIT {$perPage} OFFSET {$offset}";
-        
-        return $this->db->fetchAll($sql, $params);
+
+        $products = $this->db->fetchAll($sql, $params);
+
+        if (empty($products)) {
+            return $products;
+        }
+
+        $maxSold = 0;
+        foreach ($products as $p) {
+            $sold = (int)($p['total_sold'] ?? 0);
+            if ($sold > $maxSold) {
+                $maxSold = $sold;
+            }
+        }
+
+        $firstPostedId = null;
+        foreach ($products as $p) {
+            $pid = (int)($p['id'] ?? 0);
+            if ($firstPostedId === null || ($pid > 0 && $pid < $firstPostedId)) {
+                $firstPostedId = $pid;
+            }
+        }
+
+        $sponsoredIdsStr = $this->db->fetchOne("SELECT value FROM settings WHERE key_name = 'sponsored_product_ids'")['value'] ?? '';
+        $goldenIds = [];
+        if (!empty(trim($sponsoredIdsStr))) {
+            $goldenIds = array_map('intval', explode(',', $sponsoredIdsStr));
+            $goldenIds = array_filter($goldenIds);
+        }
+
+        foreach ($products as &$p) {
+            $pid = (int)($p['id'] ?? 0);
+            $sold = (int)($p['total_sold'] ?? 0);
+
+            $isMostSold = ($maxSold > 0 && $sold === $maxSold);
+            $isGoldenPosition = in_array($pid, $goldenIds, true);
+            $isFirstPosted = ($firstPostedId !== null && $pid === $firstPostedId);
+
+            $p['show_crown'] = ($isMostSold || $isGoldenPosition || $isFirstPosted) ? 1 : 0;
+            $p['is_golden_position'] = $isGoldenPosition ? 1 : 0;
+            $p['is_most_sold'] = $isMostSold ? 1 : 0;
+            $p['is_first_posted'] = $isFirstPosted ? 1 : 0;
+        }
+        unset($p);
+
+        return $products;
     }
     
     public function findBySlug($slug) {
-        $sql = "SELECT p.*, u.name as seller_name, u.username as seller_username, c.name as category_name, c.slug as category_slug 
+        $sql = "SELECT p.*, 
+                    u.name as seller_name, 
+                    u.username as seller_username, 
+                    u.status as seller_status,
+                    c.name as category_name, 
+                    c.slug as category_slug 
                 FROM {$this->table} p
                 LEFT JOIN users u ON p.seller_id = u.id
                 LEFT JOIN categories c ON p.category_id = c.id

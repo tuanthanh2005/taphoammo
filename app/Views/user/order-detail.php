@@ -49,10 +49,12 @@
                             <div class="row">
                                 <div class="col-md-8">
                                     <h6><?= e($item['product_name']) ?></h6>
-                                    <p class="text-muted mb-1">
-                                        <i class="fas fa-user"></i> Seller: <a
-                                            href="<?= url('/seller/' . e($item['seller_username'])) ?>"
-                                            class="fw-bold text-decoration-none text-primary"><?= e($item['seller_name'] ?: $item['seller_username']) ?></a>
+                                    <p class="text-muted mb-1 d-flex align-items-center gap-2">
+                                        <i class="fas fa-user"></i> Seller: 
+                                        <a href="<?= url('/seller/' . e($item['seller_username'])) ?>" class="fw-bold text-decoration-none text-primary"><?= e($item['seller_name'] ?: $item['seller_username']) ?></a>
+                                        <button onclick="event.stopPropagation(); _iwOpenChat(<?= $item['seller_id'] ?>, '<?= e($item['seller_name'] ?: $item['seller_username']) ?>')" class="btn btn-sm btn-link p-0 text-decoration-none" title="Nhắn tin cho người bán">
+                                            <i class="fas fa-comment-dots"></i> Nhắn tin
+                                        </button>
                                     </p>
                                     <p class="mb-1">
                                         <strong>Giá:</strong> <?= money($item['price']) ?> x <?= $item['quantity'] ?>

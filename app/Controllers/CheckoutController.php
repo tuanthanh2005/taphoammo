@@ -106,6 +106,14 @@ class CheckoutController extends Controller {
             return;
         }
 
+        // Kiểm tra trạng thái người bán
+        $db = Database::getInstance();
+        $seller = $db->fetchOne("SELECT status FROM users WHERE id = ?", [$product['seller_id']]);
+        if (!$seller || $seller['status'] !== 'active') {
+            $this->instantError('Người bán này hiện đang bị khóa tài khoản. Bạn không thể thực hiện mua hàng.', $_SERVER['HTTP_REFERER'] ?? '/');
+            return;
+        }
+
         if ($product['stock_quantity'] < $quantity) {
             $this->instantError('Sản phẩm không đủ số lượng trong kho', $_SERVER['HTTP_REFERER'] ?? '/');
             return;

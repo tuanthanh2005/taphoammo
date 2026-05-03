@@ -136,8 +136,8 @@
                                         <a href="<?= url('/product/' . $product['slug']) ?>" class="text-dark text-decoration-none hover-primary fw-bold text-uppercase stretched-link">
                                             <?= e($product['name']) ?>
                                         </a>
-                                        <?php if ($index === 0): ?>
-                                            <i class="fas fa-crown text-warning ms-1" title="VIP"></i>
+                                        <?php if (!empty($product['show_crown'])): ?>
+                                            <i class="fas fa-crown text-warning ms-1" title="Sản phẩm nổi bật"></i>
                                         <?php endif; ?>
                                     </h6>
                                     
@@ -163,7 +163,12 @@
                                     
                                     <div class="small mb-1" style="font-size: 12px;">
                                         <span class="text-muted">Người bán:</span> 
-                                        <a href="<?= url('/seller/' . ($product['seller_username'] ?? $product['seller_id'])) ?>" class="text-decoration-none fw-bold" style="position: relative; z-index: 2;"><?= e($product['seller_name']) ?></a>
+                                        <?php
+                                        $sellerProfileSlug = !empty($product['seller_username'])
+                                            ? $product['seller_username']
+                                            : (string)($product['seller_id'] ?? '');
+                                        ?>
+                                        <a href="<?= url('/seller/' . rawurlencode($sellerProfileSlug)) ?>" class="text-decoration-none fw-bold" style="position: relative; z-index: 2;"><?= e($product['seller_name']) ?></a>
                                         <span class="text-success ms-1"><i class="fas fa-check-circle" title="Đã xác thực"></i></span>
                                     </div>
                                     

@@ -11,7 +11,13 @@
         </div>
         <h2 class="display-5 fw-bold mb-1">Cửa hàng của <?= e($seller['name']) ?></h2>
         <p class="mb-0 opacity-75">
-            <i class="fas fa-check-circle text-success bg-white rounded-circle p-1"></i> Người bán chuyên nghiệp
+            <?php if ($seller['status'] === 'active'): ?>
+                <i class="fas fa-check-circle text-success bg-white rounded-circle p-1"></i> Người bán chuyên nghiệp
+            <?php elseif ($seller['status'] === 'banned'): ?>
+                <span class="badge bg-danger p-2"><i class="fas fa-ban me-1"></i> CỬA HÀNG ĐANG BỊ KHÓA</span>
+            <?php elseif ($seller['status'] === 'suspended'): ?>
+                <span class="badge bg-warning text-dark p-2"><i class="fas fa-exclamation-triangle me-1"></i> CỬA HÀNG ĐANG TẠM NGƯNG</span>
+            <?php endif; ?>
         </p>
     </div>
 </div>

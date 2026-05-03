@@ -691,45 +691,61 @@ class Helper
 
     public static function sendSystemMessage($toUserId, $message)
     {
-        $systemUserId = self::getSystemUserId();
-        if ((int) $toUserId === $systemUserId)
+        return self::sendChatMessage(self::getSystemUserId(), $toUserId, $message);
+    }
+
+    public static function sendChatMessage($senderId, $receiverId, $message)
+    {
+        if ((int) $senderId === (int) $receiverId)
             return;
 
         $db = Database::getInstance();
 
-        // Tìm cuộc trò chuyện (Admin luôn đóng vai trò Seller trong các thông báo hệ thống)
+        // Luôn coi người có ID nhỏ hơn là user1 để tránh trùng lặp conversation
+        $u1 = min((int)$senderId, (int)$receiverId);
+        $u2 = max((int)$senderId, (int)$receiverId);
+
         $conversation = $db->fetchOne(
-            "SELECT * FROM conversations WHERE buyer_id = ? AND seller_id = ?",
-            [$toUserId, $systemUserId]
+            "SELECT * FROM conversations WHERE (buyer_id = ? AND seller_id = ?) OR (buyer_id = ? AND seller_id = ?)",
+            [$u1, $u2, $u2, $u1]
         );
 
         if (!$conversation) {
             $convId = $db->insert('conversations', [
-                'buyer_id' => $toUserId,
-                'seller_id' => $systemUserId,
+                'buyer_id' => $u1,
+                'seller_id' => $u2,
                 'last_message' => $message,
                 'last_message_at' => date('Y-m-d H:i:s'),
-                'unread_count_buyer' => 1,
+                'unread_count_buyer' => ((int)$receiverId === $u1) ? 1 : 0,
+                'unread_count_seller' => ((int)$receiverId === $u2) ? 1 : 0,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ]);
         } else {
             $convId = $conversation['id'];
+            $updateFields = [
+                'last_message = ?',
+                'last_message_at = NOW()',
+                'updated_at = NOW()'
+            ];
+            $params = [$message];
+
+            if ((int)$receiverId === (int)$conversation['buyer_id']) {
+                $updateFields[] = 'unread_count_buyer = unread_count_buyer + 1';
+            } else {
+                $updateFields[] = 'unread_count_seller = unread_count_seller + 1';
+            }
+
+            $params[] = $convId;
             $db->query(
-                "UPDATE conversations SET 
-                    last_message = ?, 
-                    last_message_at = NOW(), 
-                    updated_at = NOW(),
-                    unread_count_buyer = unread_count_buyer + 1
-                WHERE id = ?",
-                [$message, $convId]
+                "UPDATE conversations SET " . implode(', ', $updateFields) . " WHERE id = ?",
+                $params
             );
         }
 
-        // Chèn tin nhắn
-        $db->insert('messages', [
+        return $db->insert('messages', [
             'conversation_id' => $convId,
-            'sender_id' => $systemUserId,
+            'sender_id' => $senderId,
             'message' => $message,
             'created_at' => date('Y-m-d H:i:s')
         ]);

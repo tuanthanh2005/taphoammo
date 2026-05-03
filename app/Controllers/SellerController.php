@@ -535,7 +535,7 @@ class SellerController extends Controller {
         $orderItem = $db->fetchOne(
             "SELECT oi.*, o.order_code, o.created_at, o.payment_status, o.order_status, o.total_amount,
                     p.name as product_name, p.thumbnail, p.product_type,
-                    u.name as buyer_name, u.email as buyer_email, u.username as buyer_username
+                    u.name as buyer_name, u.email as buyer_email, u.username as buyer_username, u.id as buyer_id
              FROM order_items oi
              LEFT JOIN orders o ON oi.order_id = o.id
              LEFT JOIN products p ON oi.product_id = p.id

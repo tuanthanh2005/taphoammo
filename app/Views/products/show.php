@@ -158,7 +158,10 @@
                             <div class="text-muted small">Người bán chuyên nghiệp</div>
                         </div>
                         <div class="ms-auto">
-                            <a href="<?= url('/seller/' . ($product['seller_username'] ?? $product['seller_id'])) ?>"
+                            <?php
+                            $sellerSlug = !empty($product['seller_username']) ? $product['seller_username'] : (string)$product['seller_id'];
+                            ?>
+                            <a href="<?= url('/seller/' . rawurlencode($sellerSlug)) ?>"
                                 class="btn btn-outline-primary btn-sm rounded-pill px-3">
                                 Xem Shop
                             </a>
@@ -195,11 +198,22 @@
 
                                 <div class="row g-2">
                                     <div class="col-12">
-                                        <button type="button"
-                                            class="btn btn-success btn-lg w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center shadow-sm"
-                                            data-bs-toggle="modal" data-bs-target="#buyNowModal" onclick="openBuyNowModal()">
-                                            <i class="fas fa-bolt me-2"></i> MUA NGAY
-                                        </button>
+                                        <?php if (($product['seller_status'] ?? 'active') === 'active'): ?>
+                                            <button type="button"
+                                                class="btn btn-success btn-lg w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center shadow-sm"
+                                                data-bs-toggle="modal" data-bs-target="#buyNowModal" onclick="openBuyNowModal()">
+                                                <i class="fas fa-bolt me-2"></i> MUA NGAY
+                                            </button>
+                                        <?php else: ?>
+                                            <button type="button"
+                                                class="btn btn-secondary btn-lg w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center shadow-sm"
+                                                disabled>
+                                                <i class="fas fa-user-lock me-2"></i> NGƯỜI BÁN ĐÃ BỊ KHÓA
+                                            </button>
+                                            <div class="text-danger small mt-2 text-center">
+                                                <i class="fas fa-exclamation-triangle"></i> Bạn không thể mua sản phẩm từ người bán này do tài khoản của họ đang bị tạm khóa.
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             </div>

@@ -56,6 +56,15 @@ class CartController extends Controller {
             $this->redirect('/cart');
             return;
         }
+
+        // Kiểm tra trạng thái người bán
+        $db = Database::getInstance();
+        $seller = $db->fetchOne("SELECT status FROM users WHERE id = ?", [$product['seller_id']]);
+        if (!$seller || $seller['status'] !== 'active') {
+            Session::setFlash('error', 'Người bán này hiện đang bị khóa tài khoản. Bạn không thể mua hàng từ shop này.');
+            $this->redirect('/product/' . $product['slug']);
+            return;
+        }
         
         if ($product['stock_quantity'] < $quantity) {
             Session::setFlash('error', 'Sản phẩm không đủ hàng');

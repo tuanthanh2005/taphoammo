@@ -156,22 +156,39 @@ class OrderService {
                 $userModel = new User();
                 foreach ($cartItems as $item) {
                     $seller = $userModel->find($item['seller_id']);
+                    $buyer = $userModel->find($userId);
+                    
+                    $subtotal = $item['price'] * $item['quantity'];
+                    $chatMsg = "🛒 <b>ĐƠN HÀNG MỚI</b>\n";
+                    $chatMsg .= "Mã đơn: #{$orderCode}\n";
+                    $chatMsg .= "Khách hàng: " . ($buyer['name'] ?? 'Khách') . "\n";
+                    $chatMsg .= "Sản phẩm: {$item['name']}\n";
+                    $chatMsg .= "Số lượng: {$item['quantity']}\n";
+                    $chatMsg .= "Tổng tiền: " . money($subtotal) . "\n";
+                    if (!empty($item['note'])) {
+                        $chatMsg .= "Ghi chú: " . $item['note'] . "\n";
+                    }
+                    $chatMsg .= "\n<i>Người bán vui lòng kiểm tra và bàn giao hàng sớm nhất có thể.</i>";
+                    
+                    // Gửi tin nhắn vào Chat hệ thống
+                    Helper::sendChatMessage($userId, $item['seller_id'], $chatMsg);
+
+                    // Gửi Telegram nếu có
                     if (!empty($seller['telegram_chat_id'])) {
-                        $subtotal = $item['price'] * $item['quantity'];
-                        $msg = "🛒 <b>ĐƠN HÀNG MỚI</b>\n";
-                        $msg .= "Mã đơn: " . Helper::telegramEscape($orderCode) . "\n";
-                        $msg .= "Sản phẩm: " . Helper::telegramEscape($item['name']) . "\n";
-                        $msg .= "Số lượng: " . Helper::telegramEscape($item['quantity']) . "\n";
-                        $msg .= "Tổng tiền: " . money($subtotal) . "\n";
+                        $tgMsg = "🛒 <b>ĐƠN HÀNG MỚI</b>\n";
+                        $tgMsg .= "Mã đơn: " . Helper::telegramEscape($orderCode) . "\n";
+                        $tgMsg .= "Sản phẩm: " . Helper::telegramEscape($item['name']) . "\n";
+                        $tgMsg .= "Số lượng: " . Helper::telegramEscape($item['quantity']) . "\n";
+                        $tgMsg .= "Tổng tiền: " . money($subtotal) . "\n";
                         if (!empty($item['note'])) {
-                            $msg .= "Ghi chú của khách: " . Helper::telegramEscape($item['note']) . "\n";
+                            $tgMsg .= "Ghi chú của khách: " . Helper::telegramEscape($item['note']) . "\n";
                         }
-                        $msg .= "Vui lòng kiểm tra trên hệ thống.";
-                        Helper::sendTelegramMessage($seller['telegram_chat_id'], $msg);
+                        $tgMsg .= "Vui lòng kiểm tra trên hệ thống.";
+                        Helper::sendTelegramMessage($seller['telegram_chat_id'], $tgMsg);
                     }
                 }
             } catch (Exception $e) {
-                error_log("Telegram Notify Error: " . $e->getMessage());
+                error_log("Order Notification Error: " . $e->getMessage());
             }
 
             ob_end_clean();

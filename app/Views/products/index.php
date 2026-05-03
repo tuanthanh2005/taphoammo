@@ -199,7 +199,8 @@
                                     
                                     <div class="small mb-1" style="font-size: 12px;">
                                         <span class="text-muted">Người bán:</span> 
-                                        <a href="<?= url('/seller/' . ($product['seller_username'] ?? $product['seller_id'])) ?>" class="text-decoration-none fw-bold" style="position: relative; z-index: 2;"><?= e($product['seller_name']) ?></a>
+                                        <?php $sSlug = !empty($product['seller_username']) ? $product['seller_username'] : (string)$product['seller_id']; ?>
+                                        <a href="<?= url('/seller/' . rawurlencode($sSlug)) ?>" class="text-decoration-none fw-bold" style="position: relative; z-index: 2;"><?= e($product['seller_name']) ?></a>
                                         <span class="text-success ms-1"><i class="fas fa-check-circle" title="Đã xác thực"></i></span>
                                     </div>
                                     

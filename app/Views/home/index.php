@@ -20,14 +20,34 @@ if (Auth::check()) {
     <div class="container position-relative z-1 py-5">
         <h1 class="display-3 fw-bold mb-3 animate-fade-in-up">AI CỦA TÔI</h1>
         <p class="lead mb-4 animate-fade-in-up animation-delay-1">Sàn thương mại điện tử sản phẩm số #1 Việt Nam</p>
-        <form action="<?= url('/search') ?>" method="GET" class="mt-4 animate-fade-in-up animation-delay-2">
-            <div class="search-box mx-auto shadow-lg">
-                <input type="text" name="q" class="form-control form-control-lg border-0"
-                    placeholder="Bạn cần tìm mua gì hôm nay?..." style="border-radius: 30px 0 0 30px;">
-                <button class="btn btn-warning px-4 fw-bold" type="submit" style="border-radius: 0 30px 30px 0;">
-                    <i class="fas fa-search"></i> Tìm ngay
-                </button>
+        <form action="<?= url('/search') ?>" method="GET" class="mt-4 animate-fade-in-up animation-delay-2 hero-search-form">
+            <div class="search-grid-top">
+                <select class="form-select search-select" name="search_option">
+                    <option value="">Tùy chọn tìm kiếm</option>
+                    <option value="all">Tất cả</option>
+                    <option value="product">Sản phẩm</option>
+                    <option value="shop">Gian hàng</option>
+                    <option value="seller">Người bán</option>
+                </select>
+                <select class="form-select search-select" name="category">
+                    <option value="">Tất cả</option>
+                    <option value="accounts">Tài khoản</option>
+                    <option value="software">Phần mềm</option>
+                    <option value="courses">Khóa học</option>
+                </select>
+                <select class="form-select search-select" name="price_range">
+                    <option value="">Tất cả</option>
+                    <option value="0-100000">Dưới 100K</option>
+                    <option value="100000-500000">100K - 500K</option>
+                    <option value="500000-1000000">500K - 1M</option>
+                    <option value="1000000+">Trên 1M</option>
+                </select>
             </div>
+            <input type="text" name="q" class="form-control search-input-wide"
+                placeholder="Tìm gian hàng hoặc người bán" aria-label="Tìm kiếm gian hàng hoặc người bán">
+            <button class="btn search-submit-btn fw-bold" type="submit">
+                <i class="fas fa-search me-2"></i>Tìm kiếm
+            </button>
         </form>
     </div>
 </div>
@@ -267,16 +287,110 @@ if (Auth::check()) {
         z-index: 0;
     }
 
-    .search-box {
+    .hero-search-form {
+        max-width: 1160px;
+        margin: 0 auto;
         display: flex;
-        max-width: 600px;
-        background: white;
-        border-radius: 30px;
-        padding: 5px;
+        flex-direction: column;
+        gap: 12px;
     }
 
-    .search-box input:focus {
-        box-shadow: none;
+    .search-grid-top {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr;
+        gap: 12px;
+    }
+
+    .search-select {
+        height: 56px;
+        border-radius: 8px;
+        border: none;
+        padding: 0 18px;
+        font-size: 1rem;
+        color: #1f2937;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-select:focus {
+        border-color: transparent;
+        box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25), 0 8px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-input-wide {
+        height: 56px;
+        border-radius: 8px;
+        border: none;
+        padding: 0 18px;
+        font-size: 1.05rem;
+        box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-input-wide::placeholder {
+        color: #98a2b3;
+        font-weight: 500;
+    }
+
+    .search-input-wide:focus {
+        border-color: transparent;
+        box-shadow: 0 0 0 0.2rem rgba(16, 185, 129, 0.25), 0 8px 18px rgba(0, 0, 0, 0.18);
+    }
+
+    .search-submit-btn {
+        align-self: center;
+        min-width: 170px;
+        height: 52px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6a5cff 0%, #7b61ff 50%, #5b4fff 100%);
+        color: #fff;
+        font-size: 1.05rem;
+        box-shadow: 0 10px 22px rgba(91, 79, 255, 0.38);
+        transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    }
+
+    .search-submit-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(91, 79, 255, 0.48);
+        filter: brightness(1.04);
+        color: #fff;
+    }
+
+    .search-submit-btn:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 991.98px) {
+        .hero-search-form {
+            max-width: 100%;
+        }
+
+        .search-grid-top {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .search-select,
+        .search-input-wide {
+            height: 52px;
+        }
+
+        .search-submit-btn {
+            width: 100%;
+            max-width: 280px;
+        }
+    }
+
+    @media (max-width: 575.98px) {
+        .search-select,
+        .search-input-wide {
+            font-size: 0.95rem;
+            padding: 0 14px;
+        }
+
+        .search-submit-btn {
+            height: 48px;
+            font-size: 1rem;
+        }
     }
 
     /* Typography & Titles */

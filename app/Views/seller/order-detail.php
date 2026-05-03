@@ -135,9 +135,9 @@ foreach ($stocks as $stockItem) {
                     <i class="fas fa-envelope me-1"></i> <?= e($order['buyer_email']) ?>
                 </div>
                 <hr>
-                <a href="<?= url('/seller/chat') ?>" class="btn btn-outline-primary btn-sm w-100">
+                <button onclick="event.stopPropagation(); _iwOpenChat(<?= $order['buyer_id'] ?>, '<?= e($order['buyer_name']) ?>')" class="btn btn-outline-primary btn-sm w-100">
                     <i class="fas fa-comment-dots"></i> Nhắn tin với khách
-                </a>
+                </button>
             </div>
         </div>
 
