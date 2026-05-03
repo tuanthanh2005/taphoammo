@@ -4,22 +4,24 @@ ob_start();
 
 <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
+    <div class="row mb-4 gy-3 align-items-center">
+        <div class="col-md-6 d-none d-md-block">
             <h4 class="fw-bold mb-1"><i class="fas fa-boxes text-primary me-2"></i> Quản lý Sản phẩm</h4>
             <p class="text-muted small mb-0">Quản lý kho hàng, trạng thái và cập nhật thông tin sản phẩm của bạn.</p>
         </div>
-        <div class="col-md-6 d-flex gap-3 justify-content-md-end">
-            <form action="<?= url('/seller/products') ?>" method="GET" class="d-flex gap-2">
-                <div class="input-group" style="max-width: 250px;">
-                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm sản phẩm..." value="<?= e($search ?? '') ?>">
-                </div>
-                <button type="submit" class="btn btn-outline-primary rounded-pill px-3">Tìm</button>
-            </form>
-            <a href="<?= url('/seller/products/create') ?>" class="btn btn-primary rounded-pill px-4 shadow-sm">
-                <i class="fas fa-plus me-2"></i> Thêm sản phẩm mới
-            </a>
+        <div class="col-md-6">
+            <div class="d-flex flex-column flex-md-row gap-2 justify-content-md-end">
+                <form action="<?= url('/seller/products') ?>" method="GET" class="d-flex gap-2">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm sản phẩm..." value="<?= e($search ?? '') ?>">
+                    </div>
+                    <button type="submit" class="btn btn-primary px-3">Tìm</button>
+                </form>
+                <a href="<?= url('/seller/products/create') ?>" class="btn btn-success rounded-3 px-4 shadow-sm">
+                    <i class="fas fa-plus me-2"></i> Thêm sản phẩm
+                </a>
+            </div>
         </div>
     </div>
 
