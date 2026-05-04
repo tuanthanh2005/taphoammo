@@ -50,6 +50,78 @@ class SellerController extends Controller {
             'bestProducts' => $bestProducts
         ]);
     }
+
+    public function profile() {
+        $userModel = new User();
+        $user = $userModel->find(Auth::id());
+        $this->view('seller/profile', ['user' => $user]);
+    }
+
+    public function updateProfile() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/seller/profile');
+            return;
+        }
+
+        CSRF::check();
+
+        $userId = Auth::id();
+        $user = Auth::user();
+        $data = [
+            'name' => trim($_POST['name'] ?? ''),
+            'phone' => trim($_POST['phone'] ?? ''),
+            'telegram_chat_id' => trim($_POST['telegram_chat_id'] ?? '')
+        ];
+
+        if ($data['name'] === '') {
+            Session::setFlash('error', 'Vui lòng nhập họ tên.');
+            $this->redirect('/seller/profile');
+            return;
+        }
+
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+            $upload = Helper::uploadFile($_FILES['avatar'], 'avatars');
+            if ($upload['success']) {
+                $data['avatar'] = $upload['path'];
+            } else {
+                Session::setFlash('error', $upload['message']);
+                $this->redirect('/seller/profile');
+                return;
+            }
+        }
+
+        if (!empty($_POST['new_password'])) {
+            $currentPassword = $_POST['current_password'] ?? '';
+            $newPassword = $_POST['new_password'] ?? '';
+            $confirmPassword = $_POST['confirm_password'] ?? '';
+
+            if (empty($user['password']) || !password_verify($currentPassword, $user['password'])) {
+                Session::setFlash('error', 'Mật khẩu hiện tại không đúng.');
+                $this->redirect('/seller/profile');
+                return;
+            }
+
+            if ($newPassword !== $confirmPassword) {
+                Session::setFlash('error', 'Mật khẩu xác nhận không khớp.');
+                $this->redirect('/seller/profile');
+                return;
+            }
+
+            if (strlen($newPassword) < 6) {
+                Session::setFlash('error', 'Mật khẩu phải có ít nhất 6 ký tự.');
+                $this->redirect('/seller/profile');
+                return;
+            }
+
+            $data['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
+        }
+
+        $userModel = new User();
+        $userModel->update($userId, $data);
+
+        Session::setFlash('success', 'Cập nhật hồ sơ seller thành công.');
+        $this->redirect('/seller/profile');
+    }
     
     public function products() {
         $productModel = new Product();
@@ -276,7 +348,7 @@ class SellerController extends Controller {
             FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
             JOIN users u ON o.user_id = u.id
-            LEFT JOIN disputes d ON oi.order_id = d.order_id AND oi.product_id = d.product_id
+            LEFT JOIN disputes d ON oi.id = d.order_item_id
             WHERE oi.product_id = ? 
             AND (oi.item_status = 'processing' OR (d.id IS NOT NULL AND d.status IN ('open', 'under_review')))
             GROUP BY oi.order_id

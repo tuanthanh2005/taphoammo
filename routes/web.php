@@ -44,6 +44,8 @@ $router->post('/checkout/instant', [CheckoutController::class, 'instant'], [Auth
 
 // Seller routes
 $router->get('/seller/dashboard', [SellerController::class, 'dashboard'], [SellerMiddleware::class]);
+$router->get('/seller/profile', [SellerController::class, 'profile'], [SellerMiddleware::class]);
+$router->post('/seller/profile', [SellerController::class, 'updateProfile'], [SellerMiddleware::class]);
 $router->get('/seller/products', [SellerController::class, 'products'], [SellerMiddleware::class]);
 $router->get('/seller/products/create', [SellerController::class, 'createProduct'], [SellerMiddleware::class, SellerBalanceMiddleware::class]);
 $router->post('/seller/products/store', [SellerController::class, 'storeProduct'], [SellerMiddleware::class, SellerBalanceMiddleware::class]);
