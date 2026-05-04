@@ -19,6 +19,14 @@ class ProductController extends Controller {
         if (!empty($_GET['search'])) {
             $filters['search'] = $_GET['search'];
         }
+
+        if (!empty($_GET['sort'])) {
+            $filters['sort'] = $_GET['sort'];
+        }
+
+        if (isset($_GET['on_sale'])) {
+            $filters['on_sale'] = $_GET['on_sale'];
+        }
         
         $products = $productModel->getAll($filters, $page, $perPage);
         $categories = $categoryModel->getActive();

@@ -138,9 +138,9 @@ if (Auth::check()) {
                     <div class="quick-links-card">
                         <h6 class="fw-bold mb-3"><i class="fas fa-bolt me-2 text-vip"></i>Nhanh</h6>
                         <div class="quick-links-list">
-                            <a href="#" class="quick-link"><i class="fas fa-fire"></i>Hot Deals</a>
-                            <a href="#" class="quick-link"><i class="fas fa-star"></i>Top Seller</a>
-                            <a href="#" class="quick-link"><i class="fas fa-gift"></i>Khuyến mãi</a>
+                            <a href="<?= url('/products?sort=hot') ?>" class="quick-link"><i class="fas fa-fire"></i>Hot Deals</a>
+                            <a href="<?= url('/products?sort=top_seller') ?>" class="quick-link"><i class="fas fa-star"></i>Top Seller</a>
+                            <a href="<?= url('/products?on_sale=1') ?>" class="quick-link"><i class="fas fa-gift"></i>Khuyến mãi</a>
                         </div>
                     </div>
                 </div>

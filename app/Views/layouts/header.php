@@ -24,8 +24,68 @@ if (Auth::check()) {
         <link rel="icon" type="image/x-icon" href="<?= asset($favicon) ?>">
     <?php endif; ?>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* Global Loader Styles */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        #global-loader.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        .loader-content {
+            text-align: center;
+            animation: pulse-loader 1.5s infinite ease-in-out;
+        }
+        .loader-logo {
+            width: 70px;
+            height: 70px;
+            background: #28a745;
+            color: white;
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(40, 167, 69, 0.25);
+        }
+        .loader-text {
+            color: #333;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+        @keyframes pulse-loader {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+    </style>
 </head>
 <body>
+    <div id="global-loader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="loader-text text-uppercase">Đang kết nối...</div>
+        </div>
+    </div>
     <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
         <div class="container">
             <a class="navbar-brand fw-bold text-success" href="<?= url('/') ?>">

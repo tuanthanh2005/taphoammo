@@ -2,28 +2,29 @@
 
 <div class="container-fluid py-4">
     <!-- Header -->
-    <div class="row mb-4 align-items-center">
-        <div class="col-md-6">
+    <!-- Header -->
+    <div class="row mb-4 gy-3">
+        <div class="col-12 col-md-auto me-auto">
             <h4 class="fw-bold mb-1"><i class="fas fa-shopping-basket text-primary me-2"></i> Quản lý Đơn hàng</h4>
-            <p class="text-muted small mb-0">Theo dõi và xử lý các đơn hàng khách hàng đã mua từ gian hàng của bạn.</p>
+            <div class="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill small">
+                Tổng: <?= count($orders) ?> đơn
+            </div>
         </div>
-        <div class="col-md-6 text-md-end">
-            <div class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
-                Tổng cộng: <?= count($orders) ?> đơn hàng (trang <?= $currentPage ?>)
-            </div>
-            
-            <div class="mt-3">
-                <form action="<?= url('/seller/orders') ?>" method="GET" class="d-flex gap-2 justify-content-md-end">
-                    <div class="input-group" style="max-width: 300px;">
+        <div class="col-12 col-md-auto">
+            <form action="<?= url('/seller/orders') ?>" method="GET" class="row g-2">
+                <div class="col">
+                    <div class="input-group input-group-sm">
                         <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                        <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm mã đơn, tên sản phẩm..." value="<?= e($search ?? '') ?>">
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm mã đơn, SP..." value="<?= e($search ?? '') ?>">
                     </div>
-                    <button type="submit" class="btn btn-primary px-4 rounded-pill fw-bold">Tìm</button>
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary btn-sm px-3 fw-bold">Tìm</button>
                     <?php if (!empty($search)): ?>
-                        <a href="<?= url('/seller/orders') ?>" class="btn btn-outline-secondary rounded-pill px-3"><i class="fas fa-times"></i></a>
+                        <a href="<?= url('/seller/orders') ?>" class="btn btn-outline-secondary btn-sm"><i class="fas fa-times"></i></a>
                     <?php endif; ?>
-                </form>
-            </div>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -34,13 +35,11 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr class="text-uppercase small fw-bold text-muted">
-                            <th class="ps-4 py-3">Thông báo</th>
-                            <th>Mã đơn</th>
-                            <th>Sản phẩm</th>
-                            <th>Khách hàng</th>
-                            <th>Doanh thu</th>
-                            <th>Trạng thái</th>
-                            <th class="pe-4 text-end">Chi tiết</th>
+                            <th class="ps-3 py-3" style="min-width: 130px;">Mã đơn / Ngày</th>
+                            <th style="min-width: 150px;">Sản phẩm / Khách</th>
+                            <th style="min-width: 90px;">Doanh thu</th>
+                            <th style="min-width: 100px;">Trạng thái</th>
+                            <th class="pe-3 text-end">Chi tiết</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -56,55 +55,51 @@
                         <?php else: ?>
                             <?php foreach ($orders as $order): ?>
                                 <tr>
-                                    <td class="ps-4">
-                                        <?php if (!($order['is_read'] ?? 1)): ?>
-                                            <span class="badge bg-danger rounded-pill pulse-badge">Mới</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-light text-muted border rounded-pill">Đã xem</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-dark">#<?= e($order['order_code']) ?></div>
-                                        <div class="text-muted" style="font-size: 11px;">
-                                            <i class="far fa-clock me-1"></i> <?= date('H:i d/m/Y', strtotime($order['created_at'])) ?>
+                                    <td class="ps-3">
+                                        <div class="d-flex align-items-center gap-2 mb-1">
+                                            <div class="fw-bold text-dark">#<?= e($order['order_code']) ?></div>
+                                            <?php if (!($order['is_read'] ?? 1)): ?>
+                                                <span class="badge bg-danger rounded-pill pulse-badge" style="font-size: 0.6rem;">Mới</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.65rem;">
+                                            <i class="far fa-clock me-1"></i> <?= date('d/m/y H:i', strtotime($order['created_at'])) ?>
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="fw-semibold text-dark"><?= e(Helper::truncate($order['product_name'], 40)) ?></div>
-                                        <div class="text-muted small">Số lượng: x<?= $order['quantity'] ?></div>
+                                        <div class="fw-semibold text-dark text-truncate" style="max-width: 140px; font-size: 0.85rem;"><?= e($order['product_name']) ?></div>
+                                        <div class="text-muted small" style="font-size: 0.75rem;">
+                                            x<?= $order['quantity'] ?> · <span class="fw-bold text-muted"><?= e($order['buyer_name']) ?></span>
+                                        </div>
                                         <?php if (!empty($order['note'])): ?>
                                             <div class="mt-1">
-                                                <span class="badge bg-light text-dark fw-normal border" style="font-size: 10px;">
-                                                    <i class="fas fa-comment-dots text-muted me-1"></i> Ghi chú: <?= e(Helper::truncate($order['note'], 30)) ?>
+                                                <span class="badge bg-light text-dark fw-normal border text-truncate" style="font-size: 0.65rem; max-width: 140px;">
+                                                    <i class="fas fa-comment-dots text-muted me-1"></i> <?= e($order['note']) ?>
                                                 </span>
                                             </div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
-                                        <div class="fw-bold small text-dark"><?= e($order['buyer_name']) ?></div>
-                                        <div class="text-muted" style="font-size: 11px;">ID: #<?= $order['order_id'] ?></div>
-                                    </td>
-                                    <td>
-                                        <div class="fw-bold text-success"><?= money($order['seller_amount']) ?></div>
-                                        <div class="text-muted" style="font-size: 10px;">Thanh toán: <?= $order['payment_status'] === 'paid' ? 'Đã xong' : 'Chờ' ?></div>
+                                        <div class="fw-bold text-success" style="font-size: 0.85rem;"><?= money($order['seller_amount']) ?></div>
+                                        <div class="text-muted" style="font-size: 0.65rem;"><?= $order['payment_status'] === 'paid' ? 'Đã thanh toán' : 'Chờ' ?></div>
                                     </td>
                                     <td>
                                         <?php
                                         $statusConfigs = [
-                                            'processing' => ['bg' => 'bg-warning-subtle', 'text' => 'text-warning', 'label' => 'Đang xử lý'],
-                                            'delivered' => ['bg' => 'bg-success-subtle', 'text' => 'text-success', 'label' => 'Đã giao hàng'],
-                                            'issue' => ['bg' => 'bg-danger-subtle', 'text' => 'text-danger', 'label' => 'Có vấn đề'],
-                                            'refunded' => ['bg' => 'bg-secondary-subtle', 'text' => 'text-secondary', 'label' => 'Đã hoàn tiền']
+                                            'processing' => ['bg' => 'bg-warning-subtle', 'text' => 'text-warning', 'label' => 'Xử lý'],
+                                            'delivered' => ['bg' => 'bg-success-subtle', 'text' => 'text-success', 'label' => 'Đã giao'],
+                                            'issue' => ['bg' => 'bg-danger-subtle', 'text' => 'text-danger', 'label' => 'Lỗi'],
+                                            'refunded' => ['bg' => 'bg-secondary-subtle', 'text' => 'text-secondary', 'label' => 'Hoàn']
                                         ];
                                         $cfg = $statusConfigs[$order['item_status'] ?? 'processing'] ?? ['bg' => 'bg-light', 'text' => 'text-dark', 'label' => $order['item_status']];
                                         ?>
-                                        <span class="badge rounded-pill <?= $cfg['bg'] ?> <?= $cfg['text'] ?> px-3 fw-normal" style="font-size: 11px;">
+                                        <span class="badge rounded-pill <?= $cfg['bg'] ?> <?= $cfg['text'] ?> px-2 py-1 fw-normal" style="font-size: 0.65rem;">
                                             <?= $cfg['label'] ?>
                                         </span>
                                     </td>
-                                    <td class="pe-4 text-end">
-                                        <a href="<?= url('/seller/orders/' . $order['order_id']) ?>" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-bold">
-                                            <i class="fas fa-eye me-1"></i> Xem đơn
+                                    <td class="pe-3 text-end">
+                                        <a href="<?= url('/seller/orders/' . $order['order_id']) ?>" class="btn btn-sm btn-primary py-1 px-2" style="font-size: 0.75rem;">
+                                            <i class="fas fa-eye"></i>
                                         </a>
                                     </td>
                                 </tr>

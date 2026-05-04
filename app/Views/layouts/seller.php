@@ -130,12 +130,78 @@
 
         /* Loading state */
         .btn-loading {
-            pointer-events: none;
+            pointer-size: none;
             opacity: 0.7;
+        }
+
+        /* Global Loader */
+        #global-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        #global-loader.active {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .loader-content {
+            text-align: center;
+            animation: pulse-loader 1.5s infinite ease-in-out;
+        }
+
+        .loader-logo {
+            width: 80px;
+            height: 80px;
+            background: var(--sidebar-active);
+            color: white;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.3);
+        }
+
+        .loader-text {
+            color: #333;
+            font-weight: 600;
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        @keyframes pulse-loader {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
         }
     </style>
 </head>
 <body>
+    <div id="global-loader">
+        <div class="loader-content">
+            <div class="loader-logo">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="loader-text text-uppercase">Đang xử lý...</div>
+            <div class="mt-2 small text-muted">Vui lòng đợi trong giây lát</div>
+        </div>
+    </div>
+
     <div class="container-fluid p-0">
         <div class="seller-layout">
             <!-- Mobile Header -->
@@ -300,11 +366,6 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
                             <span>Xin chào, <strong><?= e(Auth::user()['name']) ?></strong></span>
                         </div>
                     </div>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm d-lg-none" onclick="toggleSidebar()">
-                            <i class="fas fa-bars"></i>
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Flash Messages -->
@@ -336,23 +397,60 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
     <script>
         // Mobile Sidebar Toggle
         const sidebarToggle = document.querySelector('.sidebar-toggle');
+        const sidebarToggleMobile = document.getElementById('sidebarToggleMobile');
         const sidebar = document.getElementById('sellerSidebar');
-        
-        function toggleSidebar() {
-            sidebar.classList.toggle('show');
-            document.body.classList.toggle('sidebar-open');
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+            });
         }
 
-        sidebarToggle?.addEventListener('click', toggleSidebar);
+        if (sidebarToggleMobile) {
+            sidebarToggleMobile.addEventListener('click', () => {
+                sidebar.classList.toggle('show');
+            });
+        }
 
-        // Close sidebar on route change (for SPA-like behavior)
+        // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
-            if (!sidebar.contains(e.target) && !sidebarToggle?.contains(e.target)) {
-                sidebar.classList.remove('show');
-                document.body.classList.remove('sidebar-open');
+            if (window.innerWidth < 992 && sidebar.classList.contains('show')) {
+                if (!sidebar.contains(e.target) && (!sidebarToggleMobile || !sidebarToggleMobile.contains(e.target))) {
+                    sidebar.classList.remove('show');
+                }
             }
         });
 
+        // SMART GLOBAL LOADER LOGIC
+        let loaderTimeout;
+        const showLoader = () => {
+            // Chỉ hiện loader nếu tác vụ mất hơn 500ms (0.5 giây)
+            loaderTimeout = setTimeout(() => {
+                document.getElementById('global-loader').classList.add('active');
+            }, 500);
+        };
+
+        const hideLoader = () => {
+            clearTimeout(loaderTimeout);
+            document.getElementById('global-loader').classList.remove('active');
+        };
+
+        // Kích hoạt khi chuyển trang
+        window.addEventListener('beforeunload', showLoader);
+
+        // Kích hoạt khi submit form (ngoại trừ các form có thuộc tính data-no-loader)
+        document.addEventListener('submit', (e) => {
+            if (!e.target.hasAttribute('data-no-loader')) {
+                showLoader();
+            }
+        });
+
+        // Đảm bảo loader biến mất khi quay lại từ cache trình duyệt (nút Back)
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                hideLoader();
+            }
+        });
     </script>
     <?php require_once __DIR__ . '/chat_widget.php'; ?>
 </body>

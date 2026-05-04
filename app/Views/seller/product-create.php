@@ -9,14 +9,16 @@ foreach ($categories as $cat) {
 ?>
 
 <div class="seller-form-shell">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
+    <div class="row align-items-center mb-4 gy-3">
+        <div class="col-12 col-md-auto me-auto text-center text-md-start">
             <h2 class="mb-1 fw-bold">Thêm sản phẩm mới</h2>
-            <div class="text-muted">Chọn đúng danh mục để hệ thống gợi ý cách nhập hàng phù hợp.</div>
+            <div class="text-muted small">Chọn đúng danh mục để hệ thống gợi ý phù hợp.</div>
         </div>
-        <a href="<?= url('/seller/products') ?>" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-1"></i> Quay lại
-        </a>
+        <div class="col-12 col-md-auto text-center">
+            <a href="<?= url('/seller/products') ?>" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="fas fa-arrow-left me-1"></i> Quay lại
+            </a>
+        </div>
     </div>
 
     <!-- ========== STEP 1: CHỌN DANH MỤC ========== -->
@@ -199,13 +201,17 @@ foreach ($categories as $cat) {
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-2 mt-4">
-            <button type="button" class="btn btn-outline-secondary" id="btnBackStep1">
-                <i class="fas fa-arrow-left me-1"></i> Đổi danh mục
-            </button>
-            <button type="submit" class="btn btn-success">
-                <i class="fas fa-save me-1"></i> Tạo sản phẩm
-            </button>
+        <div class="row g-3 mt-4">
+            <div class="col-6 col-md-auto ms-md-auto order-2 order-md-1">
+                <button type="button" class="btn btn-outline-secondary w-100" id="btnBackStep1">
+                    <i class="fas fa-arrow-left me-1"></i> Đổi danh mục
+                </button>
+            </div>
+            <div class="col-12 col-md-auto order-1 order-md-2">
+                <button type="submit" class="btn btn-success btn-lg w-100 fw-bold px-md-5">
+                    <i class="fas fa-save me-1"></i> Tạo sản phẩm ngay
+                </button>
+            </div>
         </div>
     </form>
 </div>
@@ -368,15 +374,31 @@ foreach ($categories as $cat) {
     to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
+    .seller-form-card { padding: 1.5rem !important; }
     .category-picker-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
-    .category-pick-card { padding: 1rem 0.8rem; }
-    .category-pick-icon { width: 44px; height: 44px; font-size: 1.1rem; }
+    .category-pick-card { padding: 1rem 0.75rem; border-radius: 14px; }
+    .category-pick-icon { width: 44px; height: 44px; font-size: 1.1rem; margin-bottom: 0.5rem; }
+    .category-pick-name { font-size: 0.9rem; }
     .category-pick-desc { display: none; }
-    .selected-category-banner { flex-direction: column; text-align: center; }
+    
+    .selected-category-banner { 
+        padding: 0.85rem; 
+        justify-content: center; 
+        text-align: center;
+        gap: 0.75rem;
+    }
+    .selected-category-banner .d-flex { flex-direction: column; width: 100%; }
+    .selected-cat-icon { width: 40px; height: 40px; font-size: 1rem; }
+    .selected-category-banner #btnChangeCat { width: 100%; }
+}
+
+@media (max-width: 480px) {
+    .category-picker-grid { gap: 8px; }
+    .category-pick-card { padding: 0.85rem 0.5rem; }
 }
 </style>
 

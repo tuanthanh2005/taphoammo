@@ -105,6 +105,29 @@ class Product extends Model {
             $params[] = $filters['is_featured'];
         }
 
+        if (!empty($filters['on_sale'])) {
+            $where[] = 'p.sale_price > 0 AND p.sale_price < p.price';
+        }
+
+        $orderBy = 'p.created_at DESC';
+        if (!empty($filters['sort'])) {
+            switch ($filters['sort']) {
+                case 'hot':
+                    $orderBy = 'p.total_sold DESC, p.created_at DESC';
+                    break;
+                case 'top_seller':
+                    $where[] = "u.role = 'seller' AND u.status = 'active'";
+                    $orderBy = 'u.created_at ASC, p.total_sold DESC'; // Simplified top seller logic
+                    break;
+                case 'price_asc':
+                    $orderBy = 'p.price ASC';
+                    break;
+                case 'price_desc':
+                    $orderBy = 'p.price DESC';
+                    break;
+            }
+        }
+
         $whereClause = implode(' AND ', $where);
         $offset = ($page - 1) * $perPage;
 
@@ -113,7 +136,7 @@ class Product extends Model {
                 LEFT JOIN users u ON p.seller_id = u.id
                 LEFT JOIN categories c ON p.category_id = c.id
                 WHERE {$whereClause}
-                ORDER BY p.created_at DESC
+                ORDER BY {$orderBy}
                 LIMIT {$perPage} OFFSET {$offset}";
 
         $products = $this->db->fetchAll($sql, $params);

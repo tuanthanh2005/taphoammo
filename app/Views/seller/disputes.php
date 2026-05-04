@@ -1,14 +1,16 @@
 <?php ob_start(); ?>
 <?php $responseHours = Helper::getDisputeSellerResponseHours(); ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-        <h2 class="mb-1">Khiếu nại từ khách hàng</h2>
-        <p class="text-muted small mb-0">Phản hồi rõ ràng và gửi bằng chứng để admin có đủ hai phía trước khi phán quyết.</p>
+<div class="row align-items-center mb-4 gy-3">
+    <div class="col-12 col-md-auto me-auto text-center text-md-start">
+        <h2 class="mb-1 fw-bold">Khiếu nại từ khách hàng</h2>
+        <p class="text-muted small mb-0">Phản hồi rõ ràng và gửi bằng chứng để admin xem xét.</p>
     </div>
-    <a href="<?= url('/seller/orders') ?>" class="btn btn-primary">
-        <i class="fas fa-shopping-cart me-1"></i> Quản lý đơn hàng
-    </a>
+    <div class="col-12 col-md-auto text-center">
+        <a href="<?= url('/seller/orders') ?>" class="btn btn-outline-primary btn-sm px-3">
+            <i class="fas fa-shopping-cart me-1"></i> Quản lý đơn hàng
+        </a>
+    </div>
 </div>
 
 <div class="alert alert-warning border-0 shadow-sm mb-4">
@@ -28,14 +30,11 @@
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Mã khiếu nại</th>
-                        <th>Đơn hàng</th>
-                        <th>Sản phẩm</th>
-                        <th>Người mua</th>
-                        <th>Số tiền</th>
-                        <th>Trạng thái</th>
-                        <th>Phản hồi seller</th>
-                        <th>Thao tác</th>
+                        <th class="ps-3" style="min-width: 120px;">Khiếu nại / Đơn</th>
+                        <th style="min-width: 140px;">Sản phẩm / Người mua</th>
+                        <th style="min-width: 90px;">Số tiền</th>
+                        <th style="min-width: 100px;">Trạng thái</th>
+                        <th style="min-width: 100px;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,34 +69,33 @@
                     $canRespond = in_array($d['status'], ['open', 'under_review'], true);
                     ?>
                     <tr>
-                        <td class="fw-bold text-primary">#<?= e($d['dispute_code']) ?></td>
-                        <td>
-                            <a href="<?= url('/seller/orders/' . $d['order_id']) ?>" class="text-decoration-none fw-bold">
-                                #<?= e($d['order_code']) ?>
-                            </a>
-                            <div class="small text-muted"><?= date('d/m/Y H:i', strtotime($d['created_at'])) ?></div>
+                        <td class="ps-3">
+                            <div class="fw-bold text-primary">#<?= e($d['dispute_code']) ?></div>
+                            <div class="small">
+                                <a href="<?= url('/seller/orders/' . $d['order_id']) ?>" class="text-decoration-none text-muted">
+                                    Đơn: #<?= e($d['order_code']) ?>
+                                </a>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.65rem;"><?= date('d/m/y H:i', strtotime($d['created_at'])) ?></div>
                         </td>
                         <td>
-                            <div class="fw-semibold"><?= e($d['product_name'] ?? 'Sản phẩm') ?></div>
-                            <div class="small text-muted"><?= e($reasonMap[$d['reason']] ?? 'Khác') ?></div>
+                            <div class="fw-semibold text-truncate" style="max-width: 130px;"><?= e($d['product_name'] ?? 'Sản phẩm') ?></div>
+                            <div class="small text-muted" style="font-size: 0.7rem;">
+                                <i class="fas fa-user me-1"></i><?= e($d['user_name']) ?> (@<?= e($d['user_username']) ?>)
+                            </div>
                         </td>
+                        <td class="fw-bold text-danger" style="font-size: 0.85rem;"><?= money($d['amount']) ?></td>
                         <td>
-                            <div class="fw-bold"><?= e($d['user_name']) ?></div>
-                            <div class="small text-muted">@<?= e($d['user_username']) ?></div>
-                        </td>
-                        <td class="fw-bold text-danger"><?= money($d['amount']) ?></td>
-                        <td><span class="badge bg-<?= $color ?>"><?= $label ?></span></td>
-                        <td>
+                            <span class="badge bg-<?= $color ?> d-block mb-1 py-1" style="font-size: 0.65rem;"><?= $label ?></span>
                             <?php if (!empty($d['seller_responded_at'])): ?>
-                                <span class="badge bg-success-subtle text-success border border-success-subtle">Đã phản hồi</span>
-                                <div class="small text-muted mt-1"><?= date('d/m/Y H:i', strtotime($d['seller_responded_at'])) ?></div>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-1" style="font-size: 0.6rem;">Đã phản hồi</span>
                             <?php else: ?>
-                                <span class="badge bg-light text-dark border">Chưa phản hồi</span>
+                                <span class="badge bg-light text-dark border px-1" style="font-size: 0.6rem;">Chưa phản hồi</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <button type="button" class="btn btn-sm <?= $canRespond ? 'btn-primary' : 'btn-outline-secondary' ?>" data-bs-toggle="modal" data-bs-target="#disputeSellerModal<?= $d['id'] ?>">
-                                <?= $canRespond ? 'Phản hồi ngay' : 'Xem chi tiết' ?>
+                            <button type="button" class="btn btn-sm <?= $canRespond ? 'btn-primary' : 'btn-outline-secondary' ?> w-100 py-1" style="font-size: 0.75rem;" data-bs-toggle="modal" data-bs-target="#disputeSellerModal<?= $d['id'] ?>">
+                                <?= $canRespond ? 'Phản hồi' : 'Chi tiết' ?>
                             </button>
                         </td>
                     </tr>

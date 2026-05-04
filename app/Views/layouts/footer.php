@@ -157,5 +157,31 @@
     </script>
     <?php require_once __DIR__ . '/chat_widget.php'; ?>
     <script src="<?= asset('js/main.js') ?>"></script>
+    <script>
+        // SMART GLOBAL LOADER LOGIC
+        (function() {
+            let loaderTimeout;
+            const showLoader = () => {
+                loaderTimeout = setTimeout(() => {
+                    const loader = document.getElementById('global-loader');
+                    if (loader) loader.classList.add('active');
+                }, 500);
+            };
+
+            const hideLoader = () => {
+                clearTimeout(loaderTimeout);
+                const loader = document.getElementById('global-loader');
+                if (loader) loader.classList.remove('active');
+            };
+
+            window.addEventListener('beforeunload', showLoader);
+            document.addEventListener('submit', (e) => {
+                if (!e.target.hasAttribute('data-no-loader')) showLoader();
+            });
+            window.addEventListener('pageshow', (event) => {
+                if (event.persisted) hideLoader();
+            });
+        })();
+    </script>
 </body>
 </html>
