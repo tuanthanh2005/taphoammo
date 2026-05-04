@@ -1,0 +1,52 @@
+<?php
+/**
+ * Artisan-like Command Line Interface for MMO Marketplace
+ */
+
+if (php_sapi_name() !== 'cli') {
+    die("Lệnh này chỉ có thể chạy từ Terminal (CLI).\n");
+}
+
+define('ROOT_PATH', __DIR__);
+
+// Load Environment Variables
+if (file_exists(ROOT_PATH . '/.env')) {
+    $lines = file(ROOT_PATH . '/.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0 || strpos($line, '=') === false) continue;
+        [$key, $value] = explode('=', $line, 2);
+        $_ENV[trim($key)] = trim($value, " \t\n\r\0\x0B\"'");
+    }
+}
+
+$command = $argv[1] ?? 'help';
+
+switch ($command) {
+    case 'migrate':
+        echo "--- Bắt đầu quá trình Migration ---\n";
+        $files = glob(ROOT_PATH . '/migrations/*.php');
+        sort($files); // Run in order
+        
+        foreach ($files as $file) {
+            echo "✓ Đang chạy: " . basename($file) . "\n";
+            try {
+                include $file;
+            } catch (Exception $e) {
+                echo "✗ Lỗi khi chạy " . basename($file) . ": " . $e->getMessage() . "\n";
+            }
+        }
+        echo "--- HOÀN TẤT! ---\n";
+        break;
+
+    case 'add-columns':
+        echo "--- Đang kiểm tra và thêm các cột còn thiếu ---\n";
+        include ROOT_PATH . '/add_missing_columns.php';
+        break;
+
+    case 'help':
+    default:
+        echo "Hệ thống lệnh MMO Artisan:\n";
+        echo "  migrate       : Chạy tất cả các file migration trong thư mục /migrations\n";
+        echo "  add-columns   : Chạy script kiểm tra và thêm các cột còn thiếu\n";
+        break;
+}

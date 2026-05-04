@@ -26,6 +26,8 @@ CREATE TABLE `users` (
   `referred_by` int(11) DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `telegram_chat_id` varchar(50) DEFAULT NULL,
+  `max_products` int(11) DEFAULT 10,
   PRIMARY KEY (`id`),
   UNIQUE KEY `username` (`username`),
   UNIQUE KEY `email` (`email`),
