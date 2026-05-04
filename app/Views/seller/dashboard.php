@@ -190,7 +190,7 @@ $currentBalance = $wallet['balance'] ?? 0;
                 </div>
                 <div class="card-body pt-0">
                     <p class="text-muted small mb-3">Nhận tin nhắn báo đơn hàng mới ngay lập tức qua Telegram.</p>
-                    <form action="<?= url('/seller/telegram/update') ?>" method="POST">
+                    <form action="/seller/telegram/update" method="POST">
                         <?= csrf_field() ?>
                         <div class="input-group mb-3">
                             <input type="text" name="telegram_chat_id" class="form-control rounded-start-pill ps-4" value="<?= e(Auth::user()['telegram_chat_id'] ?? '') ?>" placeholder="Nhập Chat ID của bạn...">

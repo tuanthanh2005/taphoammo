@@ -118,6 +118,11 @@ class SellerController extends Controller {
         $userModel = new User();
         $userModel->update($userId, $data);
 
+        // Update session name if changed
+        if (isset($data['name'])) {
+            $_SESSION['user_name'] = $data['name'];
+        }
+
         Session::setFlash('success', 'Cập nhật hồ sơ seller thành công.');
         $this->redirect('/seller/profile');
     }
@@ -1075,14 +1080,26 @@ class SellerController extends Controller {
         $userId = Auth::id();
         
         $userModel = new User();
-        $userModel->update($userId, ['telegram_chat_id' => $telegramChatId]);
+        $success = $userModel->update($userId, ['telegram_chat_id' => $telegramChatId]);
         
-        // Cập nhật session user
-        $user = Auth::user();
-        $user['telegram_chat_id'] = $telegramChatId;
-        Session::set('user', $user);
+        if ($success) {
+            if ($telegramChatId !== '') {
+                // Gửi tin nhắn thử
+                $testMsg = "🔔 <b>THÔNG BÁO HỆ THỐNG</b>\nChúc mừng! Bạn đã kết nối Telegram thành công với tài khoản seller <b>" . Helper::telegramEscape(Auth::user()['name']) . "</b>.\nBạn sẽ nhận được thông báo ngay khi có đơn hàng mới hoặc khiếu nại.";
+                $sent = Helper::sendTelegramMessage($telegramChatId, $testMsg);
+                
+                if ($sent) {
+                    Session::setFlash('success', 'Đã cập nhật Telegram Chat ID và gửi tin nhắn thử thành công! Vui lòng kiểm tra Telegram của bạn.');
+                } else {
+                    Session::setFlash('warning', 'Đã lưu Chat ID nhưng không thể gửi tin nhắn thử. Hãy chắc chắn bạn đã nhấn <b>/start</b> với bot hệ thống.');
+                }
+            } else {
+                Session::setFlash('success', 'Đã xóa Telegram Chat ID thành công.');
+            }
+        } else {
+            Session::setFlash('error', 'Có lỗi xảy ra khi cập nhật Telegram Chat ID.');
+        }
         
-        Session::setFlash('success', 'Đã cập nhật Telegram Chat ID thành công!');
         $this->redirect('/seller/dashboard');
     }
 }

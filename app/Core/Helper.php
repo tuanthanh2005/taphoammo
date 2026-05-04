@@ -6,12 +6,15 @@ class Helper
 
     public static function url($path = '')
     {
-        $baseUrl = $_ENV['APP_URL'] ?? '';
-        if (empty($baseUrl)) {
+        $baseUrl = '';
+        if (isset($_SERVER['HTTP_HOST'])) {
             $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-            $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+            $host = $_SERVER['HTTP_HOST'];
             $baseUrl = $protocol . '://' . $host;
+        } else {
+            $baseUrl = $_ENV['APP_URL'] ?? 'http://localhost';
         }
+        
         $baseUrl = rtrim($baseUrl, '/');
         $path = '/' . ltrim($path, '/');
         return $baseUrl . $path;

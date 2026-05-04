@@ -66,6 +66,7 @@ $router->post('/seller/deactivation/request', [SellerController::class, 'request
 $router->post('/seller/deactivation/cancel', [SellerController::class, 'cancelDeactivation'], [SellerMiddleware::class]);
 $router->get('/seller/withdrawals', [SellerController::class, 'withdrawals'], [SellerMiddleware::class]);
 $router->post('/seller/withdrawals/store', [SellerController::class, 'requestWithdrawal'], [SellerMiddleware::class]);
+$router->get('/seller/telegram/update', [SellerController::class, 'updateTelegram'], [SellerMiddleware::class]);
 $router->post('/seller/telegram/update', [SellerController::class, 'updateTelegram'], [SellerMiddleware::class]);
 
 // Chat routes
