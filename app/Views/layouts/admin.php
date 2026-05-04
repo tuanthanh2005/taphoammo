@@ -159,6 +159,7 @@
                     $adminPendingOrders = $db->fetchOne("SELECT COUNT(*) as count FROM order_items WHERE item_status = 'processing'")['count'] ?? 0;
                     $adminPendingWithdrawals = $db->fetchOne("SELECT COUNT(*) as count FROM withdrawals WHERE status = 'pending'")['count'] ?? 0;
                     $adminPendingDeposits = $db->fetchOne("SELECT COUNT(*) as count FROM deposit_requests WHERE status = 'pending'")['count'] ?? 0;
+                    $adminUnresolvedSpam = $db->fetchOne("SELECT COUNT(*) as count FROM spam_alerts WHERE is_resolved = 0")['count'] ?? 0;
                     ?>
                     <ul class="nav flex-column gap-1 px-2">
                         <li class="nav-item">
@@ -180,6 +181,15 @@
                                 if ($adminSpamCount > 0):
                                     ?>
                                     <span class="badge bg-warning text-dark rounded-pill"><?= $adminSpamCount ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link rounded-pill d-flex justify-content-between align-items-center"
+                                href="<?= url('/admin/spam-alerts') ?>">
+                                <span><i class="fas fa-shield-alt text-danger me-2"></i> Cảnh báo Spam</span>
+                                <?php if ($adminUnresolvedSpam > 0): ?>
+                                    <span class="badge bg-danger rounded-pill"><?= $adminUnresolvedSpam ?></span>
                                 <?php endif; ?>
                             </a>
                         </li>

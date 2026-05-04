@@ -84,6 +84,9 @@ $router->get('/affiliate/commissions', [AffiliateController::class, 'commissions
 // Admin routes
 $router->get('/admin/dashboard', [AdminController::class, 'dashboard'], [AdminMiddleware::class]);
 $router->get('/admin/spam-users', [AdminController::class, 'spamUsers'], [AdminMiddleware::class]);
+$router->get('/admin/spam-alerts', [AdminController::class, 'spamAlerts'], [AdminMiddleware::class]);
+$router->post('/admin/users/temp-ban', [AdminController::class, 'tempBanUser'], [AdminMiddleware::class]);
+$router->post('/admin/spam-alerts/resolve/{id}', [AdminController::class, 'resolveSpamAlert'], [AdminMiddleware::class]);
 $router->get('/admin/users', [AdminController::class, 'users'], [AdminMiddleware::class]);
 $router->post('/admin/users/update-role/{id}', [AdminController::class, 'updateUserRole'], [AdminMiddleware::class]);
 $router->post('/admin/users/reset-password', [AdminController::class, 'resetUserPassword'], [AdminMiddleware::class]);

@@ -168,6 +168,63 @@ class AdminController extends Controller {
         ]);
     }
 
+    public function spamAlerts() {
+        $db = Database::getInstance();
+        $page = max(1, (int)($_GET['page'] ?? 1));
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        $alerts = $db->fetchAll(
+            "SELECT s.*, u.name as user_name, u.email as user_email, u.banned_until
+             FROM spam_alerts s
+             LEFT JOIN users u ON s.user_id = u.id
+             ORDER BY s.created_at DESC
+             LIMIT {$perPage} OFFSET {$offset}"
+        );
+
+        $totalCount = $db->fetchOne("SELECT COUNT(*) as total FROM spam_alerts")['total'];
+
+        $this->view('admin/spam_alerts', [
+            'title' => 'Cảnh báo Spam Request',
+            'alerts' => $alerts,
+            'currentPage' => $page,
+            'totalPages' => ceil($totalCount / $perPage)
+        ]);
+    }
+
+    public function tempBanUser() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+        CSRF::check();
+
+        $userId = $_POST['user_id'] ?? null;
+        $duration = (int)($_POST['duration'] ?? 10); // Minutes
+
+        if (!$userId) {
+            Session::setFlash('error', 'Thiếu ID người dùng');
+            $this->redirect($_SERVER['HTTP_REFERER'] ?? '/admin/spam-alerts');
+            return;
+        }
+
+        $bannedUntil = date('Y-m-d H:i:s', time() + ($duration * 60));
+        
+        $db = Database::getInstance();
+        $db->update('users', ['banned_until' => $bannedUntil], 'id = :id', ['id' => $userId]);
+
+        Session::setFlash('success', "Đã khóa người dùng này trong {$duration} phút.");
+        $this->redirect($_SERVER['HTTP_REFERER'] ?? '/admin/spam-alerts');
+    }
+
+    public function resolveSpamAlert($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') return;
+        CSRF::check();
+        
+        $db = Database::getInstance();
+        $db->update('spam_alerts', ['is_resolved' => 1], 'id = :id', ['id' => $id]);
+        
+        Session::setFlash('success', 'Đã đánh dấu xử lý.');
+        $this->redirect('/admin/spam-alerts');
+    }
+
     public function approveSeller() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/admin/users');
