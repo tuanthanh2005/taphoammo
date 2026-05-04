@@ -74,7 +74,7 @@ try {
 
     // Activity
     if (Auth::check()) {
-        $db->query("UPDATE users SET last_active_at = NOW() WHERE id = ?", [Auth::id()]);
+        $db->query("UPDATE users SET last_active_at = ? WHERE id = ?", [date('Y-m-d H:i:s'), Auth::id()]);
     }
 } catch (Exception $e) {
     // Ignore if DB is not set up

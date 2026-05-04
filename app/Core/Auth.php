@@ -51,8 +51,8 @@ class Auth {
             }
 
             $db->query(
-                "UPDATE users SET last_active_at = NOW() WHERE id = ?",
-                [self::id()]
+                "UPDATE users SET last_active_at = ? WHERE id = ?",
+                [date('Y-m-d H:i:s'), self::id()]
             );
         } catch (Exception $e) {
             return;
