@@ -7,17 +7,17 @@ $walletSupportTelegram = trim($walletSettings['wallet_telegram_support_username'
 $walletSupportTelegramUrl = trim($walletSettings['wallet_telegram_support_url'] ?? 'https://t.me/specademy');
 ?>
 
-<div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
-        <h2 class="mb-0">Ví tiền của tôi</h2>
-        <div>
-            <button class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#depositModal">
-                <i class="fas fa-plus-circle"></i> Nạp tiền
-            </button>
-            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deactivateModal">
-                <i class="fas fa-user-times"></i> Hủy tài khoản Seller
-            </button>
-        </div>
+<div class="row mb-4 gy-3">
+    <div class="col-12 col-md-auto me-auto">
+        <h2 class="mb-0 fw-bold"><i class="fas fa-wallet text-primary me-2"></i>Ví tiền của tôi</h2>
+    </div>
+    <div class="col-12 col-md-auto d-flex gap-2">
+        <button class="btn btn-primary flex-fill" data-bs-toggle="modal" data-bs-target="#depositModal">
+            <i class="fas fa-plus-circle"></i> Nạp tiền
+        </button>
+        <button class="btn btn-outline-danger flex-fill" data-bs-toggle="modal" data-bs-target="#deactivateModal">
+            <i class="fas fa-user-times"></i> Hủy Seller
+        </button>
     </div>
 </div>
 
@@ -48,41 +48,42 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
     </ul>
 </div>
 
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card text-white bg-success shadow-sm h-100">
-            <div class="card-body">
-                <h6 class="card-title mb-1"><i class="fas fa-wallet"></i> Số dư khả dụng</h6>
-                <h2 class="mb-0"><?= money($wallet['balance'] ?? 0) ?></h2>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-success shadow-sm h-100 border-0">
+            <div class="card-body p-3">
+                <h6 class="card-title mb-1 opacity-75 small"><i class="fas fa-wallet"></i> Khả dụng</h6>
+                <h3 class="mb-0 fw-bold" style="font-size: calc(1.1rem + 0.3vw);"><?= money($wallet['balance'] ?? 0) ?></h3>
             </div>
-            <div class="card-footer bg-transparent border-0">
-                <a href="<?= url('/seller/withdrawals') ?>" class="btn btn-light btn-sm w-100 fw-bold text-success">Rút tiền</a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-warning shadow-sm h-100">
-            <div class="card-body">
-                <h6 class="card-title mb-1"><i class="fas fa-hourglass-half"></i> Tiền đang giữ</h6>
-                <h2 class="mb-0"><?= money($wallet['held_balance'] ?? 0) ?></h2>
-                <small class="d-block mt-1" style="font-size: 0.75rem;">Sẽ được chuyển sau 7 ngày</small>
+            <div class="card-footer bg-white bg-opacity-10 border-0 p-2 text-center">
+                <a href="<?= url('/seller/withdrawals') ?>" class="text-white text-decoration-none small fw-bold">Rút tiền <i class="fas fa-chevron-right ms-1"></i></a>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-info shadow-sm h-100">
-            <div class="card-body">
-                <h6 class="card-title mb-1"><i class="fas fa-shield-alt"></i> Tiền cọc</h6>
-                <h2 class="mb-0"><?= money($wallet['deposit_balance'] ?? 0) ?></h2>
-                <small class="d-block mt-1" style="font-size: 0.75rem;">Đảm bảo giao dịch</small>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-warning shadow-sm h-100 border-0">
+            <div class="card-body p-3">
+                <h6 class="card-title mb-1 opacity-75 small"><i class="fas fa-hourglass-half"></i> Đang giữ</h6>
+                <h3 class="mb-0 fw-bold" style="font-size: calc(1.1rem + 0.3vw);"><?= money($wallet['held_balance'] ?? 0) ?></h3>
+                <div class="mt-1 opacity-75" style="font-size: 0.7rem;">7 ngày xử lý</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card text-white bg-primary shadow-sm h-100">
-            <div class="card-body">
-                <h6 class="card-title mb-1"><i class="fas fa-chart-line"></i> Tổng thu nhập</h6>
-                <h2 class="mb-0"><?= money($wallet['total_earned'] ?? 0) ?></h2>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-info shadow-sm h-100 border-0">
+            <div class="card-body p-3">
+                <h6 class="card-title mb-1 opacity-75 small"><i class="fas fa-shield-alt"></i> Tiền cọc</h6>
+                <h3 class="mb-0 fw-bold" style="font-size: calc(1.1rem + 0.3vw);"><?= money($wallet['deposit_balance'] ?? 0) ?></h3>
+                <div class="mt-1 opacity-75" style="font-size: 0.7rem;">Dùng cho stock</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card text-white bg-primary shadow-sm h-100 border-0">
+            <div class="card-body p-3">
+                <h6 class="card-title mb-1 opacity-75 small"><i class="fas fa-chart-line"></i> Tổng thu nhập</h6>
+                <h3 class="mb-0 fw-bold" style="font-size: calc(1.1rem + 0.3vw);"><?= money($wallet['total_earned'] ?? 0) ?></h3>
+                <div class="mt-1 opacity-75" style="font-size: 0.7rem;">Lũy kế</div>
             </div>
         </div>
     </div>
@@ -97,11 +98,10 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Mã GD</th>
-                        <th>Loại giao dịch</th>
+                        <th class="ps-3">Mã/Loại</th>
                         <th>Số tiền</th>
-                        <th>Số dư sau</th>
-                        <th>Mô tả</th>
+                        <th class="d-none d-md-table-cell">Số dư sau</th>
+                        <th class="d-none d-sm-table-cell">Mô tả</th>
                         <th>Thời gian</th>
                     </tr>
                 </thead>
@@ -113,33 +113,37 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                     <?php else: ?>
                         <?php foreach ($transactions as $tx): ?>
                             <tr>
-                                <td>#<?= $tx['id'] ?></td>
-                                <td>
+                                <td class="ps-3">
+                                    <div class="fw-bold small text-muted">#<?= $tx['id'] ?></div>
                                     <?php
                                     $typeLabels = [
                                         'deposit' => ['success', 'Nạp tiền'],
                                         'purchase' => ['danger', 'Mua hàng'],
                                         'sale_income' => ['success', 'Bán hàng'],
-                                        'admin_fee' => ['danger', 'Phí nền tảng'],
+                                        'admin_fee' => ['danger', 'Phí sàn'],
                                         'withdrawal' => ['warning', 'Rút tiền'],
-                                        'withdrawal_fee' => ['danger', 'Phí rút tiền'],
+                                        'withdrawal_fee' => ['danger', 'Phí rút'],
                                         'refund' => ['info', 'Hoàn tiền'],
                                         'affiliate_commission' => ['success', 'Hoa hồng']
                                     ];
                                     $label = $typeLabels[$tx['type']] ?? ['secondary', $tx['type']];
                                     ?>
-                                    <span class="badge bg-<?= $label[0] ?>"><?= $label[1] ?></span>
+                                    <span class="badge bg-<?= $label[0] ?> py-1" style="font-size: 0.65rem;"><?= $label[1] ?></span>
                                 </td>
                                 <td>
                                     <?php if (in_array($tx['type'], ['purchase', 'admin_fee', 'withdrawal', 'withdrawal_fee'])): ?>
-                                        <span class="text-danger fw-bold">-<?= money($tx['amount']) ?></span>
+                                        <div class="text-danger fw-bold small">-<?= money($tx['amount']) ?></div>
                                     <?php else: ?>
-                                        <span class="text-success fw-bold">+<?= money($tx['amount']) ?></span>
+                                        <div class="text-success fw-bold small">+<?= money($tx['amount']) ?></div>
                                     <?php endif; ?>
+                                    <div class="d-md-none text-muted" style="font-size: 0.65rem;"><?= money($tx['balance_after']) ?></div>
                                 </td>
-                                <td class="fw-bold"><?= money($tx['balance_after']) ?></td>
-                                <td><small class="text-muted"><?= e($tx['description']) ?></small></td>
-                                <td><?= date('d/m/Y H:i:s', strtotime($tx['created_at'])) ?></td>
+                                <td class="d-none d-md-table-cell fw-bold small"><?= money($tx['balance_after']) ?></td>
+                                <td class="d-none d-sm-table-cell"><small class="text-muted small"><?= e($tx['description']) ?></small></td>
+                                <td>
+                                    <div class="small" style="font-size: 0.75rem;"><?= date('H:i', strtotime($tx['created_at'])) ?></div>
+                                    <div class="text-muted" style="font-size: 0.65rem;"><?= date('d/m/y', strtotime($tx['created_at'])) ?></div>
+                                </td>
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
