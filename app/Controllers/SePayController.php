@@ -3,17 +3,29 @@
 
 class SePayController extends Controller {
     public function handleWebhook() {
+        // Ghi log chi tiết ra file để debug trên server
+        $logFile = __DIR__ . '/../../storage/logs/sepay_webhook.log';
+        $rawInput = file_get_contents('php://input');
+        $headers = getallheaders();
+        $logEntry = "[" . date('Y-m-d H:i:s') . "] IP: " . ($_SERVER['REMOTE_ADDR'] ?? 'Unknown') . "\n";
+        $logEntry .= "HEADERS: " . json_encode($headers) . "\n";
+        $logEntry .= "BODY: " . $rawInput . "\n";
+        $logEntry .= "------------------------------------------\n";
+        
+        // Tạo thư mục nếu chưa có
+        if (!is_dir(dirname($logFile))) {
+            mkdir(dirname($logFile), 0777, true);
+        }
+        file_put_contents($logFile, $logEntry, FILE_APPEND);
+
         // Lấy dữ liệu từ webhook
-        $input = file_get_contents('php://input');
-        $data = json_decode($input, true);
+        $data = json_decode($rawInput, true);
 
         if (!$data) {
             Logger::error('SePay Webhook: Invalid JSON input');
             $this->json(['success' => false, 'message' => 'Invalid JSON'], 400);
             return;
         }
-
-        Logger::activity('SePay Webhook received: ' . $input);
 
         // Kiểm tra Token bảo mật (nếu có cấu hình)
         $db = Database::getInstance();
@@ -60,6 +72,7 @@ class SePayController extends Controller {
         }
 
         if ($deposit) {
+            file_put_contents($logFile, "[MATCHED] Found deposit request ID: " . $deposit['id'] . "\n", FILE_APPEND);
             // Kiểm tra số tiền (cho phép sai lệch nhỏ nếu cần, nhưng thường bank auto thì nên khớp)
             if (abs($amount - (float)$deposit['amount']) > 1) {
                 Logger::error("SePay Webhook: Amount mismatch. Expected {$deposit['amount']}, got {$amount}");
@@ -89,6 +102,7 @@ class SePayController extends Controller {
             
             $this->json(['success' => true, 'message' => 'Processed successfully']);
         } else {
+            file_put_contents($logFile, "[NOT_FOUND] No pending deposit request for content: $content\n", FILE_APPEND);
             Logger::error("SePay Webhook: No pending deposit request found for content '$content'");
             $this->json(['success' => false, 'message' => 'No matching deposit request found'], 404);
         }
