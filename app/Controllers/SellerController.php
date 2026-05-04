@@ -69,8 +69,7 @@ class SellerController extends Controller {
         $user = Auth::user();
         $data = [
             'name' => trim($_POST['name'] ?? ''),
-            'phone' => trim($_POST['phone'] ?? ''),
-            'telegram_chat_id' => trim($_POST['telegram_chat_id'] ?? '')
+            'phone' => trim($_POST['phone'] ?? '')
         ];
 
         if ($data['name'] === '') {
