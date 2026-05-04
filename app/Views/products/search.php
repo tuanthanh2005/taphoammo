@@ -47,7 +47,9 @@
                                         <a href="<?= url('/product/' . $product['slug']) ?>" class="text-dark text-decoration-none fw-medium small hover-primary d-block text-truncate stretched-link" style="max-width: 150px;" title="<?= e($product['name']) ?>">
                                             <?= e($product['name']) ?>
                                         </a>
-                                        <?php if ($product['sale_price']): ?>
+                                        <?php if (!empty($product['display_price'])): ?>
+                                            <span class="text-primary fw-bold small"><?= e($product['display_price']) ?></span>
+                                        <?php elseif ($product['sale_price']): ?>
                                             <span class="text-danger fw-bold small"><?= money($product['sale_price']) ?></span>
                                         <?php else: ?>
                                             <span class="text-primary fw-bold small"><?= money($product['price']) ?></span>
@@ -121,7 +123,9 @@
                                         <img src="<?= asset($product['thumbnail'] ?? 'images/no-image.png') ?>" class="img-fluid" alt="<?= e($product['name']) ?>" style="max-height: 100%; object-fit: contain;">
                                     </div>
                                     <div class="text-success small fw-bold mt-auto">Tồn kho: <?= $product['stock_quantity'] ?></div>
-                                    <?php if ($product['sale_price']): ?>
+                                    <?php if (!empty($product['display_price'])): ?>
+                                        <div class="fw-bold text-primary fs-6 mt-1"><?= e($product['display_price']) ?></div>
+                                    <?php elseif ($product['sale_price']): ?>
                                         <div class="fw-bold text-danger fs-6 mt-1"><?= money($product['sale_price']) ?></div>
                                         <div class="text-muted text-decoration-line-through" style="font-size: 11px;"><?= money($product['price']) ?></div>
                                     <?php else: ?>

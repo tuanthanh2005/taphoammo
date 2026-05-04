@@ -221,7 +221,9 @@ if (Auth::check()) {
                                         <span class="seller-name"><?= e($product['seller_name']) ?></span>
                                     </div>
                                     <div class="product-price-section">
-                                        <?php if ($product['sale_price']): ?>
+                                        <?php if (!empty($product['display_price'])): ?>
+                                            <div class="price-normal text-gradient-vip fw-bold"><?= e($product['display_price']) ?></div>
+                                        <?php elseif ($product['sale_price']): ?>
                                             <div class="price-sale"><?= money($product['sale_price']) ?></div>
                                             <div class="price-old"><?= money($product['price']) ?></div>
                                         <?php else: ?>
@@ -273,7 +275,9 @@ if (Auth::check()) {
                                             <span><?= e($product['seller_name']) ?></span>
                                         </div>
                                         <div class="product-price-section">
-                                            <?php if ($product['sale_price']): ?>
+                                            <?php if (!empty($product['display_price'])): ?>
+                                                <div class="price-normal text-gradient-vip fw-bold"><?= e($product['display_price']) ?></div>
+                                            <?php elseif ($product['sale_price']): ?>
                                                 <div class="price-sale"><?= money($product['sale_price']) ?></div>
                                             <?php else: ?>
                                                 <div class="price-normal"><?= money($product['price']) ?></div>

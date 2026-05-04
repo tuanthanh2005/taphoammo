@@ -150,6 +150,47 @@ foreach ($categories as $cat) {
                     <!-- Dynamic tips per category -->
                     <div class="category-tips-box mt-3" id="categoryTips"></div>
                 </div>
+
+                <!-- 🔥 SECTION: GÓI SẢN PHẨM (VARIANTS) 🔥 -->
+                <div class="seller-form-section mt-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="seller-section-title mb-0">
+                            <span class="seller-section-icon"><i class="fas fa-layer-group"></i></span>
+                            <span>Gói sản phẩm & Giá (Tùy chọn)</span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enableVariants" name="has_variants" value="1">
+                            <label class="form-check-label fw-bold text-primary" for="enableVariants">Sản phẩm có nhiều gói</label>
+                        </div>
+                    </div>
+                    
+                    <div id="variantsContainer" style="display: none;">
+                        <div class="alert alert-light border border-primary border-opacity-25 mb-3">
+                            <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Bạn có thể tạo các gói như: 1 Tháng, 3 Tháng, Vĩnh viễn... với giá khác nhau.</small>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm table-borderless align-middle" id="variantsTable" style="min-width: 900px;">
+                                <thead class="text-muted small text-uppercase">
+                                    <tr>
+                                        <th style="width: 25%;">Tên gói</th>
+                                        <th style="width: 20%;">Giá / Sale</th>
+                                        <th style="width: 15%;">Số lượng</th>
+                                        <th style="width: 30%;">Nội dung bàn giao</th>
+                                        <th style="width: 5%;" class="text-center">Ghi chú?</th>
+                                        <th style="width: 5%;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Variants will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm w-100 mt-2 border-dashed" id="btnAddVariant">
+                            <i class="fas fa-plus-circle me-1"></i> Thêm gói mới
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- CỘT PHẢI -->
@@ -165,16 +206,24 @@ foreach ($categories as $cat) {
                         <input type="file" name="thumbnail" class="form-control" accept="image/*">
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3" id="mainPriceContainer">
                         <label class="form-label fw-semibold" id="lblPrice">Giá bán *</label>
                         <input type="number" name="price" class="form-control" required min="0" step="1000"
                                id="inputPrice" placeholder="">
                         <div class="form-text" id="priceHelp"></div>
                     </div>
 
-                    <div>
+                    <div id="mainSalePriceContainer">
                         <label class="form-label fw-semibold">Giá khuyến mãi</label>
-                        <input type="number" name="sale_price" class="form-control" min="0" step="1000">
+                        <input type="number" name="sale_price" class="form-control" min="0" step="1000" id="inputSalePrice">
+                    </div>
+
+                    <!-- Ô nhập giá hiển thị khi có nhiều gói -->
+                    <div class="mt-3" id="displayPriceContainer" style="display: none;">
+                        <label class="form-label fw-semibold text-primary">Giá hiển thị giao diện (Ví dụ: 1k - 20k)</label>
+                        <input type="text" name="display_price" class="form-control" id="inputDisplayPrice" 
+                               placeholder="VD: 1.000đ - 20.000đ hoặc Từ 5.000đ">
+                        <div class="form-text">Dùng để hiển thị ngoài trang chủ khi sản phẩm có nhiều gói.</div>
                     </div>
                 </div>
 
@@ -194,8 +243,18 @@ foreach ($categories as $cat) {
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-3 mb-0">
-                        <i class="fas fa-circle-info me-1"></i> Sản phẩm sẽ được tạo trước, sau đó bạn nhập kho và chờ admin duyệt.
+                    <div id="quickStockContainer">
+                        <div class="mt-3 p-3 bg-light rounded-3 border">
+                            <div class="fw-bold small text-primary mb-2"><i class="fas fa-bolt me-1"></i> Nạp hàng nhanh</div>
+                            <div class="mb-2">
+                                <label class="form-label small mb-1">Số lượng nạp hàng</label>
+                                <input type="number" name="main_stock_add" class="form-control form-control-sm" placeholder="VD: 10" min="0">
+                            </div>
+                            <div>
+                                <label class="form-label small mb-1">Nội dung bàn giao</label>
+                                <textarea name="main_stock_content" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách khi nạp hàng"></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -591,6 +650,79 @@ foreach ($categories as $cat) {
     requireNote.addEventListener('change', function() {
         this.dataset.userTouched = 'true';
     });
+
+    // --- LOGIC GÓI SẢN PHẨM (VARIANTS) ---
+    const enableVariants = document.getElementById('enableVariants');
+    const variantsContainer = document.getElementById('variantsContainer');
+    const variantsTableBody = document.querySelector('#variantsTable tbody');
+    const btnAddVariant = document.getElementById('btnAddVariant');
+    const inputPrice = document.getElementById('inputPrice');
+    const inputSalePrice = document.getElementById('inputSalePrice');
+    const mainPriceWrapper = document.getElementById('mainPriceContainer');
+    const mainSalePriceWrapper = document.getElementById('mainSalePriceContainer');
+    const quickStockWrapper = document.getElementById('quickStockContainer');
+    const displayPriceWrapper = document.getElementById('displayPriceContainer');
+
+    enableVariants.addEventListener('change', function() {
+        if (this.checked) {
+            variantsContainer.style.display = 'block';
+            mainPriceWrapper.style.display = 'none';
+            mainSalePriceWrapper.style.display = 'none';
+            displayPriceWrapper.style.display = 'block';
+            quickStockWrapper.style.display = 'none';
+            inputPrice.required = false;
+            if (variantsTableBody.children.length === 0) addVariantRow();
+        } else {
+            variantsContainer.style.display = 'none';
+            mainPriceWrapper.style.display = 'block';
+            mainSalePriceWrapper.style.display = 'block';
+            displayPriceWrapper.style.display = 'none';
+            quickStockWrapper.style.display = 'block';
+            inputPrice.required = true;
+        }
+    });
+
+    function addVariantRow() {
+        const index = variantsTableBody.children.length;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>
+                <input type="text" name="variants[${index}][name]" class="form-control form-control-sm" placeholder="VD: Gói 1 Tháng" required>
+            </td>
+            <td>
+                <div class="input-group input-group-sm mb-1">
+                    <span class="input-group-text bg-light border-0" style="font-size: 0.7rem;">Gốc</span>
+                    <input type="number" name="variants[${index}][price]" class="form-control" placeholder="Giá" required min="0" step="1000">
+                </div>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-light border-0" style="font-size: 0.7rem;">Sale</span>
+                    <input type="number" name="variants[${index}][sale_price]" class="form-control" placeholder="Trống nếu không sale" min="0" step="1000">
+                </div>
+            </td>
+            <td>
+                <input type="number" name="variants[${index}][stock_add]" class="form-control form-control-sm" placeholder="Số lượng nạp..." min="0">
+            </td>
+            <td>
+                <textarea name="variants[${index}][stock_content]" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách khi nạp hàng"></textarea>
+            </td>
+            <td class="text-center">
+                <div class="form-check form-check-inline m-0">
+                    <input class="form-check-input" type="checkbox" name="variants[${index}][require_note]" value="1">
+                </div>
+            </td>
+            <td class="text-end">
+                <button type="button" class="btn btn-link text-danger p-0 btn-remove-variant"><i class="fas fa-times-circle"></i></button>
+            </td>
+        `;
+        variantsTableBody.appendChild(tr);
+
+        tr.querySelector('.btn-remove-variant').addEventListener('click', () => {
+            tr.remove();
+            if (variantsTableBody.children.length === 0) enableVariants.checked = false;
+        });
+    }
+
+    btnAddVariant.addEventListener('click', addVariantRow);
 })();
 </script>
 

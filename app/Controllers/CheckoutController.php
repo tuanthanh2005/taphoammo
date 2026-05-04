@@ -90,6 +90,7 @@ class CheckoutController extends Controller {
         }
 
         $productId = $_POST['product_id'] ?? 0;
+        $variantId = $_POST['variant_id'] ?? null;
         $quantity = (int)($_POST['quantity'] ?? 1);
         $note = trim($_POST['note'] ?? '');
 
@@ -106,6 +107,17 @@ class CheckoutController extends Controller {
             return;
         }
 
+        // Handle Variant
+        $variant = null;
+        if (!empty($variantId)) {
+            $db = Database::getInstance();
+            $variant = $db->fetchOne("SELECT * FROM product_variants WHERE id = ? AND product_id = ?", [$variantId, $productId]);
+            if (!$variant) {
+                $this->instantError('Gói sản phẩm không hợp lệ', $_SERVER['HTTP_REFERER'] ?? '/');
+                return;
+            }
+        }
+
         // Kiểm tra trạng thái người bán
         $db = Database::getInstance();
         $seller = $db->fetchOne("SELECT status FROM users WHERE id = ?", [$product['seller_id']]);
@@ -114,19 +126,29 @@ class CheckoutController extends Controller {
             return;
         }
 
+        // Stock check (can be improved to check variant-specific stock)
         if ($product['stock_quantity'] < $quantity) {
             $this->instantError('Sản phẩm không đủ số lượng trong kho', $_SERVER['HTTP_REFERER'] ?? '/');
             return;
         }
 
-        if (!empty($product['require_note']) && $note === '') {
+        // Ghi chú check: Ưu tiên cài đặt của gói nếu có, nếu không lấy theo sản phẩm chính
+        $finalRequireNote = $variant ? ($variant['require_note'] == 1) : (!empty($product['require_note']));
+        if ($finalRequireNote && $note === '') {
             $this->instantError('Sản phẩm này bắt buộc phải nhập ghi chú', $_SERVER['HTTP_REFERER'] ?? '/');
             return;
         }
 
+        // Giá check: Ưu tiên giá của gói
         $price = $product['sale_price'] ?? $product['price'];
+        if ($variant) {
+            $price = $variant['sale_price'] ?? $variant['price'];
+        }
+
         $item = [
             'product_id' => $product['id'],
+            'variant_id' => $variant ? $variant['id'] : null,
+            'variant_name' => $variant ? $variant['name'] : null,
             'name' => $product['name'],
             'price' => $price,
             'quantity' => $quantity,

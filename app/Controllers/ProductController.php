@@ -97,6 +97,9 @@ class ProductController extends Controller {
             echo "404 - Product Not Found";
             return;
         }
+
+        // Lấy danh sách gói (variants)
+        $variants = $db->fetchAll("SELECT * FROM product_variants WHERE product_id = ? AND status = 'active' ORDER BY price ASC", [$product['id']]);
         
         // Get reviews
         $reviews = $db->fetchAll(
@@ -117,6 +120,7 @@ class ProductController extends Controller {
         
         $this->view('products/show', [
             'product' => $product,
+            'variants' => $variants,
             'reviews' => $reviews,
             'relatedProducts' => $relatedProducts,
             'title' => $product['name'] . ' - AI CỦA TÔI',

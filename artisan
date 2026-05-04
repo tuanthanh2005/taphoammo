@@ -30,7 +30,12 @@ switch ($command) {
         foreach ($files as $file) {
             echo "✓ Đang chạy: " . basename($file) . "\n";
             try {
-                include $file;
+                $migration = include $file;
+                if (is_object($migration) && method_exists($migration, 'up')) {
+                    $db = Database::getInstance();
+                    $migration->up($db);
+                    echo "   [OK] Đã chạy migration thành công\n";
+                }
             } catch (Exception $e) {
                 echo "✗ Lỗi khi chạy " . basename($file) . ": " . $e->getMessage() . "\n";
             }

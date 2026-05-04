@@ -40,6 +40,19 @@ $isFileMode = ($categoryProfile['stock_mode'] ?? 'lines') === 'file';
                     <form action="<?= url('/seller/products/stock/import') ?>" method="POST" enctype="multipart/form-data">
                         <?= csrf_field() ?>
                         <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                        
+                        <?php if (!empty($variants)): ?>
+                            <div class="mb-4">
+                                <label class="form-label fw-bold small"><i class="fas fa-tags me-1 text-primary"></i> Áp dụng cho gói sản phẩm</label>
+                                <select name="variant_id" class="form-select rounded-3">
+                                    <option value="">-- Kho hàng chung (Tất cả gói) --</option>
+                                    <?php foreach ($variants as $v): ?>
+                                        <option value="<?= $v['id'] ?>"><?= e($v['name']) ?> - <?= money($v['sale_price'] ?? $v['price']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <div class="form-text small mt-1">Chọn gói cụ thể nếu hàng bạn nạp chỉ dành riêng cho gói đó.</div>
+                            </div>
+                        <?php endif; ?>
 
                         <?php if ($isFileMode): ?>
                             <div class="mb-4">
@@ -142,6 +155,9 @@ $isFileMode = ($categoryProfile['stock_mode'] ?? 'lines') === 'file';
                                 <thead class="bg-light">
                                     <tr class="text-uppercase small fw-bold text-muted">
                                         <th class="ps-4">Nội dung</th>
+                                        <?php if (!empty($variants)): ?>
+                                            <th>Gói</th>
+                                        <?php endif; ?>
                                         <th>Trạng thái</th>
                                         <th class="pe-4 text-end">Thời gian</th>
                                     </tr>
@@ -161,6 +177,26 @@ $isFileMode = ($categoryProfile['stock_mode'] ?? 'lines') === 'file';
                                                     <code class="bg-light p-1 rounded"><?= e(Helper::truncate($parsed['display_text'], 40)) ?></code>
                                                 <?php endif; ?>
                                             </td>
+                                            <?php if (!empty($variants)): ?>
+                                                <td>
+                                                    <?php 
+                                                    $stockVariant = null;
+                                                    if ($stock['variant_id']) {
+                                                        foreach ($variants as $v) {
+                                                            if ($v['id'] == $stock['variant_id']) {
+                                                                $stockVariant = $v;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    ?>
+                                                    <?php if ($stockVariant): ?>
+                                                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle small"><?= e($stockVariant['name']) ?></span>
+                                                    <?php else: ?>
+                                                        <span class="text-muted small italic">Chung</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                            <?php endif; ?>
                                             <td>
                                                 <?php if ($stock['status'] === 'available'): ?>
                                                     <span class="badge bg-success-subtle text-success rounded-pill px-3">Sẵn sàng</span>

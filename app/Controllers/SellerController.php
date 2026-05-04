@@ -200,7 +200,8 @@ class SellerController extends Controller {
         }
         
         // Validation
-        if (empty($name) || empty($categoryId) || empty($price)) {
+        $hasVariants = isset($_POST['has_variants']);
+        if (empty($name) || empty($categoryId) || (!$hasVariants && empty($price))) {
             Session::setFlash('error', 'Vui lòng nhập đầy đủ thông tin');
             $this->redirect('/seller/products/create');
             return;
@@ -217,8 +218,9 @@ class SellerController extends Controller {
             'slug' => Helper::generateSlug($name) . '-' . time(),
             'short_description' => $shortDescription,
             'description' => $description,
-            'price' => $price,
+            'price' => !empty($price) ? $price : 0,
             'sale_price' => $salePrice ?: null,
+            'display_price' => isset($_POST['display_price']) ? $_POST['display_price'] : null,
             'product_type' => $productType,
             'warranty_days' => $warrantyDays,
             'warranty_note' => $warrantyNote,
@@ -239,6 +241,63 @@ class SellerController extends Controller {
         $productId = $productModel->create($data);
         
         if ($productId) {
+            // Handle Variants
+            if (isset($_POST['has_variants']) && !empty($_POST['variants'])) {
+                $db = Database::getInstance();
+                foreach ($_POST['variants'] as $variant) {
+                    if (empty($variant['name']) || empty($variant['price'])) continue;
+                    
+                    $vId = $db->insert('product_variants', [
+                        'product_id'     => $productId,
+                        'name'           => $variant['name'],
+                        'price'          => $variant['price'],
+                        'sale_price'     => !empty($variant['sale_price']) ? $variant['sale_price'] : null,
+                        'require_note'   => isset($variant['require_note']) ? 1 : 0,
+                        'stock_quantity' => 0,
+                        'status'         => 'active'
+                    ]);
+
+                    // Handle Stock Addition for new variants
+                    $stockAdd = !empty($variant['stock_add']) ? (int)$variant['stock_add'] : 0;
+                    if ($vId && $stockAdd > 0) {
+                        $stockContent = !empty($variant['stock_content']) ? $variant['stock_content'] : 'Bàn giao thủ công';
+                        for ($i = 0; $i < $stockAdd; $i++) {
+                            $db->insert('product_stocks', [
+                                'product_id' => $productId,
+                                'variant_id' => $vId,
+                                'seller_id'  => Auth::id(),
+                                'content'    => $stockContent,
+                                'status'     => 'available'
+                            ]);
+                        }
+                    }
+                }
+                
+                if (!empty($_POST['variants'][0]['price'])) {
+                    $firstPrice = $_POST['variants'][0]['price'];
+                    $firstSale = !empty($_POST['variants'][0]['sale_price']) ? $_POST['variants'][0]['sale_price'] : null;
+                    $productModel->update($productId, ['price' => $firstPrice, 'sale_price' => $firstSale]);
+                }
+            } else {
+                // Handle Main Stock Addition (Quick Import)
+                $mainStockAdd = !empty($_POST['main_stock_add']) ? (int)$_POST['main_stock_add'] : 0;
+                if ($mainStockAdd > 0) {
+                    $mainStockContent = !empty($_POST['main_stock_content']) ? $_POST['main_stock_content'] : 'Bàn giao thủ công';
+                    for ($i = 0; $i < $mainStockAdd; $i++) {
+                        $db->insert('product_stocks', [
+                            'product_id' => $productId,
+                            'variant_id' => null,
+                            'seller_id'  => Auth::id(),
+                            'content'    => $mainStockContent,
+                            'status'     => 'available'
+                        ]);
+                    }
+                }
+            }
+            
+            // Sync stock counts
+            $productModel->updateStock($productId);
+
             Session::setFlash('success', 'Tạo sản phẩm thành công! Vui lòng chờ admin duyệt.');
             $this->redirect('/seller/products/stock/' . $productId);
         } else {
@@ -260,9 +319,13 @@ class SellerController extends Controller {
         $categories = $categoryModel->getActive();
         $selectedCategory = $categoryModel->find($product['category_id']);
         
+        $db = Database::getInstance();
+        $variants = $db->fetchAll("SELECT * FROM product_variants WHERE product_id = ? ORDER BY id ASC", [$id]);
+        
         $this->view('seller/product-edit', [
             'product' => $product,
             'categories' => $categories,
+            'variants' => $variants,
             'categoryProfile' => Helper::getCategoryProductProfile($selectedCategory ?: [])
         ]);
     }
@@ -307,6 +370,7 @@ class SellerController extends Controller {
             'description' => $description,
             'price' => $price,
             'sale_price' => $salePrice ?: null,
+            'display_price' => $_POST['display_price'] ?? null,
             'product_type' => $productType,
             'warranty_days' => $warrantyDays,
             'warranty_note' => $warrantyNote !== '' ? $warrantyNote : ($warrantyDays > 0 ? "Bao hanh {$warrantyDays} ngay" : 'Khong bao hanh'),
@@ -323,6 +387,86 @@ class SellerController extends Controller {
         }
         
         $productModel->update($id, $data);
+        
+        // Handle Variants
+        $db = Database::getInstance();
+        if (isset($_POST['has_variants']) && !empty($_POST['variants'])) {
+            $postedVariantIds = [];
+            foreach ($_POST['variants'] as $v) {
+                if (empty($v['name'])) continue;
+                
+                $variantData = [
+                    'product_id'   => $id,
+                    'name'         => $v['name'],
+                    'price'        => $v['price'],
+                    'sale_price'   => !empty($v['sale_price']) ? $v['sale_price'] : null,
+                    'require_note' => isset($v['require_note']) ? 1 : 0
+                ];
+                
+                $vId = null;
+                if (!empty($v['id'])) {
+                    $vId = (int)$v['id'];
+                    $db->update('product_variants', $variantData, "id = :id", ['id' => $vId]);
+                    $postedVariantIds[] = $vId;
+                } else {
+                    $vId = $db->insert('product_variants', array_merge($variantData, [
+                        'stock_quantity' => 0,
+                        'status'         => 'active'
+                    ]));
+                    if ($vId) $postedVariantIds[] = $vId;
+                }
+
+                // Handle Stock Addition
+                $stockAdd = !empty($v['stock_add']) ? (int)$v['stock_add'] : 0;
+                if ($vId && $stockAdd > 0) {
+                    $stockContent = !empty($v['stock_content']) ? $v['stock_content'] : 'Bàn giao thủ công';
+                    for ($i = 0; $i < $stockAdd; $i++) {
+                        $db->insert('product_stocks', [
+                            'product_id' => $id,
+                            'variant_id' => $vId,
+                            'seller_id'  => Auth::id(),
+                            'content'    => $stockContent,
+                            'status'     => 'available'
+                        ]);
+                    }
+                }
+            }
+            
+            // Delete removed variants
+            if (!empty($postedVariantIds)) {
+                $placeholders = implode(',', array_fill(0, count($postedVariantIds), '?'));
+                $params = array_merge([$id], $postedVariantIds);
+                $db->query("DELETE FROM product_variants WHERE product_id = ? AND id NOT IN ($placeholders)", $params);
+            } else {
+                $db->query("DELETE FROM product_variants WHERE product_id = ?", [$id]);
+            }
+
+            // Sync main price with first variant
+            if (!empty($_POST['variants'][0]['price'])) {
+                $firstPrice = $_POST['variants'][0]['price'];
+                $firstSale = !empty($_POST['variants'][0]['sale_price']) ? $_POST['variants'][0]['sale_price'] : null;
+                $productModel->update($id, ['price' => $firstPrice, 'sale_price' => $firstSale]);
+            }
+        } else {
+            $db->query("DELETE FROM product_variants WHERE product_id = ?", [$id]);
+
+            // Handle Main Stock Addition (Quick Import)
+            $mainStockAdd = !empty($_POST['main_stock_add']) ? (int)$_POST['main_stock_add'] : 0;
+            if ($mainStockAdd > 0) {
+                $mainStockContent = !empty($_POST['main_stock_content']) ? $_POST['main_stock_content'] : 'Bàn giao thủ công';
+                for ($i = 0; $i < $mainStockAdd; $i++) {
+                    $db->insert('product_stocks', [
+                        'product_id' => $id,
+                        'variant_id' => null,
+                        'seller_id'  => Auth::id(),
+                        'content'    => $mainStockContent,
+                        'status'     => 'available'
+                    ]);
+                }
+            }
+        }
+
+        $productModel->updateStock($id);
         
         Session::setFlash('success', 'Cập nhật sản phẩm thành công');
         $this->redirect('/seller/products');
@@ -348,14 +492,14 @@ class SellerController extends Controller {
 
         // 1. Kiểm tra xem có đơn hàng nào đang trong trạng thái xử lý hoặc khiếu nại không
         $pendingOrders = $db->fetchAll("
-            SELECT oi.order_id, o.order_code, u.name as buyer_name, oi.item_status
+            SELECT o.order_code, u.name as buyer_name, oi.item_status
             FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
             JOIN users u ON o.user_id = u.id
             LEFT JOIN disputes d ON oi.id = d.order_item_id
             WHERE oi.product_id = ? 
             AND (oi.item_status = 'processing' OR (d.id IS NOT NULL AND d.status IN ('open', 'under_review')))
-            GROUP BY oi.order_id
+            GROUP BY o.order_code, u.name, oi.item_status
         ", [$id]);
 
         if (!empty($pendingOrders)) {
@@ -403,10 +547,12 @@ class SellerController extends Controller {
             "SELECT * FROM product_stocks WHERE product_id = ? ORDER BY created_at DESC",
             [$id]
         );
+        $variants = $db->fetchAll("SELECT * FROM product_variants WHERE product_id = ?", [$id]);
         
         $this->view('seller/product-stock', [
             'product' => $product,
             'stocks' => $stocks,
+            'variants' => $variants,
             'categoryProfile' => Helper::getCategoryProductProfile($category ?: [])
         ]);
     }
@@ -420,6 +566,7 @@ class SellerController extends Controller {
         CSRF::check();
         
         $productId = $_POST['product_id'] ?? 0;
+        $variantId = !empty($_POST['variant_id']) ? (int)$_POST['variant_id'] : null;
         $stockContent = trim($_POST['stock_content'] ?? '');
         
         $productModel = new Product();
@@ -530,6 +677,7 @@ class SellerController extends Controller {
         foreach ($stockEntries as $entry) {
             $db->insert('product_stocks', [
                 'product_id' => $productId,
+                'variant_id' => $variantId,
                 'seller_id' => Auth::id(),
                 'content' => $entry,
                 'status' => 'available'

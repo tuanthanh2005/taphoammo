@@ -162,10 +162,8 @@
         (function() {
             let loaderTimeout;
             const showLoader = () => {
-                loaderTimeout = setTimeout(() => {
-                    const loader = document.getElementById('global-loader');
-                    if (loader) loader.classList.add('active');
-                }, 500);
+                const loader = document.getElementById('global-loader');
+                if (loader) loader.classList.add('active');
             };
 
             const hideLoader = () => {
@@ -174,13 +172,35 @@
                 if (loader) loader.classList.remove('active');
             };
 
-            window.addEventListener('beforeunload', showLoader);
-            document.addEventListener('submit', (e) => {
-                if (!e.target.hasAttribute('data-no-loader')) showLoader();
+            // Only show loader for actual navigation links
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (!link) return;
+                
+                const href = link.getAttribute('href');
+                const target = link.getAttribute('target');
+
+                // Skip if: no href, anchor, js link, new tab, or special keys
+                if (!href || 
+                    href.startsWith('#') || 
+                    href.startsWith('javascript:') || 
+                    target === '_blank' || 
+                    e.ctrlKey || e.shiftKey || e.metaKey ||
+                    link.classList.contains('no-loader')
+                ) {
+                    return;
+                }
+
+                // Show loader after 300ms delay to avoid flickering for fast pages
+                loaderTimeout = setTimeout(showLoader, 300);
             });
+
             window.addEventListener('pageshow', (event) => {
-                if (event.persisted) hideLoader();
+                hideLoader();
             });
+
+            // Ensure loader is hidden when navigating back/forward
+            window.onpopstate = hideLoader;
         })();
     </script>
 </body>

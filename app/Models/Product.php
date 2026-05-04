@@ -211,6 +211,16 @@ class Product extends Model {
     public function updateStock($productId) {
         $count = $this->getStockCount($productId);
         $this->update($productId, ['stock_quantity' => $count]);
+
+        // Sync variants stock
+        $variants = $this->db->fetchAll("SELECT id FROM product_variants WHERE product_id = ?", [$productId]);
+        foreach ($variants as $v) {
+            $vCount = (int)$this->db->fetchOne(
+                "SELECT COUNT(*) as total FROM product_stocks WHERE variant_id = ? AND status = 'available'",
+                [$v['id']]
+            )['total'];
+            $this->db->query("UPDATE product_variants SET stock_quantity = ? WHERE id = ?", [$vCount, $v['id']]);
+        }
     }
     
     public function getSponsored($limit = 3) {

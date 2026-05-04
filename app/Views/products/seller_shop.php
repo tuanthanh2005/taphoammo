@@ -64,7 +64,9 @@
                             </h6>
                             <div class="mt-auto border-top pt-2">
                                 <div class="product-price mb-1">
-                                    <?php if ($product['sale_price']): ?>
+                                    <?php if (!empty($product['display_price'])): ?>
+                                        <span class="text-primary fw-bold d-block"><?= e($product['display_price']) ?></span>
+                                    <?php elseif ($product['sale_price']): ?>
                                         <span class="text-danger fw-bold d-block"><?= money($product['sale_price']) ?></span>
                                         <small class="text-muted text-decoration-line-through" style="font-size: 11px;"><?= money($product['price']) ?></small>
                                     <?php else: ?>

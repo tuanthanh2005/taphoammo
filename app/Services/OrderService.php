@@ -46,9 +46,10 @@ class OrderService {
                 $adminFeeAmount = $subtotal * ($adminFeePercent / 100);
                 $sellerAmount = $subtotal - $adminFeeAmount;
 
+                $variantId = $item['variant_id'] ?? null;
                 $stocks = $this->db->fetchAll(
-                    "SELECT * FROM product_stocks WHERE product_id = ? AND status = 'available' LIMIT ?",
-                    [$item['product_id'], $item['quantity']]
+                    "SELECT * FROM product_stocks WHERE product_id = ? AND (variant_id = ? OR (? IS NULL AND variant_id IS NULL)) AND status = 'available' LIMIT ?",
+                    [$item['product_id'], $variantId, $variantId, $item['quantity']]
                 );
 
                 if (count($stocks) < $item['quantity']) {
@@ -79,6 +80,8 @@ class OrderService {
                 $orderItemId = $this->db->insert('order_items', [
                     'order_id' => $orderId,
                     'product_id' => $item['product_id'],
+                    'variant_id' => $item['variant_id'] ?? null,
+                    'variant_name' => $item['variant_name'] ?? null,
                     'seller_id' => $item['seller_id'],
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
@@ -163,6 +166,9 @@ class OrderService {
                     $chatMsg .= "Mã đơn: #{$orderCode}\n";
                     $chatMsg .= "Khách hàng: " . ($buyer['name'] ?? 'Khách') . "\n";
                     $chatMsg .= "Sản phẩm: {$item['name']}\n";
+                    if (!empty($item['variant_name'])) {
+                        $chatMsg .= "Gói: {$item['variant_name']}\n";
+                    }
                     $chatMsg .= "Số lượng: {$item['quantity']}\n";
                     $chatMsg .= "Tổng tiền: " . money($subtotal) . "\n";
                     if (!empty($item['note'])) {
@@ -178,6 +184,9 @@ class OrderService {
                         $tgMsg = "🛒 <b>ĐƠN HÀNG MỚI</b>\n";
                         $tgMsg .= "Mã đơn: " . Helper::telegramEscape($orderCode) . "\n";
                         $tgMsg .= "Sản phẩm: " . Helper::telegramEscape($item['name']) . "\n";
+                        if (!empty($item['variant_name'])) {
+                            $tgMsg .= "Gói: " . Helper::telegramEscape($item['variant_name']) . "\n";
+                        }
                         $tgMsg .= "Số lượng: " . Helper::telegramEscape($item['quantity']) . "\n";
                         $tgMsg .= "Tổng tiền: " . money($subtotal) . "\n";
                         if (!empty($item['note'])) {

@@ -1,5 +1,38 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
+<style>
+    .variant-btn {
+        background: #fff;
+        border: 2px solid #e9ecef;
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 600;
+        color: #495057;
+        transition: all 0.2s ease;
+        text-align: left;
+        min-width: 140px;
+    }
+    .variant-btn:hover {
+        border-color: #dee2e6;
+        background: #f8f9fa;
+        transform: translateY(-2px);
+    }
+    .variant-btn.active {
+        background: #e7f5ff;
+        border-color: #0d6efd;
+        color: #0d6efd;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+    }
+    .badge-sale {
+        background: #ff4757;
+        color: white;
+        font-size: 0.65rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-left: 5px;
+    }
+</style>
+
 <div class="product-detail-page bg-light pb-5">
     <!-- Breadcrumbs -->
     <div class="container py-3">
@@ -118,18 +151,81 @@
                         </div>
                     </div>
 
+                    <!-- 🔥 CẤU HÌNH GÓI SẢN PHẨM 🔥 -->
+                    <?php if (!empty($variants)): ?>
+                        <?php 
+                        $firstAvailableIndex = -1;
+                        foreach ($variants as $idx => $v) {
+                            if ($v['stock_quantity'] > 0) {
+                                $firstAvailableIndex = $idx;
+                                break;
+                            }
+                        }
+                        ?>
+                        <style>
+                            .variant-btn.disabled-variant {
+                                opacity: 0.6;
+                                cursor: not-allowed;
+                                border: 1px dashed #ccc !important;
+                                background: #f8f9fa !important;
+                                color: #6c757d !important;
+                            }
+                            .variant-btn.disabled-variant:hover {
+                                background: #f8f9fa !important;
+                                transform: none !important;
+                            }
+                        </style>
+                        <div class="product-variants-section mb-4">
+                            <h6 class="fw-bold text-dark mb-3">Chọn gói sản phẩm:</h6>
+                            <div class="d-flex flex-wrap gap-2" id="variantSelector">
+                                <?php foreach ($variants as $index => $v): ?>
+                                    <?php $isOutOfStock = ($v['stock_quantity'] <= 0); ?>
+                                    <button type="button" 
+                                            class="btn variant-btn <?= $index === $firstAvailableIndex ? 'active' : '' ?> <?= $isOutOfStock ? 'disabled-variant' : '' ?>"
+                                            data-id="<?= $v['id'] ?>"
+                                            data-price="<?= $v['price'] ?>"
+                                            data-sale-price="<?= $v['sale_price'] ?? '' ?>"
+                                            data-require-note="<?= $v['require_note'] ?>"
+                                            data-name="<?= e($v['name']) ?>"
+                                            data-stock="<?= $v['stock_quantity'] ?>"
+                                            <?= $isOutOfStock ? 'disabled' : '' ?>>
+                                        <?= e($v['name']) ?>
+                                        <?php if ($v['sale_price'] && !$isOutOfStock): ?>
+                                            <span class="badge bg-danger ms-1">Giảm giá</span>
+                                        <?php endif; ?>
+                                        <?php if ($isOutOfStock): ?>
+                                            <span class="badge bg-secondary ms-1">Hết hàng</span>
+                                        <?php endif; ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <input type="hidden" name="selected_variant_id" id="selectedVariantId" value="<?= $firstAvailableIndex !== -1 ? $variants[$firstAvailableIndex]['id'] : '' ?>">
+                    <?php else: ?>
+                        <input type="hidden" name="selected_variant_id" id="selectedVariantId" value="">
+                    <?php endif; ?>
+
                     <!-- Price -->
+                    <?php
+                    $displayPrice = $product['price'];
+                    $displaySalePrice = $product['sale_price'];
+                    
+                    if (!empty($variants) && $firstAvailableIndex !== -1) {
+                        $v = $variants[$firstAvailableIndex];
+                        $displayPrice = $v['price'];
+                        $displaySalePrice = $v['sale_price'];
+                    }
+                    ?>
                     <div class="bg-light p-4 rounded-4 mb-4">
-                        <div class="d-flex align-items-center flex-wrap">
-                            <?php if ($product['sale_price']): ?>
-                                <h2 class="text-danger fw-bold mb-0 me-3 fs-1"><?= money($product['sale_price']) ?></h2>
-                                <span
-                                    class="text-muted text-decoration-line-through fs-5"><?= money($product['price']) ?></span>
+                        <div class="d-flex align-items-center flex-wrap" id="mainPriceDisplay">
+                            <?php if ($displaySalePrice): ?>
+                                <h2 class="text-danger fw-bold mb-0 me-3 fs-1"><?= money($displaySalePrice) ?></h2>
+                                <span class="text-muted text-decoration-line-through fs-5"><?= money($displayPrice) ?></span>
                                 <span class="badge bg-danger ms-3 px-2 py-1" style="font-size: 0.8rem;">
-                                    -<?= round((($product['price'] - $product['sale_price']) / $product['price']) * 100) ?>%
+                                    -<?= round((($displayPrice - $displaySalePrice) / $displayPrice) * 100) ?>%
                                 </span>
                             <?php else: ?>
-                                <h2 class="text-primary fw-bold mb-0 fs-1"><?= money($product['price']) ?></h2>
+                                <h2 class="text-primary fw-bold mb-0 fs-1"><?= money($displayPrice) ?></h2>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -193,7 +289,7 @@
                                         <button class="btn btn-outline-secondary border-start-0 px-3" type="button"
                                             onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
                                     </div>
-                                    <div class="ms-3 text-muted small">Có sẵn: <?= $product['stock_quantity'] ?></div>
+                                    <div class="ms-3 text-muted small">Có sẵn: <span id="displayStock"><?= $firstAvailableIndex !== -1 ? $variants[$firstAvailableIndex]['stock_quantity'] : $product['stock_quantity'] ?></span></div>
                                 </div>
 
                                 <div class="row g-2">
@@ -250,45 +346,49 @@
                     <form action="<?= url('/checkout/instant') ?>" method="POST" id="instantPurchaseForm">
                         <?= csrf_field() ?>
                         <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                        <input type="hidden" name="variant_id" id="modal_variant_id" value="">
                         <div class="modal-body">
                             <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
                                 <img src="<?= asset($product['thumbnail'] ?? 'images/no-image.png') ?>"
                                     class="rounded me-3" style="width: 60px; height: 60px; object-fit: cover;">
                                 <div>
-                                    <div class="fw-bold text-dark text-truncate" style="max-width: 250px;">
+                                    <div class="fw-bold text-dark text-truncate" id="modal_product_name" style="max-width: 250px;">
                                         <?= e($product['name']) ?>
                                     </div>
-                                    <div class="text-danger fw-bold">
+                                    <div class="text-muted small" id="modal_variant_name"></div>
+                                    <div class="text-danger fw-bold" id="modal_unit_price">
                                         <?= money($product['sale_price'] ?? $product['price']) ?>
                                     </div>
                                 </div>
                             </div>
-
+                            <!-- Quantity -->
                             <div class="mb-4">
-                                <label class="form-label fw-bold small text-muted text-uppercase">Số lượng muốn
-                                    mua</label>
-                                <div class="input-group input-group-lg shadow-sm">
-                                    <button class="btn btn-outline-secondary border-end-0 px-4" type="button"
-                                        onclick="updateModalQty(-1)"><i class="fas fa-minus"></i></button>
-                                    <input type="number" name="quantity" id="modal_quantity"
-                                        class="form-control text-center fw-bold border-start-0 border-end-0" value="1"
-                                        min="1" max="<?= $product['stock_quantity'] ?>" onchange="updateModalTotal()">
-                                    <button class="btn btn-outline-secondary border-start-0 px-4" type="button"
-                                        onclick="updateModalQty(1)"><i class="fas fa-plus"></i></button>
+                                <label class="form-label fw-bold small text-muted text-uppercase">Số lượng</label>
+                                <div class="d-flex align-items-center">
+                                    <div class="input-group" style="width: 140px;">
+                                        <button class="btn btn-outline-secondary px-3" type="button" onclick="updateModalQty(-1)">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" id="modal_quantity" name="quantity" 
+                                               class="form-control text-center fw-bold" value="1" min="1" 
+                                               max="<?= $product['stock_quantity'] ?>" onchange="updateModalTotal()">
+                                        <button class="btn btn-outline-secondary px-3" type="button" onclick="updateModalQty(1)">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                    <div class="ms-3 text-muted small">Tồn kho: <span id="modal_display_stock"><?= $product['stock_quantity'] ?></span></div>
                                 </div>
-                                <div class="text-end mt-2 small text-muted">Còn lại: <?= $product['stock_quantity'] ?>
-                                    sản phẩm</div>
                             </div>
-
-                            <?php if (!empty($product['require_note'])): ?>
+                            
+                            <!-- Note field (Dynamic) -->
+                            <div id="modal_note_container" style="display: none;">
                                 <div class="mb-4">
                                     <label class="form-label fw-bold small text-muted text-uppercase">Ghi Chú <span
                                             class="text-danger">*</span></label>
                                     <textarea name="note" id="modal_note" class="form-control" rows="2"
-                                        placeholder="Sản phẩm này bắt buộc nhập ghi chú (Ví dụ: Email cần nâng cấp, link profile...)"
-                                        required></textarea>
+                                        placeholder="Sản phẩm này bắt buộc nhập ghi chú (Ví dụ: Email cần nâng cấp, link profile...)"></textarea>
                                 </div>
-                            <?php endif; ?>
+                            </div>
 
                             <div class="p-3 rounded-3" style="background-color: #fff9f0; border: 1px solid #ffeeba;">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -309,28 +409,134 @@
             </div>
         </div>
         <script>
+            // --- LOGIC CHỌN GÓI SẢN PHẨM ---
+            const variantButtons = document.querySelectorAll('.variant-btn');
+            const selectedVariantIdInput = document.getElementById('selectedVariantId');
+            const mainPriceContainer = document.querySelector('.bg-light.p-4.rounded-4.mb-4 .d-flex');
+
+            variantButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    variantButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const id = this.dataset.id;
+                    const price = parseFloat(this.dataset.price);
+                    const salePrice = this.dataset.salePrice ? parseFloat(this.dataset.salePrice) : null;
+                    const requireNote = this.dataset.requireNote == '1';
+                    
+                    selectedVariantIdInput.value = id;
+                    
+                    // Cập nhật giá hiển thị
+                    updateDisplayPrice(price, salePrice);
+
+                    // Cập nhật số lượng tồn kho hiển thị
+                    const stock = parseInt(this.dataset.stock || 0);
+                    const displayStock = document.getElementById('displayStock');
+                    if (displayStock) {
+                        displayStock.textContent = stock;
+                    }
+                    
+                    // Cập nhật giới hạn input số lượng
+                    const pageQty = document.getElementById('page_quantity');
+                    if (pageQty) {
+                        pageQty.max = stock;
+                        if (parseInt(pageQty.value) > stock) pageQty.value = stock > 0 ? 1 : 0;
+                    }
+                });
+            });
+
+            function updateDisplayPrice(price, salePrice) {
+                const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
+                let html = '';
+                if (salePrice) {
+                    const discount = Math.round(((price - salePrice) / price) * 100);
+                    html = `
+                        <h2 class="text-danger fw-bold mb-0 me-3 fs-1">${formatter.format(salePrice).replace('₫', 'đ')}</h2>
+                        <span class="text-muted text-decoration-line-through fs-5">${formatter.format(price).replace('₫', 'đ')}</span>
+                        <span class="badge bg-danger ms-3 px-2 py-1" style="font-size: 0.8rem;">-${discount}%</span>
+                    `;
+                } else {
+                    html = `<h2 class="text-primary fw-bold mb-0 fs-1">${formatter.format(price).replace('₫', 'đ')}</h2>`;
+                }
+                mainPriceContainer.innerHTML = html;
+            }
+
             function openBuyNowModal() {
                 const pageQty = document.getElementById('page_quantity');
                 const modalQty = document.getElementById('modal_quantity');
+                const activeVariant = document.querySelector('.variant-btn.active');
+                
+                // 1. Reset/Clear modal info first
+                document.getElementById('modal_variant_id').value = '';
+                document.getElementById('modal_variant_name').textContent = '';
+                
+                let currentPrice = parseFloat('<?= $product['sale_price'] ?? $product['price'] ?>');
+                let finalRequireNote = <?= !empty($product['require_note']) ? 'true' : 'false' ?>;
+                let currentStock = parseInt('<?= $product['stock_quantity'] ?>');
 
+                // 2. If variant is selected, override with variant data
+                if (activeVariant) {
+                    const vId = activeVariant.dataset.id;
+                    const vName = activeVariant.dataset.name;
+                    currentPrice = parseFloat(activeVariant.dataset.salePrice || activeVariant.dataset.price);
+                    finalRequireNote = activeVariant.dataset.requireNote == '1';
+                    currentStock = parseInt(activeVariant.dataset.stock || 0);
+
+                    document.getElementById('modal_variant_id').value = vId;
+                    document.getElementById('modal_variant_name').textContent = 'Gói: ' + vName;
+                }
+
+                // 3. Update display price & stock
+                const formatter = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND', minimumFractionDigits: 0 });
+                document.getElementById('modal_unit_price').textContent = formatter.format(currentPrice).replace('₫', 'đ');
+                document.getElementById('modal_display_stock').textContent = currentStock;
+
+                // 4. Handle Note Visibility
+                const noteContainer = document.getElementById('modal_note_container');
+                const noteTextarea = document.getElementById('modal_note');
+                
+                if (finalRequireNote) {
+                    noteContainer.style.display = 'block';
+                    noteTextarea.required = true;
+                } else {
+                    noteContainer.style.display = 'none';
+                    noteTextarea.required = false;
+                    noteTextarea.value = ''; 
+                }
+
+                // 5. Sync Quantity
                 if (pageQty && modalQty) {
                     modalQty.value = pageQty.value || 1;
-                    updateModalTotal();
                 }
+                updateModalTotal();
             }
 
             function updateModalQty(change) {
                 const input = document.getElementById('modal_quantity');
+                const activeVariant = document.querySelector('.variant-btn.active');
+                const maxStock = activeVariant ? parseInt(activeVariant.dataset.stock || 0) : <?= $product['stock_quantity'] ?>;
+                
                 let val = parseInt(input.value || 1, 10) + change;
                 if (val < 1) val = 1;
-                if (val > <?= $product['stock_quantity'] ?>) val = <?= $product['stock_quantity'] ?>;
+                if (val > maxStock) val = maxStock;
                 input.value = val;
                 updateModalTotal();
             }
 
             function updateModalTotal() {
-                const qty = parseInt(document.getElementById('modal_quantity').value || 1, 10);
-                const price = <?= $product['sale_price'] ?? $product['price'] ?>;
+                const qtyInput = document.getElementById('modal_quantity');
+                const qty = parseInt(qtyInput.value || 1, 10);
+                
+                // Lấy giá từ gói đang chọn hoặc giá gốc
+                const activeVariant = document.querySelector('.variant-btn.active');
+                let price = 0;
+                
+                if (activeVariant) {
+                    price = parseFloat(activeVariant.dataset.salePrice || activeVariant.dataset.price);
+                } else {
+                    price = parseFloat('<?= $product['sale_price'] ?? $product['price'] ?>');
+                }
+                
                 const total = qty * price;
 
                 const formatter = new Intl.NumberFormat('vi-VN', {
@@ -405,6 +611,12 @@
                             title: 'Thành công',
                             text: data.message,
                             confirmButtonColor: '#198754'
+                        }).then(() => {
+                            if (data.order_id) {
+                                window.location.href = '<?= url('/user/orders/') ?>' + data.order_id;
+                            } else {
+                                window.location.reload();
+                            }
                         });
                     } catch (error) {
                         Swal.fire({
