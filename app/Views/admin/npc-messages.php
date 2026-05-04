@@ -99,7 +99,7 @@
                         </div>
                     </div>
 
-                    <div class="card-body npc-thread">
+                    <div class="card-body npc-thread" id="npcThread">
                         <?php if (empty($messages)): ?>
                             <div class="text-center text-muted py-5">Cuộc trò chuyện chưa có tin nhắn.</div>
                         <?php else: ?>
@@ -127,6 +127,18 @@
                                 </div>
                             <?php endforeach; ?>
                         <?php endif; ?>
+                    </div>
+
+                    <div class="card-footer bg-white border-top p-3">
+                        <form action="<?= url('/admin/npc-messages/reply/' . $selectedConversation['id']) ?>" method="POST" class="d-flex gap-2 align-items-end">
+                            <?= csrf_field() ?>
+                            <div class="flex-grow-1">
+                                <textarea name="message" class="form-control npc-reply-input" rows="2" placeholder="Nhập trả lời với tư cách NPC..." required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary npc-send-btn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
                     </div>
                 <?php endif; ?>
             </div>
@@ -166,7 +178,7 @@
     color: #fff;
 }
 .npc-thread {
-    height: 580px;
+    height: 482px;
     overflow-y: auto;
     background: #f8fafc;
 }
@@ -194,7 +206,25 @@
 .bg-primary-subtle { background-color: rgba(13, 110, 253, 0.1); }
 .bg-secondary-subtle { background-color: rgba(108, 117, 125, 0.1); }
 .min-width-0 { min-width: 0; }
+.npc-reply-input {
+    resize: none;
+    border-radius: 8px;
+}
+.npc-send-btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 8px;
+}
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const thread = document.getElementById('npcThread');
+    if (thread) {
+        thread.scrollTop = thread.scrollHeight;
+    }
+});
+</script>
 
 <?php
 $content = ob_get_clean();

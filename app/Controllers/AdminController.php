@@ -667,6 +667,66 @@ class AdminController extends Controller {
         ]);
     }
 
+    public function replyNpcMessage($id) {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/npc-messages');
+            return;
+        }
+
+        CSRF::check();
+
+        $db = Database::getInstance();
+        $systemUserId = Helper::getSystemUserId();
+        $conversationId = (int)$id;
+        $message = trim($_POST['message'] ?? '');
+
+        if ($message === '') {
+            Session::setFlash('error', 'Vui lòng nhập nội dung trả lời.');
+            $this->redirect('/admin/npc-messages?conversation_id=' . $conversationId);
+            return;
+        }
+
+        $conversation = $db->fetchOne(
+            "SELECT * FROM conversations WHERE id = ? AND (buyer_id = ? OR seller_id = ?) LIMIT 1",
+            [$conversationId, $systemUserId, $systemUserId]
+        );
+
+        if (!$conversation) {
+            Session::setFlash('error', 'Không tìm thấy cuộc trò chuyện NPC.');
+            $this->redirect('/admin/npc-messages');
+            return;
+        }
+
+        $db->beginTransaction();
+        try {
+            $db->insert('messages', [
+                'conversation_id' => $conversationId,
+                'sender_id' => $systemUserId,
+                'message' => $message,
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+
+            $unreadField = ((int)$conversation['buyer_id'] === $systemUserId)
+                ? 'unread_count_seller'
+                : 'unread_count_buyer';
+
+            $db->query(
+                "UPDATE conversations
+                 SET last_message = ?, last_message_at = NOW(), updated_at = NOW(), {$unreadField} = {$unreadField} + 1
+                 WHERE id = ?",
+                [$message, $conversationId]
+            );
+
+            $db->commit();
+            Session::setFlash('success', 'Đã gửi trả lời NPC.');
+        } catch (Exception $e) {
+            $db->rollback();
+            Session::setFlash('error', 'Không thể gửi trả lời: ' . $e->getMessage());
+        }
+
+        $this->redirect('/admin/npc-messages?conversation_id=' . $conversationId);
+    }
+
     public function approveDeposit($id) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/admin/deposits');
