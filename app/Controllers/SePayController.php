@@ -35,7 +35,9 @@ class SePayController extends Controller {
         $headers = getallheaders();
         $receivedToken = '';
         if (isset($headers['Authorization'])) {
-            $receivedToken = str_replace('Bearer ', '', $headers['Authorization']);
+            // SePay có thể gửi 'Apikey YOUR_TOKEN' hoặc 'Bearer YOUR_TOKEN'
+            $receivedToken = $headers['Authorization'];
+            $receivedToken = str_replace(['Bearer ', 'Apikey '], '', $receivedToken);
         }
 
         if ($webhookToken !== '' && $receivedToken !== $webhookToken) {
