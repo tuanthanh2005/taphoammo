@@ -7,7 +7,7 @@ $avatar = $user['avatar'] ?? '';
     <div class="row mb-4 align-items-center">
         <div class="col-md-8">
             <h3 class="fw-bold mb-1">Hồ sơ Seller</h3>
-            <p class="text-muted small mb-0">Cập nhật thông tin tài khoản, Telegram và mật khẩu đăng nhập.</p>
+            <p class="text-muted small mb-0">Cập nhật thông tin tài khoản và mật khẩu đăng nhập.</p>
         </div>
     </div>
 
@@ -53,10 +53,6 @@ $avatar = $user['avatar'] ?? '';
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Số điện thoại</label>
                                 <input type="text" name="phone" class="form-control" value="<?= e($user['phone'] ?? '') ?>" placeholder="Nhập số điện thoại">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Telegram Chat ID</label>
-                                <input type="text" name="telegram_chat_id" class="form-control" value="<?= e($user['telegram_chat_id'] ?? '') ?>" placeholder="Nhập Telegram Chat ID">
                             </div>
                         </div>
                     </div>
