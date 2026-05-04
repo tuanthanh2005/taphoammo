@@ -242,6 +242,11 @@
 
             <!-- Sidebar -->
             <nav id="sellerSidebar" class="sidebar d-lg-block border-end shadow-sm">
+                <!-- Close Button Mobile -->
+                <button class="btn btn-link text-white d-lg-none position-absolute top-0 end-0 mt-3 me-3 fs-4 p-0 sidebar-toggle" type="button">
+                    <i class="fas fa-times"></i>
+                </button>
+
                 <div class="p-4 border-bottom border-dark border-opacity-25">
                     <div class="d-flex align-items-center gap-3">
                         <div class="bg-success bg-opacity-25 p-2 rounded-circle shadow-sm">
@@ -396,21 +401,16 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Mobile Sidebar Toggle
-        const sidebarToggle = document.querySelector('.sidebar-toggle');
-        const sidebarToggleMobile = document.getElementById('sidebarToggleMobile');
+        const sidebarButtons = document.querySelectorAll('.sidebar-toggle, #sidebarToggleMobile');
         const sidebar = document.getElementById('sellerSidebar');
 
-        if (sidebarToggle) {
-            sidebarToggle.addEventListener('click', () => {
+        sidebarButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 sidebar.classList.toggle('show');
             });
-        }
-
-        if (sidebarToggleMobile) {
-            sidebarToggleMobile.addEventListener('click', () => {
-                sidebar.classList.toggle('show');
-            });
-        }
+        });
 
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
