@@ -177,6 +177,11 @@
                                 <?php endif; ?>
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link rounded-pill" href="<?= url('/admin/npc-messages') ?>">
+                                <i class="fas fa-robot me-2 text-warning"></i> TIn nhắn NPC
+                            </a>
+                        </li>
                         <li class="nav-item border-top border-secondary mt-2 pt-2">
                             <a class="nav-link rounded-pill" href="<?= url('/admin/transactions') ?>">
                                 <i class="fas fa-exchange-alt me-2 text-info"></i> Giao dịch

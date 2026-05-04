@@ -584,6 +584,89 @@ class AdminController extends Controller {
         ]);
     }
 
+    public function npcMessages() {
+        $db = Database::getInstance();
+        $systemUserId = Helper::getSystemUserId();
+        $search = trim($_GET['search'] ?? '');
+        $conversationId = isset($_GET['conversation_id']) ? (int)$_GET['conversation_id'] : 0;
+
+        $where = ["(c.buyer_id = :system_user_id OR c.seller_id = :system_user_id_2)"];
+        $params = [
+            'system_user_id' => $systemUserId,
+            'system_user_id_2' => $systemUserId
+        ];
+
+        if ($search !== '') {
+            $where[] = "(u.name LIKE :search_name OR u.email LIKE :search_email OR u.username LIKE :search_username)";
+            $params['search_name'] = '%' . $search . '%';
+            $params['search_email'] = '%' . $search . '%';
+            $params['search_username'] = '%' . $search . '%';
+        }
+
+        $whereClause = implode(' AND ', $where);
+
+        $conversations = $db->fetchAll(
+            "SELECT c.*,
+                    u.id as user_id,
+                    u.name as user_name,
+                    u.username as username,
+                    u.email as user_email,
+                    u.role as user_role,
+                    u.status as user_status,
+                    u.last_active_at,
+                    COALESCE(ms.total_messages, 0) as total_messages,
+                    COALESCE(ms.total_messages, 0) - COALESCE(ms.npc_messages, 0) as user_messages,
+                    COALESCE(ms.npc_messages, 0) as npc_messages
+             FROM conversations c
+             JOIN users u ON u.id = CASE WHEN c.buyer_id = :system_join_id THEN c.seller_id ELSE c.buyer_id END
+             LEFT JOIN (
+                SELECT conversation_id,
+                       COUNT(*) as total_messages,
+                       SUM(CASE WHEN sender_id = :system_count_id THEN 1 ELSE 0 END) as npc_messages
+                FROM messages
+                GROUP BY conversation_id
+             ) ms ON ms.conversation_id = c.id
+             WHERE {$whereClause}
+             ORDER BY COALESCE(c.last_message_at, c.updated_at, c.created_at) DESC",
+            array_merge($params, [
+                'system_count_id' => $systemUserId,
+                'system_join_id' => $systemUserId
+            ])
+        );
+
+        if ($conversationId === 0 && !empty($conversations)) {
+            $conversationId = (int)$conversations[0]['id'];
+        }
+
+        $selectedConversation = null;
+        foreach ($conversations as $conversation) {
+            if ((int)$conversation['id'] === $conversationId) {
+                $selectedConversation = $conversation;
+                break;
+            }
+        }
+
+        $messages = [];
+        if ($selectedConversation) {
+            $messages = $db->fetchAll(
+                "SELECT m.*, u.name as sender_name, u.email as sender_email
+                 FROM messages m
+                 LEFT JOIN users u ON u.id = m.sender_id
+                 WHERE m.conversation_id = ?
+                 ORDER BY m.created_at ASC",
+                [$conversationId]
+            );
+        }
+
+        $this->view('admin/npc-messages', [
+            'conversations' => $conversations,
+            'selectedConversation' => $selectedConversation,
+            'messages' => $messages,
+            'systemUserId' => $systemUserId,
+            'search' => $search
+        ]);
+    }
+
     public function approveDeposit($id) {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/admin/deposits');

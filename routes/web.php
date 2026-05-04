@@ -98,6 +98,7 @@ $router->post('/admin/withdrawals/reject/{id}', [AdminController::class, 'reject
 $router->get('/admin/deposits', [AdminController::class, 'deposits'], [AdminMiddleware::class]);
 $router->post('/admin/deposits/approve/{id}', [AdminController::class, 'approveDeposit'], [AdminMiddleware::class]);
 $router->post('/admin/deposits/reject/{id}', [AdminController::class, 'rejectDeposit'], [AdminMiddleware::class]);
+$router->get('/admin/npc-messages', [AdminController::class, 'npcMessages'], [AdminMiddleware::class]);
 $router->get('/admin/disputes', [AdminController::class, 'disputes'], [AdminMiddleware::class]);
 $router->post('/admin/disputes/resolve/{id}', [AdminController::class, 'resolveDispute'], [AdminMiddleware::class]);
 $router->get('/admin/categories', [AdminController::class, 'categories'], [AdminMiddleware::class]);
