@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `conversation_id` int(11) NOT NULL,
   `sender_id` int(11) NOT NULL COMMENT 'Người gửi',
   `message` text NOT NULL,
-  `attachment` varchar(255) DEFAULT NULL,
   `is_read` tinyint(1) DEFAULT 0,
   `read_at` datetime DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +49,4 @@ ALTER TABLE `messages`
   ADD CONSTRAINT `fk_msg_sender` FOREIGN KEY (`sender_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 
 -- Thêm cột last_active_at vào bảng users để theo dõi trạng thái online
--- Neu bang messages da ton tai tu truoc va chua co attachment thi chay rieng dong nay:
--- ALTER TABLE `messages` ADD COLUMN `attachment` varchar(255) DEFAULT NULL AFTER `message`;
-
 ALTER TABLE `users` ADD COLUMN `last_active_at` DATETIME DEFAULT NULL AFTER `updated_at`;

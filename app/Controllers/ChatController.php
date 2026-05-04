@@ -83,7 +83,7 @@ class ChatController extends Controller {
             }
 
             // Create message
-            $msgId = $this->messageModel->createChatMessage([
+            $msgId = $this->messageModel->create([
                 'conversation_id' => $conversation['id'],
                 'sender_id' => $senderId,
                 'message' => $message,

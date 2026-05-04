@@ -3,30 +3,6 @@
 
 class Message extends Model {
     protected $table = 'messages';
-    private static $hasAttachmentColumn = null;
-
-    public function createChatMessage($data) {
-        if (!$this->hasAttachmentColumn()) {
-            if (!empty($data['attachment'])) {
-                throw new Exception("Database is missing messages.attachment. Run php update_chat_schema.php or add_chat_attachment_column.php.");
-            }
-
-            unset($data['attachment']);
-        }
-
-        return $this->create($data);
-    }
-
-    private function hasAttachmentColumn() {
-        if (self::$hasAttachmentColumn !== null) {
-            return self::$hasAttachmentColumn;
-        }
-
-        $column = $this->db->fetchOne("SHOW COLUMNS FROM {$this->table} LIKE 'attachment'");
-        self::$hasAttachmentColumn = !empty($column);
-
-        return self::$hasAttachmentColumn;
-    }
 
     public function getMessagesForConversation($conversationId) {
         return $this->db->fetchAll(
