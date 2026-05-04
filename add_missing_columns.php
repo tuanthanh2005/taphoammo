@@ -6,6 +6,17 @@ $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 echo "Checking and adding missing columns...\n\n";
 
+// Check users table
+$columns = $pdo->query('SHOW COLUMNS FROM users')->fetchAll(PDO::FETCH_COLUMN);
+if (!in_array('telegram_chat_id', $columns)) {
+    $pdo->exec('ALTER TABLE users ADD COLUMN telegram_chat_id VARCHAR(50) DEFAULT NULL AFTER updated_at');
+    echo "✓ Added telegram_chat_id to users\n";
+}
+if (!in_array('max_products', $columns)) {
+    $pdo->exec('ALTER TABLE users ADD COLUMN max_products INT DEFAULT 10 AFTER telegram_chat_id');
+    echo "✓ Added max_products to users\n";
+}
+
 // Check products table
 $columns = $pdo->query('SHOW COLUMNS FROM products')->fetchAll(PDO::FETCH_COLUMN);
 if (!in_array('deposit_required', $columns)) {
