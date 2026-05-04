@@ -122,4 +122,20 @@ class Conversation extends Model
         );
         return $result['total'] ?? 0;
     }
+
+    public function getLastUnreadNpcMessageId($userId)
+    {
+        $systemUserId = Helper::getSystemUserId();
+        $result = $this->db->fetchOne(
+            "SELECT m.id 
+             FROM messages m 
+             JOIN conversations c ON m.conversation_id = c.id 
+             WHERE (c.buyer_id = ? OR c.seller_id = ?) 
+             AND m.sender_id = ? 
+             AND m.is_read = 0 
+             ORDER BY m.created_at DESC LIMIT 1",
+            [$userId, $userId, $systemUserId]
+        );
+        return $result['id'] ?? null;
+    }
 }

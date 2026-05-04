@@ -55,13 +55,17 @@ class ChatController extends Controller {
             }
 
             // Find or create conversation
-            if ($conversationId) {
+            if ($conversationId && $conversationId !== 'npc') {
                 $conversation = $this->conversationModel->find($conversationId);
                 if (!$conversation || ($conversation['buyer_id'] != $senderId && $conversation['seller_id'] != $senderId)) {
                     ob_end_clean();
                     return $this->json(['success' => false, 'message' => 'Cuộc trò chuyện không hợp lệ']);
                 }
-            } elseif ($recipientId) {
+            } elseif ($recipientId || $conversationId === 'npc') {
+                if ($conversationId === 'npc') {
+                    $recipientId = Helper::getSystemUserId();
+                }
+
                 if ($senderId == $recipientId) {
                     ob_end_clean();
                     return $this->json(['success' => false, 'message' => 'Bạn không thể tự nhắn tin cho chính mình']);
@@ -123,6 +127,7 @@ class ChatController extends Controller {
                     'success' => true,
                     'message' => 'Tin nhắn đã được gửi',
                     'messages' => $messages,
+                    'conversation_id' => $conversation['id'],
                     'current_user_id' => $senderId
                 ]);
             }

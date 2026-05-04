@@ -170,10 +170,28 @@
         pollTimer: null, 
         attachment: null,
         lastUnreadCount: <?= (new Conversation())->getTotalUnread(Auth::id()) ?>,
-        lastNpcMessageId: null,
+        lastNpcMessageId: <?= (new Conversation())->getLastUnreadNpcMessageId(Auth::id()) ?: 'null' ?>,
         activeLastMessageId: null,
         bellSound: new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3')
     };
+
+    function _iwPlaySound(id = null) {
+        if (!id) return;
+        
+        // Tránh kêu quá nhiều tab cùng lúc bằng localStorage
+        const lastPlayed = localStorage.getItem('_iw_last_played');
+        if (lastPlayed === String(id)) return;
+        
+        // Cooldown 2 giây để tránh lag/double trigger
+        const lastTime = parseInt(localStorage.getItem('_iw_last_played_time') || '0');
+        const now = Date.now();
+        if (now - lastTime < 2000) return;
+
+        localStorage.setItem('_iw_last_played', id);
+        localStorage.setItem('_iw_last_played_time', now);
+        
+        _iw.bellSound.play().catch(e => console.log('Audio blocked or failed'));
+    }
 
     function _iwFormatSize(b) {
         if (b < 1024) return b + ' B';
@@ -357,7 +375,7 @@
             if (d.messages.length > 0) {
                 const lastMsg = d.messages[d.messages.length - 1];
                 if (_iw.activeLastMessageId && lastMsg.id > _iw.activeLastMessageId && lastMsg.sender_id != d.current_user_id) {
-                    _iw.bellSound.play().catch(e => {});
+                    _iwPlaySound('msg_' + lastMsg.id);
                 }
                 _iw.activeLastMessageId = lastMsg.id;
             }
@@ -398,9 +416,28 @@
                     el.innerHTML = d.messages.map(m => _iwRenderMsg(m, d.current_user_id)).join('');
                     el.scrollTop = el.scrollHeight;
                 }
+                if (d.conversation_id) {
+                    _iw.activeConvId = d.conversation_id;
+                }
                 _iwLoadConvList();
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi',
+                    text: d.message || 'Không thể gửi tin nhắn',
+                    confirmButtonColor: '#8b5cf6',
+                    target: '#inboxWidget'
+                });
             }
         } catch (e) {
+            console.error('Send error:', e);
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi kết nối',
+                text: 'Không thể kết nối đến máy chủ. Vui lòng thử lại.',
+                confirmButtonColor: '#8b5cf6',
+                target: '#inboxWidget'
+            });
         } finally {
             btn.disabled = false;
             btn.innerHTML = ob;
@@ -429,15 +466,18 @@
                 }
 
                 let shouldPlay = false;
+                let soundId = null;
                 if (data.has_new_npc_message && data.last_npc_message_id !== _iw.lastNpcMessageId) {
                     shouldPlay = true;
+                    soundId = 'npc_' + data.last_npc_message_id;
                     _iw.lastNpcMessageId = data.last_npc_message_id;
                 } else if (data.unread_count > _iw.lastUnreadCount) {
                     shouldPlay = true;
+                    soundId = 'count_' + data.unread_count;
                 }
 
                 if (shouldPlay) {
-                    _iw.bellSound.play().catch(e => console.log('Audio blocked'));
+                    _iwPlaySound(soundId);
                     if (!_iw.open) _iwLoadConvList(); 
                 }
                 
@@ -463,9 +503,20 @@
         document.addEventListener('click', function(e) {
             const w = document.getElementById('inboxWidget');
             const b = document.getElementById('globalChatBubble');
-            if (_iw.open && w && !w.contains(e.target) && b && !b.contains(e.target)) {
-                toggleInboxWidget();
-            }
+            
+            // Nếu widget đang đóng, không làm gì
+            if (!_iw.open) return;
+            
+            // Nếu click vào nút bubble hoặc widget, không làm gì
+            if (w.contains(e.target) || b.contains(e.target)) return;
+            
+            // QUAN TRỌNG: Nếu phần tử bị click đã bị gỡ khỏi DOM (detached), 
+            // nó có thể là icon cũ của nút Send vừa bị thay đổi innerHTML.
+            // Trong trường hợp này, ta không đóng modal.
+            if (e.target.isConnected === false) return;
+            
+            // Nếu click ra ngoài hoàn toàn, đóng widget
+            toggleInboxWidget();
         });
 
         setInterval(checkNotifications, 10000);
