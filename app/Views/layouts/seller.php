@@ -178,12 +178,12 @@
             <nav id="sellerSidebar" class="sidebar d-lg-block border-end shadow-sm">
                 <div class="p-4 border-bottom border-dark border-opacity-25">
                     <div class="d-flex align-items-center gap-3">
-                        <div class="bg-success bg-opacity-20 p-2 rounded-circle">
+                        <div class="bg-success bg-opacity-25 p-2 rounded-circle shadow-sm">
                             <i class="fas fa-store fs-4 text-success"></i>
                         </div>
                         <div>
-                            <h6 class="fw-bold mb-0 text-truncate"><?= e(Auth::user()['name']) ?></h6>
-                            <small class="text-white-50">Seller</small>
+                            <h6 class="fw-bold mb-0 text-white text-truncate"><?= e(Auth::user()['name']) ?></h6>
+                            <small class="text-white-50">Người bán</small>
                         </div>
                     </div>
                 </div>
