@@ -318,27 +318,58 @@ document.addEventListener('DOMContentLoaded', function () {
         presets.forEach(b => b.classList.remove('active'));
     });
 
-    generateBtn.addEventListener('click', () => {
+    generateBtn.addEventListener('click', async () => {
         const amount = parseInt(amountInput.value);
         if (isNaN(amount) || amount < 50000 || amount > 5000000) {
             Swal.fire('Lỗi', 'Số tiền từ 50k - 5M', 'warning');
             return;
         }
 
-        const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-        currentTransferContent = baseTransferContent + '_' + randomSuffix;
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang tạo...';
 
-        const qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?accountName=${encodeURIComponent(accountName)}&addInfo=${encodeURIComponent(currentTransferContent)}&amount=${amount}`;
+        const formData = new FormData();
+        formData.append('amount', amount);
+        formData.append('csrf_token', '<?= csrf_token() ?>');
 
-        qrImage.src = qrUrl;
-        amountText.textContent = formatMoney(amount);
-        contentDisplay.textContent = currentTransferContent;
-        copyBtn.dataset.copy = currentTransferContent;
+        try {
+            const response = await fetch('<?= url('/user/wallet/initiate-deposit') ?>', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                currentTransferContent = result.transfer_code;
+                qrImage.src = result.qr_url;
+                amountText.textContent = formatMoney(result.amount);
+                contentDisplay.textContent = result.transfer_code;
+                copyBtn.dataset.copy = result.transfer_code;
 
-        qrResult.classList.remove('d-none');
-        confirmBtn.classList.remove('d-none');
-        
-        qrResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                qrResult.classList.remove('d-none');
+                
+                // If it's SePay, we might want to hide the manual confirm button or show a message
+                if (result.is_sepay) {
+                    confirmBtn.classList.add('d-none');
+                    // Add a small badge or text saying automatic
+                    const alertBox = qrResult.querySelector('.alert-info');
+                    alertBox.innerHTML = '<i class="fas fa-magic me-2"></i> Hệ thống SePay sẽ tự động cộng tiền sau khi bạn chuyển khoản thành công. Không cần xác nhận thủ công.';
+                    alertBox.className = 'alert alert-success border-0 rounded-4 mb-3 small';
+                } else {
+                    confirmBtn.classList.remove('d-none');
+                }
+
+                qrResult.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                Swal.fire('Lỗi', result.message || 'Không thể tạo yêu cầu', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire('Lỗi', 'Không thể kết nối máy chủ', 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<i class="fas fa-qrcode me-2"></i>TẠO MÃ QR NẠP TIỀN';
+        }
     });
 
     confirmBtn.addEventListener('click', async () => {

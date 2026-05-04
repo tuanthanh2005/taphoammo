@@ -35,6 +35,7 @@ $router->post('/user/orders/{id}/dispute', [UserController::class, 'submitDisput
 $router->post('/user/orders/{id}/review', [UserController::class, 'submitReview'], [AuthMiddleware::class]);
 $router->get('/user/wallet', [UserController::class, 'wallet'], [AuthMiddleware::class]);
 $router->post('/user/wallet/confirm-deposit', [UserController::class, 'confirmDeposit'], [AuthMiddleware::class]);
+$router->post('/user/wallet/initiate-deposit', [UserController::class, 'initiateDeposit'], [AuthMiddleware::class]);
 $router->get('/messages', [ChatController::class, 'userIndex'], [AuthMiddleware::class]);
 $router->get('/user/favorites', [FavoriteController::class, 'index'], [AuthMiddleware::class]);
 $router->post('/api/favorites/toggle', [FavoriteController::class, 'toggle'], [AuthMiddleware::class]);
@@ -121,20 +122,22 @@ $router->post('/admin/menus/delete/{id}', [AdminController::class, 'deleteMenu']
 $router->post('/admin/sellers/update-limit/{id}', [AdminController::class, 'updateSellerLimit'], [AdminMiddleware::class]);
 $router->post('/admin/sellers/toggle-status/{id}', [AdminController::class, 'toggleSellerStatus'], [AdminMiddleware::class]);
 $router->post('/admin/sellers/refund-and-ban/{id}', [AdminController::class, 'refundSellerOrdersAndBan'], [AdminMiddleware::class]);
-$router->post('/admin/users/toggle-status/{id}', [AdminController::class, 'toggleUserStatus'], [AdminMiddleware::class]);
 
 $router->get('/admin/orders', [AdminController::class, 'orders'], [AdminMiddleware::class]);
 $router->get('/admin/orders/{id}', [AdminController::class, 'orderDetail'], [AdminMiddleware::class]);
 
-    $router->get('/admin/settings', [AdminController::class, 'settings'], [AdminMiddleware::class]);
-    $router->post('/admin/settings/update', [AdminController::class, 'updateSettings'], [AdminMiddleware::class]);
-    $router->get('/admin/transactions', [AdminController::class, 'transactions'], [AdminMiddleware::class]);
-    $router->get('/admin/error-logs', [AdminController::class, 'errorLogs'], [AdminMiddleware::class]);
-    $router->get('/admin/bai-viet', [ArticleController::class, 'adminIndex'], [AdminMiddleware::class]);
+$router->get('/admin/settings', [AdminController::class, 'settings'], [AdminMiddleware::class]);
+$router->post('/admin/settings/update', [AdminController::class, 'updateSettings'], [AdminMiddleware::class]);
+$router->get('/admin/transactions', [AdminController::class, 'transactions'], [AdminMiddleware::class]);
+$router->get('/admin/error-logs', [AdminController::class, 'errorLogs'], [AdminMiddleware::class]);
+$router->get('/admin/bai-viet', [ArticleController::class, 'adminIndex'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/store', [ArticleController::class, 'store'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/update/{id}', [ArticleController::class, 'update'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/upload-image', [ArticleController::class, 'uploadImage'], [AdminMiddleware::class]);
 $router->post('/admin/bai-viet/delete/{id}', [ArticleController::class, 'delete'], [AdminMiddleware::class]);
 
-// Public seller shop route (placed at the end to avoid conflicting with /seller/dashboard etc)
+// SePay Webhook
+$router->post('/webhook/sepay', [SePayController::class, 'handleWebhook']);
+
+// Public seller shop route
 $router->get('/seller/{username}', [ProductController::class, 'sellerShop']);

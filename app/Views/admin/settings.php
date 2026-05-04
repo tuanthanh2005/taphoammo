@@ -121,6 +121,52 @@ ob_start();
                     </div>
                 </div>
 
+                <!-- SePay Config -->
+                <div class="col-12 mt-5">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="card-header bg-primary text-white py-3">
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-bolt me-2"></i> Tích hợp SePay (Tự động duyệt nạp tiền)</h6>
+                        </div>
+                        <div class="card-body p-4 bg-light">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <div class="form-check form-switch p-0">
+                                        <label class="form-label small fw-semibold d-block">Trạng thái SePay</label>
+                                        <input type="hidden" name="sepay_enabled" value="0">
+                                        <input class="form-check-input ms-0 me-2" type="checkbox" name="sepay_enabled" value="1" <?= ($settings['sepay_enabled'] ?? 0) ? 'checked' : '' ?>>
+                                        <label class="form-check-label small">Kích hoạt SePay Checkout</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">Chế độ</label>
+                                    <select name="sepay_mode" class="form-select">
+                                        <option value="sandbox" <?= ($settings['sepay_mode'] ?? 'sandbox') === 'sandbox' ? 'selected' : '' ?>>Sandbox (Test)</option>
+                                        <option value="production" <?= ($settings['sepay_mode'] ?? 'sandbox') === 'production' ? 'selected' : '' ?>>Production (Thật)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-semibold">Webhook Token (Bảo mật)</label>
+                                    <input type="text" name="sepay_webhook_token" class="form-control" value="<?= e($settings['sepay_webhook_token'] ?? '') ?>" placeholder="Token để xác thực Webhook">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">SePay Merchant ID</label>
+                                    <input type="text" name="sepay_merchant_id" class="form-control" value="<?= e($settings['sepay_merchant_id'] ?? '') ?>" placeholder="Ví dụ: SP-XXXXXX">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-semibold">SePay API Key</label>
+                                    <input type="text" name="sepay_api_key" class="form-control" value="<?= e($settings['sepay_api_key'] ?? '') ?>" placeholder="spsk_...">
+                                </div>
+                                <div class="col-12 mt-3">
+                                    <div class="alert alert-info border-0 rounded-3 small mb-0">
+                                        <i class="fas fa-info-circle me-2"></i> <strong>Webhook URL:</strong> <code><?= url('/webhook/sepay') ?></code>
+                                        <br>Cấu hình Webhook URL này trên dashboard SePay để nhận thông báo thanh toán tự động.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Telegram Config -->
                 <div class="col-12 mt-5">
                     <h6 class="fw-bold mb-3 text-dark border-start border-4 border-primary ps-3">Thông báo Telegram</h6>

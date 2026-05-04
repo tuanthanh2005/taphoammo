@@ -336,6 +336,100 @@ class UserController extends Controller {
         ]);
     }
 
+    public function initiateDeposit() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->json(['success' => false, 'message' => 'Phương thức không hợp lệ'], 405);
+        }
+
+        try {
+            CSRF::check();
+            $amount = (int)($_POST['amount'] ?? 0);
+            if ($amount < 50000 || $amount > 5000000) {
+                $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
+            }
+
+            $db = Database::getInstance();
+            $userId = Auth::id();
+
+            // Rate limit check
+            $countLastHour = $db->fetchOne(
+                "SELECT COUNT(*) as total FROM deposit_requests WHERE user_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR)",
+                [$userId]
+            )['total'];
+
+            if ($countLastHour >= 10) { // Nâng lên 10 cho thoải mái
+                $this->json(['success' => false, 'message' => 'Bạn đã tạo quá nhiều yêu cầu nạp tiền. Vui lòng thử lại sau.'], 429);
+            }
+
+            $settings = $this->getWalletSettings();
+            $sepayEnabled = ($db->fetchOne("SELECT value FROM settings WHERE key_name = 'sepay_enabled'")['value'] ?? '0') === '1';
+
+            $transferCode = 'NAP' . str_pad((string)$userId, 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time() . $userId), 0, 4));
+            $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);
+
+            $depositRequestModel = new DepositRequest();
+            $depositId = $depositRequestModel->create([
+                'user_id' => $userId,
+                'deposit_code' => $depositCode,
+                'amount' => $amount,
+                'transfer_code' => $transferCode,
+                'bank_code' => trim($settings['deposit_bank_code'] ?? 'mb'),
+                'bank_name' => trim($settings['deposit_bank_name'] ?? 'MB Bank'),
+                'account_name' => trim($settings['deposit_account_name'] ?? ''),
+                'account_number' => trim($settings['deposit_account_number'] ?? ''),
+                'status' => 'pending'
+            ]);
+
+            if ($sepayEnabled) {
+                require_once __DIR__ . '/../Services/SePayService.php';
+                $sepay = new SePayService();
+                $checkout = $sepay->createCheckout([
+                    'order_id' => $depositCode,
+                    'amount' => $amount,
+                    'description' => $transferCode,
+                    'return_url' => url('/user/wallet'),
+                    'cancel_url' => url('/user/wallet'),
+                    // Webhook URL nên là URL tuyệt đối mà SePay có thể gọi tới
+                    'webhook_url' => url('/webhook/sepay') 
+                ]);
+
+                if ($checkout && isset($checkout['success']) && $checkout['success']) {
+                    $this->json([
+                        'success' => true,
+                        'is_sepay' => true,
+                        'checkout_url' => $checkout['data']['checkout_url'] ?? '',
+                        'qr_url' => $checkout['data']['qr_url'] ?? '',
+                        'transfer_code' => $transferCode,
+                        'amount' => $amount
+                    ]);
+                    return;
+                } else {
+                    Logger::error('SePay Checkout Error: ' . json_encode($checkout));
+                    // Fallback to manual if SePay fails
+                }
+            }
+
+            // Standard VietQR fallback
+            $bankCode = trim($settings['deposit_bank_code'] ?? 'mb');
+            $accountNumber = trim($settings['deposit_account_number'] ?? '');
+            $accountName = trim($settings['deposit_account_name'] ?? '');
+            
+            $qrUrl = "https://img.vietqr.io/image/{$bankCode}-{$accountNumber}-compact2.png?accountName=" . urlencode($accountName) . "&addInfo=" . urlencode($transferCode) . "&amount={$amount}";
+
+            $this->json([
+                'success' => true,
+                'is_sepay' => false,
+                'qr_url' => $qrUrl,
+                'transfer_code' => $transferCode,
+                'amount' => $amount
+            ]);
+
+        } catch (Exception $e) {
+            Logger::logException($e);
+            $this->json(['success' => false, 'message' => 'Lỗi hệ thống: ' . $e->getMessage()], 500);
+        }
+    }
+
     public function confirmDeposit() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Phương thức không hợp lệ'], 405);
