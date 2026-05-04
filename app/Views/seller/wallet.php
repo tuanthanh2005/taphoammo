@@ -98,11 +98,11 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th class="ps-3">Mã/Loại</th>
-                        <th>Số tiền</th>
-                        <th class="d-none d-md-table-cell">Số dư sau</th>
-                        <th class="d-none d-sm-table-cell">Mô tả</th>
-                        <th>Thời gian</th>
+                        <th class="ps-2" style="min-width: 80px;">Mã/Loại</th>
+                        <th style="min-width: 90px;">Số tiền</th>
+                        <th style="min-width: 90px;">Số dư sau</th>
+                        <th style="min-width: 120px;">Mô tả</th>
+                        <th style="min-width: 70px;">Thời gian</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -113,8 +113,8 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                     <?php else: ?>
                         <?php foreach ($transactions as $tx): ?>
                             <tr>
-                                <td class="ps-3">
-                                    <div class="fw-bold small text-muted">#<?= $tx['id'] ?></div>
+                                <td class="ps-2">
+                                    <div class="fw-bold small text-muted" style="font-size: 0.65rem;">#<?= $tx['id'] ?></div>
                                     <?php
                                     $typeLabels = [
                                         'deposit' => ['success', 'Nạp tiền'],
@@ -128,21 +128,20 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                                     ];
                                     $label = $typeLabels[$tx['type']] ?? ['secondary', $tx['type']];
                                     ?>
-                                    <span class="badge bg-<?= $label[0] ?> py-1" style="font-size: 0.65rem;"><?= $label[1] ?></span>
+                                    <span class="badge bg-<?= $label[0] ?> py-1 px-1" style="font-size: 0.6rem;"><?= $label[1] ?></span>
                                 </td>
                                 <td>
                                     <?php if (in_array($tx['type'], ['purchase', 'admin_fee', 'withdrawal', 'withdrawal_fee'])): ?>
-                                        <div class="text-danger fw-bold small">-<?= money($tx['amount']) ?></div>
+                                        <div class="text-danger fw-bold" style="font-size: 0.75rem;">-<?= money($tx['amount']) ?></div>
                                     <?php else: ?>
-                                        <div class="text-success fw-bold small">+<?= money($tx['amount']) ?></div>
+                                        <div class="text-success fw-bold" style="font-size: 0.75rem;">+<?= money($tx['amount']) ?></div>
                                     <?php endif; ?>
-                                    <div class="d-md-none text-muted" style="font-size: 0.65rem;"><?= money($tx['balance_after']) ?></div>
                                 </td>
-                                <td class="d-none d-md-table-cell fw-bold small"><?= money($tx['balance_after']) ?></td>
-                                <td class="d-none d-sm-table-cell"><small class="text-muted small"><?= e($tx['description']) ?></small></td>
+                                <td class="fw-bold text-muted" style="font-size: 0.75rem;"><?= money($tx['balance_after']) ?></td>
+                                <td><div class="small text-muted" style="font-size: 0.7rem; line-height: 1.2; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><?= e($tx['description']) ?></div></td>
                                 <td>
-                                    <div class="small" style="font-size: 0.75rem;"><?= date('H:i', strtotime($tx['created_at'])) ?></div>
-                                    <div class="text-muted" style="font-size: 0.65rem;"><?= date('d/m/y', strtotime($tx['created_at'])) ?></div>
+                                    <div class="fw-bold" style="font-size: 0.7rem;"><?= date('H:i', strtotime($tx['created_at'])) ?></div>
+                                    <div class="text-muted" style="font-size: 0.6rem;"><?= date('d/m/y', strtotime($tx['created_at'])) ?></div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
