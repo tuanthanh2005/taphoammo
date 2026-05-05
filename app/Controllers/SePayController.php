@@ -31,23 +31,30 @@ class SePayController extends Controller {
         $db = Database::getInstance();
         $webhookToken = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'sepay_webhook_token'")['value'] ?? '';
         
-        // Tùy theo cách SePay gửi token, có thể qua Header Authorization hoặc trong body
         $headers = getallheaders();
         $receivedToken = '';
+        
+        // 1. Thử lấy từ Header Authorization (SePay thường dùng)
         if (isset($headers['Authorization'])) {
-            // SePay có thể gửi 'Apikey YOUR_TOKEN' hoặc 'Bearer YOUR_TOKEN'
-            $receivedToken = $headers['Authorization'];
-            $receivedToken = str_replace(['Bearer ', 'Apikey '], '', $receivedToken);
+            $receivedToken = str_replace(['Bearer ', 'Apikey '], '', $headers['Authorization']);
+        } 
+        // 2. Thử lấy từ Header x-api-key hoặc tương đương
+        elseif (isset($headers['x-api-key'])) {
+            $receivedToken = $headers['x-api-key'];
+        }
+        // 3. Nếu SePay gửi trong body (một số trường hợp)
+        elseif (isset($data['token'])) {
+            $receivedToken = $data['token'];
         }
 
         if ($webhookToken !== '' && $receivedToken !== $webhookToken) {
+            file_put_contents($logFile, "[AUTH_FAILED] Received: $receivedToken, Expected: $webhookToken\n", FILE_APPEND);
             Logger::error('SePay Webhook: Invalid token');
             $this->json(['success' => false, 'message' => 'Unauthorized'], 401);
             return;
         }
 
         // Xử lý giao dịch
-        // SePay gửi nội dung chuyển khoản trong trường 'content' hoặc 'description'
         $content = $data['content'] ?? $data['description'] ?? '';
         $amount = (float)($data['transferAmount'] ?? $data['amount_in'] ?? 0);
         $transactionId = $data['id'] ?? $data['transaction_id'] ?? '';
@@ -57,37 +64,35 @@ class SePayController extends Controller {
             return;
         }
 
-        // Tìm yêu cầu nạp tiền khớp với nội dung chuyển khoản
-        // Nội dung thường có dạng NAP0001_XXXX
+        // Tìm yêu cầu nạp tiền
         $depositRequestModel = new DepositRequest();
-        
-        // Thử tìm theo transfer_code (nội dung chuyển khoản)
+        $deposit = null;
+
+        // Thử tìm chính xác theo nội dung
         $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE transfer_code = ? AND status = 'pending'", [$content]);
 
-        // Nếu không tìm thấy bằng nội dung chính xác, thử tìm theo pattern trong description
+        // Nếu không thấy, dùng Regex để bóc tách mã nạp tiền từ nội dung chuyển khoản
         if (!$deposit) {
-            // SePay có thể gộp nhiều thứ vào description, ta thử regex để tìm mã NAPxxxx
-            if (preg_match('/NAP\d+_[A-Z0-9]{4}/i', $content, $matches)) {
-                $foundCode = strtoupper($matches[0]);
-                $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE transfer_code = ? AND status = 'pending'", [$foundCode]);
+            // Hỗ trợ các định dạng: NAP123_ABCD, NAPUSER 123, NAPSELLER 123, NAP00062377
+            if (preg_match('/(NAPUSER\s*\d+|NAPSELLER\s*\d+|NAP\d+_[A-Z0-9]+|NAP\d+)/i', $content, $matches)) {
+                $foundCode = strtoupper(trim($matches[0]));
+                file_put_contents($logFile, "[DEBUG] Extracted code: $foundCode\n", FILE_APPEND);
+                // Chuẩn hóa dấu cách nếu có (Ví dụ "NAPUSER 1" thành "NAPUSER 1")
+                $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE (transfer_code = ? OR transfer_code = ?) AND status = 'pending'", [$foundCode, str_replace(' ', '', $foundCode)]);
             }
         }
 
         if ($deposit) {
             file_put_contents($logFile, "[MATCHED] Found deposit request ID: " . $deposit['id'] . "\n", FILE_APPEND);
-            // Kiểm tra số tiền (cho phép sai lệch nhỏ nếu cần, nhưng thường bank auto thì nên khớp)
-            if (abs($amount - (float)$deposit['amount']) > 1) {
-                Logger::error("SePay Webhook: Amount mismatch. Expected {$deposit['amount']}, got {$amount}");
-                // Chúng ta vẫn có thể duyệt nếu admin muốn, hoặc treo lại. 
-                // Ở đây ta cứ duyệt đúng số tiền thực nhận.
-            }
-
+            
             // Thực hiện cộng tiền
             $walletService = new WalletService();
+            $walletType = (strpos(strtoupper($deposit['transfer_code']), 'NAPSELLER') !== false) ? 'seller_deposit' : 'deposit';
+            
             $walletService->addMoney(
                 $deposit['user_id'],
                 $amount,
-                'deposit',
+                $walletType === 'seller_deposit' ? 'deposit' : 'deposit', // Loại giao dịch
                 'deposit_request',
                 $deposit['id'],
                 "Nạp tiền tự động qua SePay (GD: $transactionId)"
@@ -101,11 +106,9 @@ class SePayController extends Controller {
             ]);
 
             Logger::activity("SePay: Automatically approved deposit #{$deposit['id']} for User #{$deposit['user_id']}");
-            
             $this->json(['success' => true, 'message' => 'Processed successfully']);
         } else {
             file_put_contents($logFile, "[NOT_FOUND] No pending deposit request for content: $content\n", FILE_APPEND);
-            Logger::error("SePay Webhook: No pending deposit request found for content '$content'");
             $this->json(['success' => false, 'message' => 'No matching deposit request found'], 404);
         }
     }
