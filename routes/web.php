@@ -36,6 +36,7 @@ $router->post('/user/orders/{id}/review', [UserController::class, 'submitReview'
 $router->get('/user/wallet', [UserController::class, 'wallet'], [AuthMiddleware::class]);
 $router->post('/user/wallet/confirm-deposit', [UserController::class, 'confirmDeposit'], [AuthMiddleware::class]);
 $router->post('/user/wallet/initiate-deposit', [UserController::class, 'initiateDeposit'], [AuthMiddleware::class]);
+$router->get('/api/deposit/check-status', [UserController::class, 'checkDepositStatus'], [AuthMiddleware::class]);
 $router->get('/messages', [ChatController::class, 'userIndex'], [AuthMiddleware::class]);
 $router->get('/user/favorites', [FavoriteController::class, 'index'], [AuthMiddleware::class]);
 $router->post('/api/favorites/toggle', [FavoriteController::class, 'toggle'], [AuthMiddleware::class]);

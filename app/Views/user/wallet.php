@@ -282,6 +282,28 @@ $depositPresets = [50000, 100000, 200000, 500000, 1000000, 2000000];
 .bank-item:last-child { border-bottom: none; }
 .card { transition: transform 0.2s ease; }
 .card:hover { transform: translateY(-2px); }
+
+/* Pulse Loader */
+.pulse-loader {
+    width: 20px;
+    height: 20px;
+    background-color: #6366f1;
+    border-radius: 50%;
+    position: relative;
+}
+.pulse-loader::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: inherit;
+    border-radius: inherit;
+    animation: pulse 1.5s ease-out infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(3.5); opacity: 0; }
+}
 </style>
 
 <script>
@@ -297,6 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const copyBtn = document.getElementById('copyContentBtn');
     
     let currentTransferContent = '';
+    let pollingInterval = null;
     const baseTransferContent = '<?= $baseTransferContent ?>';
     const bankCode = '<?= $bankCode ?>';
     const accountNumber = '<?= $accountNumber ?>';
@@ -320,6 +343,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     generateBtn.addEventListener('click', async () => {
         const amount = parseInt(amountInput.value);
+        
+        if (pollingInterval) clearInterval(pollingInterval);
+
         if (isNaN(amount) || amount < 50000 || amount > 5000000) {
             Swal.fire('Lỗi', 'Số tiền từ 50k - 5M', 'warning');
             return;
@@ -349,13 +375,15 @@ document.addEventListener('DOMContentLoaded', function () {
                 qrResult.classList.remove('d-none');
                 
                 // If it's SePay, we might want to hide the manual confirm button or show a message
-                if (result.is_sepay) {
+                if (result.is_sepay || bankCode.toLowerCase() === 'kienlongbank' || bankCode.toLowerCase() === 'klb') {
+                    document.getElementById('autoLoadingStatus').classList.remove('d-none');
                     confirmBtn.classList.add('d-none');
-                    // Add a small badge or text saying automatic
-                    const alertBox = qrResult.querySelector('.alert-info');
-                    alertBox.innerHTML = '<i class="fas fa-magic me-2"></i> Hệ thống SePay sẽ tự động cộng tiền sau khi bạn chuyển khoản thành công. Không cần xác nhận thủ công.';
+                    const alertBox = document.getElementById('depositInfoBox');
+                    alertBox.innerHTML = '<i class="fas fa-magic me-2"></i> Hệ thống SePay sẽ tự động cộng tiền sau khi bạn chuyển khoản thành công.';
                     alertBox.className = 'alert alert-success border-0 rounded-4 mb-3 small';
+                    startPolling(result.transfer_code);
                 } else {
+                    document.getElementById('autoLoadingStatus').classList.add('d-none');
                     confirmBtn.classList.remove('d-none');
                 }
 
@@ -371,6 +399,31 @@ document.addEventListener('DOMContentLoaded', function () {
             generateBtn.innerHTML = '<i class="fas fa-qrcode me-2"></i>TẠO MÃ QR NẠP TIỀN';
         }
     });
+
+    function startPolling(transferCode) {
+        if (pollingInterval) clearInterval(pollingInterval);
+        
+        pollingInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`<?= url('/api/deposit/check-status') ?>?code=${transferCode}`);
+                const result = await response.json();
+                
+                if (result.success && result.status === 'approved') {
+                    clearInterval(pollingInterval);
+                    Swal.fire({
+                        title: 'Thành công!',
+                        text: 'Tiền đã được cộng vào tài khoản của bạn.',
+                        icon: 'success',
+                        confirmButtonText: 'Tuyệt vời'
+                    }).then(() => {
+                        location.reload();
+                    });
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+            }
+        }, 3000);
+    }
 
     confirmBtn.addEventListener('click', async () => {
         const amount = parseInt(amountInput.value);

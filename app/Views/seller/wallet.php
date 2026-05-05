@@ -232,7 +232,18 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-success fw-bold p-3 rounded-3 shadow-sm" onclick="showConfirmDeposit()">
+                            <!-- Auto Loading Status -->
+                            <div id="autoLoadingStatus" class="d-none">
+                                <div class="d-flex align-items-center justify-content-center p-3 bg-white rounded-4 border shadow-sm">
+                                    <div class="pulse-loader me-3"></div>
+                                    <div class="text-start">
+                                        <div class="fw-bold text-primary">Đang chờ thanh toán...</div>
+                                        <div class="small text-muted">Hệ thống sẽ tự động cộng tiền khi nhận được</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="confirmDepositBtn" class="btn btn-success fw-bold p-3 rounded-3 shadow-sm" onclick="showConfirmDeposit()">
                                 <i class="fas fa-paper-plane me-2"></i> XÁC NHẬN ĐÃ CHUYỂN TIỀN
                             </button>
                             <button type="button" class="btn btn-link text-muted text-decoration-none small" onclick="backToStep1()">
@@ -315,11 +326,13 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
 </div>
 
 <script>
+let pollingInterval = null;
+
 function setAmount(amount) {
     document.getElementById('depositAmount').value = amount;
 }
 
-function generateQR() {
+async function generateQR() {
     const amount = document.getElementById('depositAmount').value;
     if (!amount || amount < 100000) {
         alert('Vui lòng nhập số tiền tối thiểu 100,000đ');
@@ -332,11 +345,30 @@ function generateQR() {
     const accountName = '<?= e($accountName) ?>';
     const bankCode = '<?= e($bankCode) ?>';
 
+    // Gọi API để tạo yêu cầu trong database trước
+    const formData = new FormData();
+    formData.append('amount', amount);
+    formData.append('transfer_code', memo);
+    formData.append('csrf_token', '<?= csrf_token() ?>');
+
+    try {
+        const response = await fetch('<?= url('/seller/wallet/deposit') ?>', {
+            method: 'POST',
+            body: formData
+        });
+        // Ở đây seller controller có thể đang redirect, ta nên kiểm tra lại
+    } catch (e) { console.error(e); }
+
     let qrUrl = '';
     if (bankCode.toLowerCase() === 'kienlongbank' || bankCode.toLowerCase() === 'klb') {
         qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=KienLongBank&amount=${amount}&des=${encodeURIComponent(memo)}`;
+        document.getElementById('autoLoadingStatus').classList.remove('d-none');
+        document.getElementById('confirmDepositBtn').classList.add('d-none');
+        startPolling(memo);
     } else {
         qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
+        document.getElementById('autoLoadingStatus').classList.add('d-none');
+        document.getElementById('confirmDepositBtn').classList.remove('d-none');
     }
     
     document.getElementById('qrImage').src = qrUrl;
@@ -346,7 +378,22 @@ function generateQR() {
     document.getElementById('depositStep2').classList.remove('d-none');
 }
 
+function startPolling(transferCode) {
+    if (pollingInterval) clearInterval(pollingInterval);
+    pollingInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`<?= url('/api/deposit/check-status') ?>?code=${transferCode}`);
+            const result = await response.json();
+            if (result.success && result.status === 'approved') {
+                clearInterval(pollingInterval);
+                location.reload();
+            }
+        } catch (e) {}
+    }, 3000);
+}
+
 function backToStep1() {
+    if (pollingInterval) clearInterval(pollingInterval);
     document.getElementById('depositStep1').classList.remove('d-none');
     document.getElementById('depositStep2').classList.add('d-none');
 }
@@ -374,6 +421,27 @@ function submitDepositForm() {
 }
 .animate__animated {
     animation-duration: 0.5s;
+}
+/* Pulse Loader */
+.pulse-loader {
+    width: 15px;
+    height: 15px;
+    background-color: #6366f1;
+    border-radius: 50%;
+    position: relative;
+}
+.pulse-loader::after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-color: inherit;
+    border-radius: inherit;
+    animation: pulse 1.5s ease-out infinite;
+}
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(3.5); opacity: 0; }
 }
 </style>
 

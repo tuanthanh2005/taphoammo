@@ -1,8 +1,10 @@
 <?php
 // app/Controllers/UserController.php
 
-class UserController extends Controller {
-    private function getWalletSettings() {
+class UserController extends Controller
+{
+    private function getWalletSettings()
+    {
         $db = Database::getInstance();
         $rows = $db->fetchAll(
             "SELECT key_name, value FROM settings WHERE key_name IN (
@@ -35,7 +37,8 @@ class UserController extends Controller {
         return $settings;
     }
 
-    private function sendTelegramMessage($message, $botToken, $chatId) {
+    private function sendTelegramMessage($message, $botToken, $chatId)
+    {
         if (empty($botToken) || empty($chatId)) {
             return false;
         }
@@ -58,58 +61,61 @@ class UserController extends Controller {
         $response = @file_get_contents($url, false, $context);
         return $response !== false;
     }
-    
-    public function dashboard() {
+
+    public function dashboard()
+    {
         $db = Database::getInstance();
         $userId = Auth::id();
-        
+
         // Get statistics
         $stats = [
             'total_orders' => $db->fetchOne("SELECT COUNT(*) as total FROM orders WHERE user_id = ?", [$userId])['total'],
             'total_spent' => $db->fetchOne("SELECT SUM(total_amount) as total FROM orders WHERE user_id = ? AND payment_status = 'paid'", [$userId])['total'] ?? 0
         ];
-        
+
         // Get recent orders
         $recentOrders = $db->fetchAll(
             "SELECT * FROM orders WHERE user_id = ? ORDER BY created_at DESC LIMIT 5",
             [$userId]
         );
-        
+
         // Get wallet
         $walletService = new WalletService();
         $wallet = $walletService->getWallet($userId);
-        
+
         $this->view('user/dashboard', [
             'stats' => $stats,
             'recentOrders' => $recentOrders,
             'wallet' => $wallet
         ]);
     }
-    
-    public function profile() {
+
+    public function profile()
+    {
         $user = Auth::user();
         $this->view('user/profile', ['user' => $user]);
     }
-    
-    public function updateProfile() {
+
+    public function updateProfile()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/user/profile');
             return;
         }
-        
+
         CSRF::check();
-        
+
         $userId = Auth::id();
         $name = $_POST['name'] ?? '';
         $phone = $_POST['phone'] ?? '';
         $telegramChatId = $_POST['telegram_chat_id'] ?? '';
-        
+
         $data = [
             'name' => $name,
             'phone' => $phone,
             'telegram_chat_id' => $telegramChatId
         ];
-        
+
         // Handle avatar upload
         if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
             $upload = Helper::uploadFile($_FILES['avatar'], 'avatars');
@@ -117,59 +123,61 @@ class UserController extends Controller {
                 $data['avatar'] = $upload['path'];
             }
         }
-        
+
         // Update password if provided
         if (!empty($_POST['new_password'])) {
             $currentPassword = $_POST['current_password'] ?? '';
             $newPassword = $_POST['new_password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
-            
+
             $user = Auth::user();
-            
+
             if (!password_verify($currentPassword, $user['password'])) {
                 Session::setFlash('error', 'Mật khẩu hiện tại không đúng');
                 $this->redirect('/user/profile');
                 return;
             }
-            
+
             if ($newPassword !== $confirmPassword) {
                 Session::setFlash('error', 'Mật khẩu xác nhận không khớp');
                 $this->redirect('/user/profile');
                 return;
             }
-            
+
             if (strlen($newPassword) < 6) {
                 Session::setFlash('error', 'Mật khẩu phải có ít nhất 6 ký tự');
                 $this->redirect('/user/profile');
                 return;
             }
-            
+
             $data['password'] = password_hash($newPassword, PASSWORD_DEFAULT);
         }
-        
+
         $userModel = new User();
         $userModel->update($userId, $data);
-        
+
         Session::setFlash('success', 'Cập nhật thông tin thành công');
         $this->redirect('/user/profile');
     }
-    
-    public function orders() {
+
+    public function orders()
+    {
         $orderModel = new Order();
         $page = $_GET['page'] ?? 1;
-        
+
         $orders = $orderModel->getUserOrders(Auth::id(), $page, 10);
-        
+
         $this->view('user/orders', [
             'orders' => $orders,
             'currentPage' => $page
         ]);
     }
-    
-    public function orderDetail($id) {
+
+    public function orderDetail($id)
+    {
         $orderService = new OrderService();
         $order = $orderService->getOrderDetails($id, Auth::id());
-        
+
         if (!$order) {
             http_response_code(404);
             echo "404 - Order Not Found";
@@ -181,7 +189,7 @@ class UserController extends Controller {
         $disputes = $db->fetchAll("SELECT * FROM disputes WHERE order_id = ?", [$id]);
         $disputeCountsByItem = [];
         foreach ($disputes as $d) {
-            $itemId = (int)($d['order_item_id'] ?? 0);
+            $itemId = (int) ($d['order_item_id'] ?? 0);
             if ($itemId > 0) {
                 $disputeCountsByItem[$itemId] = ($disputeCountsByItem[$itemId] ?? 0) + 1;
             }
@@ -210,18 +218,19 @@ class UserController extends Controller {
             'reviewsByProduct' => $reviewsByProduct
         ]);
     }
-    
-    public function submitDispute($id) {
+
+    public function submitDispute($id)
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/user/orders/' . $id);
             return;
         }
 
         CSRF::check();
-        
+
         $reason = $_POST['reason'] ?? 'other';
         $description = trim($_POST['description'] ?? '');
-        $orderItemId = (int)($_POST['order_item_id'] ?? 0);
+        $orderItemId = (int) ($_POST['order_item_id'] ?? 0);
 
         if (empty($description)) {
             Session::setFlash('error', 'Vui lòng nhập chi tiết vấn đề.');
@@ -238,7 +247,7 @@ class UserController extends Controller {
                 $this->redirect('/user/orders/' . $id);
                 return;
             }
-            
+
             for ($i = 0; $i < $count; $i++) {
                 if ($files['error'][$i] === UPLOAD_ERR_OK) {
                     $fileArray = [
@@ -269,7 +278,8 @@ class UserController extends Controller {
         $this->redirect('/user/orders/' . $id);
     }
 
-    public function submitReview($id) {
+    public function submitReview($id)
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/user/orders/' . $id);
             return;
@@ -277,9 +287,9 @@ class UserController extends Controller {
 
         CSRF::check();
 
-        $rating = (int)($_POST['rating'] ?? 5);
+        $rating = (int) ($_POST['rating'] ?? 5);
         $comment = trim($_POST['comment'] ?? '');
-        $productId = (int)($_POST['product_id'] ?? 0);
+        $productId = (int) ($_POST['product_id'] ?? 0);
 
         if ($rating < 1 || $rating > 5) {
             Session::setFlash('error', 'Số sao không hợp lệ.');
@@ -288,7 +298,7 @@ class UserController extends Controller {
         }
 
         $db = Database::getInstance();
-        
+
         // Check if already reviewed
         $exists = $db->fetchOne("SELECT id FROM reviews WHERE user_id = ? AND order_id = ? AND product_id = ?", [Auth::id(), $id, $productId]);
         if ($exists) {
@@ -310,24 +320,26 @@ class UserController extends Controller {
         $this->redirect('/user/orders/' . $id);
     }
 
-    public function disputes() {
+    public function disputes()
+    {
         require_once __DIR__ . '/../Models/Dispute.php';
         $disputeModel = new Dispute();
         $disputes = $disputeModel->getByUser(Auth::id());
-        
+
         $this->view('user/disputes', [
             'disputes' => $disputes
         ]);
     }
-    
-    public function wallet() {
+
+    public function wallet()
+    {
         $walletService = new WalletService();
         $depositRequestModel = new DepositRequest();
         $wallet = $walletService->getWallet(Auth::id());
         $transactions = $walletService->getTransactions(Auth::id(), 10);
         $depositRequests = $depositRequestModel->getUserRequests(Auth::id());
         $walletSettings = $this->getWalletSettings();
-        
+
         $this->view('user/wallet', [
             'wallet' => $wallet,
             'transactions' => $transactions,
@@ -336,14 +348,15 @@ class UserController extends Controller {
         ]);
     }
 
-    public function initiateDeposit() {
+    public function initiateDeposit()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Phương thức không hợp lệ'], 405);
         }
 
         try {
             CSRF::check();
-            $amount = (int)($_POST['amount'] ?? 0);
+            $amount = (int) ($_POST['amount'] ?? 0);
             if ($amount < 50000 || $amount > 5000000) {
                 $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
             }
@@ -364,7 +377,7 @@ class UserController extends Controller {
             $settings = $this->getWalletSettings();
             $sepayEnabled = ($db->fetchOne("SELECT value FROM settings WHERE key_name = 'sepay_enabled'")['value'] ?? '0') === '1';
 
-            $transferCode = 'NAP' . str_pad((string)$userId, 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time() . $userId), 0, 4));
+            $transferCode = 'NAP' . str_pad((string) $userId, 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time() . $userId), 0, 4));
             $depositCode = 'DEP' . date('Ymd') . rand(1000, 9999);
 
             $depositRequestModel = new DepositRequest();
@@ -390,7 +403,7 @@ class UserController extends Controller {
                     'return_url' => url('/user/wallet'),
                     'cancel_url' => url('/user/wallet'),
                     // Webhook URL nên là URL tuyệt đối mà SePay có thể gọi tới
-                    'webhook_url' => url('/webhook/sepay') 
+                    'webhook_url' => url('/webhook/sepay')
                 ]);
 
                 if ($checkout && isset($checkout['success']) && $checkout['success']) {
@@ -413,7 +426,7 @@ class UserController extends Controller {
             $bankCode = trim($settings['deposit_bank_code'] ?? 'KienLongBank');
             $accountNumber = trim($settings['deposit_account_number'] ?? '101499100004608842');
             $accountName = trim($settings['deposit_account_name'] ?? 'TRAN THANH TUAN');
-            
+
             if (strtolower($bankCode) === 'kienlongbank' || strtolower($bankCode) === 'klb') {
                 $qrUrl = "https://qr.sepay.vn/img?acc={$accountNumber}&bank=KienLongBank&amount={$amount}&des=" . urlencode($transferCode);
             } else {
@@ -434,7 +447,8 @@ class UserController extends Controller {
         }
     }
 
-    public function confirmDeposit() {
+    public function confirmDeposit()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->json(['success' => false, 'message' => 'Phương thức không hợp lệ'], 405);
         }
@@ -443,7 +457,7 @@ class UserController extends Controller {
             Logger::activity('Yêu cầu nạp tiền: ' . ($_POST['amount'] ?? 0) . 'đ');
             CSRF::check();
 
-            $amount = (int)($_POST['amount'] ?? 0);
+            $amount = (int) ($_POST['amount'] ?? 0);
             if ($amount < 50000 || $amount > 5000000) {
                 $this->json(['success' => false, 'message' => 'Số tiền nạp phải từ 50.000đ đến 5.000.000đ'], 422);
             }
@@ -475,7 +489,7 @@ class UserController extends Controller {
             $user = Auth::user();
             $transferContent = trim($_POST['transfer_code'] ?? '');
             if (empty($transferContent)) {
-                $transferContent = 'NAP' . str_pad((string)Auth::id(), 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time()), 0, 4));
+                $transferContent = 'NAP' . str_pad((string) Auth::id(), 4, '0', STR_PAD_LEFT) . '_' . strtoupper(substr(md5(time()), 0, 4));
             }
             $supportTelegram = trim($settings['wallet_telegram_support_username'] ?? $settings['telegram_support_username'] ?? '@specademy');
             $depositRequestModel = new DepositRequest();
@@ -516,9 +530,31 @@ class UserController extends Controller {
         } catch (Exception $e) {
             Logger::logException($e);
             $this->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Đã xảy ra lỗi hệ thống: ' . $e->getMessage()
             ], 500);
+        }
+    }
+    public function checkDepositStatus()
+    {
+        $transferCode = $_GET['code'] ?? '';
+        if (empty($transferCode)) {
+            $this->json(['success' => false, 'message' => 'Mã không hợp lệ'], 400);
+        }
+
+        $db = Database::getInstance();
+        $deposit = $db->fetchOne(
+            "SELECT status FROM deposit_requests WHERE user_id = ? AND transfer_code = ? ORDER BY id DESC LIMIT 1",
+            [Auth::id(), $transferCode]
+        );
+
+        if ($deposit) {
+            $this->json([
+                'success' => true,
+                'status' => $deposit['status']
+            ]);
+        } else {
+            $this->json(['success' => false, 'message' => 'Không tìm thấy yêu cầu'], 404);
         }
     }
 }
