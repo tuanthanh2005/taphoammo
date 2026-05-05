@@ -68,65 +68,70 @@ class SePayController extends Controller {
         $depositRequestModel = new DepositRequest();
         $deposit = null;
 
-        // Thử tìm chính xác theo nội dung
-        $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE transfer_code = ? AND status = 'pending'", [$content]);
+        // 1. Thử tìm chính xác theo nội dung nhận được
+        $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE (transfer_code = ? OR REPLACE(transfer_code, '_', '') = ?) AND status = 'pending'", [$content, str_replace('_', '', $content)]);
 
-        // Nếu không thấy, dùng Regex để bóc tách mã nạp tiền từ nội dung chuyển khoản
         if (!$deposit) {
-            // Hỗ trợ các định dạng: NAP123_ABCD, NAPUSER 123, NAPSELLER 123, NAP00062377
-            if (preg_match('/(NAPUSER\s*\d+|NAPSELLER\s*\d+|NAP\d+_[A-Z0-9]+|NAP\d+)/i', $content, $matches)) {
+            file_put_contents($logFile, "[DEBUG] No direct match for content: $content. Trying regex...\n", FILE_APPEND);
+            // 2. Dùng Regex để bóc tách mã nạp tiền (chấp nhận mất dấu gạch dưới)
+            if (preg_match('/(NAPUSER\s*\d+|NAPSELLER\s*\d+|NAP\d+_[A-Z0-9]+|NAP[A-Z0-9]+)/i', $content, $matches)) {
                 $foundCode = strtoupper(trim($matches[0]));
-                file_put_contents($logFile, "[DEBUG] Extracted code: $foundCode\n", FILE_APPEND);
-                // Chuẩn hóa dấu cách nếu có (Ví dụ "NAPUSER 1" thành "NAPUSER 1")
-                $deposit = $db->fetchOne("SELECT * FROM deposit_requests WHERE (transfer_code = ? OR transfer_code = ?) AND status = 'pending'", [$foundCode, str_replace(' ', '', $foundCode)]);
+                $codeWithoutUnderscore = str_replace('_', '', $foundCode);
+                file_put_contents($logFile, "[DEBUG] Regex extracted: $foundCode (Normalized: $codeWithoutUnderscore)\n", FILE_APPEND);
+                
+                $deposit = $db->fetchOne(
+                    "SELECT * FROM deposit_requests WHERE (transfer_code = ? OR REPLACE(transfer_code, '_', '') = ?) AND status = 'pending' ORDER BY id DESC LIMIT 1", 
+                    [$foundCode, $codeWithoutUnderscore]
+                );
+            } else {
+                file_put_contents($logFile, "[DEBUG] Regex could not find any NAP code in content.\n", FILE_APPEND);
             }
         }
 
-        if ($deposit) {
-            file_put_contents($logFile, "[MATCHED] Found deposit request ID: " . $deposit['id'] . " by transfer_code\n", FILE_APPEND);
-        } else {
-            // Nếu vẫn không thấy, thử bóc tách User ID từ mã NAP (Ví dụ: NAP00063960 -> 63960)
-            if (preg_match('/NAP(?:USER|SELLER)?\s*0*(\d+)/i', $foundCode ?? '', $idMatches)) {
+        // 3. Fallback: Tìm theo User ID bóc tách từ mã
+        if (!$deposit && isset($foundCode)) {
+            if (preg_match('/NAP(?:USER|SELLER)?\s*0*(\d+)/i', $foundCode, $idMatches)) {
                 $userId = $idMatches[1];
-                file_put_contents($logFile, "[DEBUG] Falling back to search by User ID: $userId\n", FILE_APPEND);
+                file_put_contents($logFile, "[DEBUG] Fallback: Searching latest pending request for User ID: $userId\n", FILE_APPEND);
                 $deposit = $db->fetchOne(
                     "SELECT * FROM deposit_requests WHERE user_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1",
                     [$userId]
                 );
-                if ($deposit) {
-                    file_put_contents($logFile, "[MATCHED] Found latest pending request ID: " . $deposit['id'] . " for User ID: $userId\n", FILE_APPEND);
-                }
             }
         }
 
         if ($deposit) {
-            file_put_contents($logFile, "[MATCHED] Final match for deposit request ID: " . $deposit['id'] . "\n", FILE_APPEND);
+            file_put_contents($logFile, "[MATCHED] Successfully matched to Deposit Request ID: " . $deposit['id'] . "\n", FILE_APPEND);
             
             // Thực hiện cộng tiền
-            $walletService = new WalletService();
-            // Xác định loại ví (User hay Seller)
-            $walletType = (strpos(strtoupper($deposit['transfer_code']), 'NAPSELLER') !== false) ? 'seller_deposit' : 'deposit';
-            
-            $walletService->addMoney(
-                $deposit['user_id'],
-                $amount,
-                'deposit', // Kiểu giao dịch (thường là deposit cho cả 2)
-                'deposit_request',
-                $deposit['id'],
-                "Nạp tiền tự động qua SePay (GD: $transactionId)"
-            );
+            try {
+                $walletService = new WalletService();
+                $walletService->addMoney(
+                    $deposit['user_id'],
+                    $amount,
+                    'deposit',
+                    'deposit_request',
+                    $deposit['id'],
+                    "Nạp tiền tự động qua SePay (GD: $transactionId)"
+                );
+                file_put_contents($logFile, "[SUCCESS] Money added to User ID: " . $deposit['user_id'] . "\n", FILE_APPEND);
 
-            // Cập nhật trạng thái yêu cầu nạp tiền
-            $depositRequestModel->update($deposit['id'], [
-                'status' => 'approved',
-                'admin_note' => "Duyệt tự động qua SePay. GD: $transactionId",
-                'processed_at' => date('Y-m-d H:i:s')
-            ]);
+                // Cập nhật trạng thái yêu cầu nạp tiền
+                $depositRequestModel->update($deposit['id'], [
+                    'status' => 'approved',
+                    'admin_note' => "Duyệt tự động qua SePay. GD: $transactionId",
+                    'processed_at' => date('Y-m-d H:i:s')
+                ]);
+                file_put_contents($logFile, "[SUCCESS] Deposit request status updated to approved.\n", FILE_APPEND);
 
-            Logger::activity("SePay: Automatically approved deposit #{$deposit['id']} for User #{$deposit['user_id']}");
-            $this->json(['success' => true, 'message' => 'Processed successfully']);
+                Logger::activity("SePay: Automatically approved deposit #{$deposit['id']} for User #{$deposit['user_id']}");
+                $this->json(['success' => true, 'message' => 'Processed successfully']);
+            } catch (Exception $ex) {
+                file_put_contents($logFile, "[ERROR] Failed to add money or update status: " . $ex->getMessage() . "\n", FILE_APPEND);
+                $this->json(['success' => false, 'message' => 'Internal Error'], 500);
+            }
         } else {
-            file_put_contents($logFile, "[NOT_FOUND] No pending deposit request for content: $content\n", FILE_APPEND);
+            file_put_contents($logFile, "[NOT_FOUND] Could not find any pending deposit request matching content or user.\n", FILE_APPEND);
             $this->json(['success' => false, 'message' => 'No matching deposit request found'], 404);
         }
     }
