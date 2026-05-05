@@ -233,7 +233,7 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
 
                         <div class="d-grid gap-2">
                             <!-- Auto Loading Status -->
-                            <div id="autoLoadingStatus" class="d-none">
+                            <div id="autoLoadingStatus" class="mb-3">
                                 <div class="d-flex align-items-center justify-content-center p-3 bg-white rounded-4 border shadow-sm">
                                     <div class="pulse-loader me-3"></div>
                                     <div class="text-start">
@@ -243,9 +243,6 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                                 </div>
                             </div>
 
-                            <button type="button" id="confirmDepositBtn" class="btn btn-success fw-bold p-3 rounded-3 shadow-sm" onclick="showConfirmDeposit()">
-                                <i class="fas fa-paper-plane me-2"></i> XÁC NHẬN ĐÃ CHUYỂN TIỀN
-                            </button>
                             <button type="button" class="btn btn-link text-muted text-decoration-none small" onclick="backToStep1()">
                                 <i class="fas fa-arrow-left me-1"></i> Quay lại sửa số tiền
                             </button>
@@ -253,25 +250,6 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                     </div>
                 </div>
             </form>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Xác nhận nạp tiền -->
-<div class="modal fade" id="confirmDepositModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-sm">
-        <div class="modal-content border-0 shadow-lg">
-            <div class="modal-body p-4 text-center">
-                <div class="mb-3 text-warning">
-                    <i class="fas fa-exclamation-circle fa-4x"></i>
-                </div>
-                <h5 class="fw-bold mb-3">Xác nhận chuyển khoản</h5>
-                <p class="text-muted small mb-4">Bạn chắc chắn đã chuyển khoản đúng số tiền và nội dung yêu cầu chưa?</p>
-                <div class="d-grid gap-2">
-                    <button type="button" class="btn btn-success py-2 fw-bold rounded-3" onclick="submitDepositForm()">Đã chuyển, gửi yêu cầu</button>
-                    <button type="button" class="btn btn-light py-2 fw-bold rounded-3" data-bs-dismiss="modal">Chưa, để tôi kiểm tra lại</button>
-                </div>
-            </div>
         </div>
     </div>
 </div>
@@ -334,10 +312,15 @@ function setAmount(amount) {
 
 async function generateQR() {
     const amount = document.getElementById('depositAmount').value;
+    const generateBtn = document.querySelector('button[onclick="generateQR()"]');
+    
     if (!amount || amount < 100000) {
         alert('Vui lòng nhập số tiền tối thiểu 100,000đ');
         return;
     }
+
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> ĐANG XỬ LÝ...';
 
     const sellerId = '<?= Auth::id() ?>';
     const memo = 'NAPSELLER ' + sellerId;
@@ -352,30 +335,47 @@ async function generateQR() {
     formData.append('csrf_token', '<?= csrf_token() ?>');
 
     try {
-        const response = await fetch('<?= url('/seller/wallet/deposit') ?>', {
+        await fetch('<?= url('/seller/wallet/deposit') ?>', {
             method: 'POST',
             body: formData
         });
-        // Ở đây seller controller có thể đang redirect, ta nên kiểm tra lại
     } catch (e) { console.error(e); }
 
     let qrUrl = '';
     if (bankCode.toLowerCase() === 'kienlongbank' || bankCode.toLowerCase() === 'klb') {
         qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=KienLongBank&amount=${amount}&des=${encodeURIComponent(memo)}`;
-        document.getElementById('autoLoadingStatus').classList.remove('d-none');
-        document.getElementById('confirmDepositBtn').classList.add('d-none');
-        startPolling(memo);
     } else {
         qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
-        document.getElementById('autoLoadingStatus').classList.add('d-none');
-        document.getElementById('confirmDepositBtn').classList.remove('d-none');
     }
     
     document.getElementById('qrImage').src = qrUrl;
     document.getElementById('displayAmount').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     
+    document.getElementById('autoLoadingStatus').classList.remove('d-none');
+    startPolling(memo);
+
     document.getElementById('depositStep1').classList.add('d-none');
     document.getElementById('depositStep2').classList.remove('d-none');
+    
+    // Bắt đầu đếm ngược 60s cho nút quay lại (nếu cần) hoặc chỉ đơn giản là chặn click tiếp
+    startCooldown(60, generateBtn);
+}
+
+function startCooldown(seconds, btn) {
+    let timeLeft = seconds;
+    btn.disabled = true;
+    const originalText = 'XÁC NHẬN & LẤY MÃ QR <i class="fas fa-arrow-right ms-2"></i>';
+    
+    const timer = setInterval(() => {
+        timeLeft--;
+        btn.innerText = `VUI LÒNG CHỜ ${timeLeft}S...`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }, 1000);
 }
 
 function startPolling(transferCode) {
@@ -402,15 +402,6 @@ function copyText(text) {
     navigator.clipboard.writeText(text).then(() => {
         alert('Đã sao chép: ' + text);
     });
-}
-
-function showConfirmDeposit() {
-    const confirmModal = new bootstrap.Modal(document.getElementById('confirmDepositModal'));
-    confirmModal.show();
-}
-
-function submitDepositForm() {
-    document.getElementById('depositForm').submit();
 }
 </script>
 

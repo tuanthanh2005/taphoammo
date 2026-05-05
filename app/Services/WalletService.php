@@ -116,4 +116,33 @@ class WalletService {
             [$userId, $limit]
         );
     }
+
+    public function getCombinedHistory($userId, $page = 1, $perPage = 10) {
+        $offset = ($page - 1) * $perPage;
+        $sql = "
+            (SELECT id, type, amount, balance_after, description, created_at, 'transaction' as source_table 
+             FROM transactions WHERE user_id = ?)
+            UNION
+            (SELECT id, status as type, amount, NULL as balance_after, 
+             CASE 
+                WHEN status = 'rejected' THEN 'Nạp tiền thất bại' 
+                ELSE 'Đang chờ xử lý' 
+             END as description, 
+             created_at, 'deposit_request' as source_table 
+             FROM deposit_requests WHERE user_id = ? AND status != 'approved')
+            ORDER BY created_at DESC 
+            LIMIT ? OFFSET ?
+        ";
+        return $this->db->fetchAll($sql, [$userId, $userId, (int)$perPage, (int)$offset]);
+    }
+
+    public function getCombinedHistoryCount($userId) {
+        $sql = "
+            SELECT (
+                (SELECT COUNT(*) FROM transactions WHERE user_id = ?) + 
+                (SELECT COUNT(*) FROM deposit_requests WHERE user_id = ? AND status != 'approved')
+            ) as total
+        ";
+        return (int)$this->db->fetchOne($sql, [$userId, $userId])['total'];
+    }
 }

@@ -333,17 +333,24 @@ class UserController extends Controller
 
     public function wallet()
     {
+        $page = (int)($_GET['page'] ?? 1);
+        if ($page < 1) $page = 1;
+        $perPage = 10;
+
         $walletService = new WalletService();
-        $depositRequestModel = new DepositRequest();
         $wallet = $walletService->getWallet(Auth::id());
-        $transactions = $walletService->getTransactions(Auth::id(), 10);
-        $depositRequests = $depositRequestModel->getUserRequests(Auth::id());
+        
+        $history = $walletService->getCombinedHistory(Auth::id(), $page, $perPage);
+        $totalItems = $walletService->getCombinedHistoryCount(Auth::id());
+        $totalPages = ceil($totalItems / $perPage);
+
         $walletSettings = $this->getWalletSettings();
 
         $this->view('user/wallet', [
             'wallet' => $wallet,
-            'transactions' => $transactions,
-            'depositRequests' => $depositRequests,
+            'history' => $history,
+            'currentPage' => $page,
+            'totalPages' => $totalPages,
             'walletSettings' => $walletSettings
         ]);
     }
