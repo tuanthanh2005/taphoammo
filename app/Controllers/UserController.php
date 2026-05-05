@@ -373,10 +373,10 @@ class UserController extends Controller {
                 'deposit_code' => $depositCode,
                 'amount' => $amount,
                 'transfer_code' => $transferCode,
-                'bank_code' => trim($settings['deposit_bank_code'] ?? 'mb'),
-                'bank_name' => trim($settings['deposit_bank_name'] ?? 'MB Bank'),
-                'account_name' => trim($settings['deposit_account_name'] ?? ''),
-                'account_number' => trim($settings['deposit_account_number'] ?? ''),
+                'bank_code' => trim($settings['deposit_bank_code'] ?? 'KienLongBank'),
+                'bank_name' => trim($settings['deposit_bank_name'] ?? 'KienLongBank'),
+                'account_name' => trim($settings['deposit_account_name'] ?? 'TRAN THANH TUAN'),
+                'account_number' => trim($settings['deposit_account_number'] ?? '101499100004608842'),
                 'status' => 'pending'
             ]);
 
@@ -409,12 +409,16 @@ class UserController extends Controller {
                 }
             }
 
-            // Standard VietQR fallback
-            $bankCode = trim($settings['deposit_bank_code'] ?? 'mb');
-            $accountNumber = trim($settings['deposit_account_number'] ?? '');
-            $accountName = trim($settings['deposit_account_name'] ?? '');
+            // Standard VietQR or SePay fallback
+            $bankCode = trim($settings['deposit_bank_code'] ?? 'KienLongBank');
+            $accountNumber = trim($settings['deposit_account_number'] ?? '101499100004608842');
+            $accountName = trim($settings['deposit_account_name'] ?? 'TRAN THANH TUAN');
             
-            $qrUrl = "https://img.vietqr.io/image/{$bankCode}-{$accountNumber}-compact2.png?accountName=" . urlencode($accountName) . "&addInfo=" . urlencode($transferCode) . "&amount={$amount}";
+            if (strtolower($bankCode) === 'kienlongbank' || strtolower($bankCode) === 'klb') {
+                $qrUrl = "https://qr.sepay.vn/img?acc={$accountNumber}&bank=KienLongBank&amount={$amount}&des=" . urlencode($transferCode);
+            } else {
+                $qrUrl = "https://img.vietqr.io/image/{$bankCode}-{$accountNumber}-compact2.png?accountName=" . urlencode($accountName) . "&addInfo=" . urlencode($transferCode) . "&amount={$amount}";
+            }
 
             $this->json([
                 'success' => true,
@@ -483,10 +487,10 @@ class UserController extends Controller {
                 'deposit_code' => $depositCode,
                 'amount' => $amount,
                 'transfer_code' => $transferContent,
-                'bank_code' => trim($settings['deposit_bank_code'] ?? 'mb'),
-                'bank_name' => trim($settings['deposit_bank_name'] ?? ''),
-                'account_name' => trim($settings['deposit_account_name'] ?? ''),
-                'account_number' => trim($settings['deposit_account_number'] ?? ''),
+                'bank_code' => trim($settings['deposit_bank_code'] ?? 'KienLongBank'),
+                'bank_name' => trim($settings['deposit_bank_name'] ?? 'KienLongBank'),
+                'account_name' => trim($settings['deposit_account_name'] ?? 'TRAN THANH TUAN'),
+                'account_number' => trim($settings['deposit_account_number'] ?? '101499100004608842'),
                 'status' => 'pending'
             ]);
 

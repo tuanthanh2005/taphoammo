@@ -843,10 +843,10 @@ class SellerController extends Controller {
         $wallet = $walletService->getWallet(Auth::id());
         $transactions = $walletService->getTransactions(Auth::id(), 10);
         $walletSettings = [
-            'deposit_bank_code' => Helper::getSettingValue('deposit_bank_code', 'mb'),
-            'deposit_bank_name' => Helper::getSettingValue('deposit_bank_name', 'MB Bank'),
+            'deposit_bank_code' => Helper::getSettingValue('deposit_bank_code', 'KienLongBank'),
+            'deposit_bank_name' => Helper::getSettingValue('deposit_bank_name', 'KienLongBank'),
             'deposit_account_name' => Helper::getSettingValue('deposit_account_name', 'TRAN THANH TUAN'),
-            'deposit_account_number' => Helper::getSettingValue('deposit_account_number', '0783704196'),
+            'deposit_account_number' => Helper::getSettingValue('deposit_account_number', '101499100004608842'),
             'wallet_telegram_support_username' => Helper::getWalletTelegramSettings()['support_username'],
             'wallet_telegram_support_url' => Helper::getWalletTelegramSettings()['support_url'],
         ];
@@ -915,10 +915,10 @@ class SellerController extends Controller {
         $transferCode = 'NAPSELLER' . str_pad((string)$userId, 4, '0', STR_PAD_LEFT);
         $remaining = 5 - ($recentCount['cnt'] + 1); // Số lần còn lại sau khi tạo
         $walletTelegram = Helper::getWalletTelegramSettings();
-        $bankCode = Helper::getSettingValue('deposit_bank_code', 'mb');
-        $bankName = Helper::getSettingValue('deposit_bank_name', 'MB Bank');
+        $bankCode = Helper::getSettingValue('deposit_bank_code', 'KienLongBank');
+        $bankName = Helper::getSettingValue('deposit_bank_name', 'KienLongBank');
         $accountName = Helper::getSettingValue('deposit_account_name', 'TRAN THANH TUAN');
-        $accountNumber = Helper::getSettingValue('deposit_account_number', '0783704196');
+        $accountNumber = Helper::getSettingValue('deposit_account_number', '101499100004608842');
         
         $depositId = $db->insert('deposit_requests', [
             'user_id'        => $userId,

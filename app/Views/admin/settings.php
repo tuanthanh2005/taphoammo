@@ -104,19 +104,19 @@ ob_start();
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label small fw-semibold">Mã ngân hàng</label>
-                            <input type="text" name="deposit_bank_code" class="form-control" value="<?= e($settings['deposit_bank_code'] ?? 'mb') ?>" placeholder="mb, vietinbank...">
+                            <input type="text" name="deposit_bank_code" class="form-control" value="<?= e($settings['deposit_bank_code'] ?? 'KienLongBank') ?>" placeholder="KienLongBank, mb, vietinbank...">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-semibold">Tên ngân hàng</label>
-                            <input type="text" name="deposit_bank_name" class="form-control" value="<?= e($settings['deposit_bank_name'] ?? 'MB Bank') ?>">
+                            <input type="text" name="deposit_bank_name" class="form-control" value="<?= e($settings['deposit_bank_name'] ?? 'KienLongBank') ?>">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-semibold">Chủ tài khoản</label>
-                            <input type="text" name="deposit_account_name" class="form-control" value="<?= e($settings['deposit_account_name'] ?? '') ?>">
+                            <input type="text" name="deposit_account_name" class="form-control" value="<?= e($settings['deposit_account_name'] ?? 'TRAN THANH TUAN') ?>">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label small fw-semibold">Số tài khoản</label>
-                            <input type="text" name="deposit_account_number" class="form-control" value="<?= e($settings['deposit_account_number'] ?? '') ?>">
+                            <input type="text" name="deposit_account_number" class="form-control" value="<?= e($settings['deposit_account_number'] ?? '101499100004608842') ?>">
                         </div>
                     </div>
                 </div>

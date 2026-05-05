@@ -1,10 +1,10 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
 <?php
-$bankCode = trim($walletSettings['deposit_bank_code'] ?? 'mb');
-$bankName = trim($walletSettings['deposit_bank_name'] ?? 'MB Bank');
+$bankCode = trim($walletSettings['deposit_bank_code'] ?? 'KienLongBank');
+$bankName = trim($walletSettings['deposit_bank_name'] ?? 'KienLongBank');
 $accountName = trim($walletSettings['deposit_account_name'] ?? 'TRAN THANH TUAN');
-$accountNumber = trim($walletSettings['deposit_account_number'] ?? '0783704196');
+$accountNumber = trim($walletSettings['deposit_account_number'] ?? '101499100004608842');
 $supportTelegram = trim($walletSettings['wallet_telegram_support_username'] ?? $walletSettings['telegram_support_username'] ?? '@specademy');
 $supportTelegramUrl = trim($walletSettings['wallet_telegram_support_url'] ?? $walletSettings['telegram_support_url'] ?? 'https://t.me/specademy');
 $baseTransferContent = 'NAP' . str_pad((string) Auth::id(), 4, '0', STR_PAD_LEFT);

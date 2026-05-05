@@ -1,8 +1,9 @@
 <?php ob_start(); ?>
 <?php
-$bankName = trim($walletSettings['deposit_bank_name'] ?? 'MB Bank');
+$bankCode = trim($walletSettings['deposit_bank_code'] ?? 'KienLongBank');
+$bankName = trim($walletSettings['deposit_bank_name'] ?? 'KienLongBank');
 $accountName = trim($walletSettings['deposit_account_name'] ?? 'TRAN THANH TUAN');
-$accountNumber = trim($walletSettings['deposit_account_number'] ?? '0783704196');
+$accountNumber = trim($walletSettings['deposit_account_number'] ?? '101499100004608842');
 $walletSupportTelegram = trim($walletSettings['wallet_telegram_support_username'] ?? '@specademy');
 $walletSupportTelegramUrl = trim($walletSettings['wallet_telegram_support_url'] ?? 'https://t.me/specademy');
 ?>
@@ -329,10 +330,14 @@ function generateQR() {
     const memo = 'NAPSELLER ' + sellerId;
     const accountNumber = '<?= e($accountNumber) ?>';
     const accountName = '<?= e($accountName) ?>';
-    const bankId = 'MB'; // Mặc định MB Bank
+    const bankCode = '<?= e($bankCode) ?>';
 
-    // URL VietQR: https://img.vietqr.io/image/<BANK_ID>-<ACCOUNT_NUMBER>-<TEMPLATE>.png?amount=<AMOUNT>&addInfo=<MEMO>&accountName=<ACCOUNT_NAME>
-    const qrUrl = `https://img.vietqr.io/image/${bankId}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
+    let qrUrl = '';
+    if (bankCode.toLowerCase() === 'kienlongbank' || bankCode.toLowerCase() === 'klb') {
+        qrUrl = `https://qr.sepay.vn/img?acc=${accountNumber}&bank=KienLongBank&amount=${amount}&des=${encodeURIComponent(memo)}`;
+    } else {
+        qrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.png?amount=${amount}&addInfo=${encodeURIComponent(memo)}&accountName=${encodeURIComponent(accountName)}`;
+    }
     
     document.getElementById('qrImage').src = qrUrl;
     document.getElementById('displayAmount').innerText = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
