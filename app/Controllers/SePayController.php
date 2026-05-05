@@ -83,22 +83,40 @@ class SePayController extends Controller {
         }
 
         if ($deposit) {
-            file_put_contents($logFile, "[MATCHED] Found deposit request ID: " . $deposit['id'] . "\n", FILE_APPEND);
+            file_put_contents($logFile, "[MATCHED] Found deposit request ID: " . $deposit['id'] . " by transfer_code\n", FILE_APPEND);
+        } else {
+            // Nếu vẫn không thấy, thử bóc tách User ID từ mã NAP (Ví dụ: NAP00063960 -> 63960)
+            if (preg_match('/NAP(?:USER|SELLER)?\s*0*(\d+)/i', $foundCode ?? '', $idMatches)) {
+                $userId = $idMatches[1];
+                file_put_contents($logFile, "[DEBUG] Falling back to search by User ID: $userId\n", FILE_APPEND);
+                $deposit = $db->fetchOne(
+                    "SELECT * FROM deposit_requests WHERE user_id = ? AND status = 'pending' ORDER BY id DESC LIMIT 1",
+                    [$userId]
+                );
+                if ($deposit) {
+                    file_put_contents($logFile, "[MATCHED] Found latest pending request ID: " . $deposit['id'] . " for User ID: $userId\n", FILE_APPEND);
+                }
+            }
+        }
+
+        if ($deposit) {
+            file_put_contents($logFile, "[MATCHED] Final match for deposit request ID: " . $deposit['id'] . "\n", FILE_APPEND);
             
             // Thực hiện cộng tiền
             $walletService = new WalletService();
+            // Xác định loại ví (User hay Seller)
             $walletType = (strpos(strtoupper($deposit['transfer_code']), 'NAPSELLER') !== false) ? 'seller_deposit' : 'deposit';
             
             $walletService->addMoney(
                 $deposit['user_id'],
                 $amount,
-                $walletType === 'seller_deposit' ? 'deposit' : 'deposit', // Loại giao dịch
+                'deposit', // Kiểu giao dịch (thường là deposit cho cả 2)
                 'deposit_request',
                 $deposit['id'],
                 "Nạp tiền tự động qua SePay (GD: $transactionId)"
             );
 
-            // Cập nhật trạng thái yêu cầu
+            // Cập nhật trạng thái yêu cầu nạp tiền
             $depositRequestModel->update($deposit['id'], [
                 'status' => 'approved',
                 'admin_note' => "Duyệt tự động qua SePay. GD: $transactionId",
