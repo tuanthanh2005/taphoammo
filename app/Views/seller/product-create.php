@@ -247,12 +247,12 @@ foreach ($categories as $cat) {
                         <div class="mt-3 p-3 bg-light rounded-3 border">
                             <div class="fw-bold small text-primary mb-2"><i class="fas fa-bolt me-1"></i> Nạp hàng nhanh</div>
                             <div class="mb-2">
-                                <label class="form-label small mb-1">Số lượng nạp hàng</label>
+                                <label class="form-label small mb-1">Nạp kho thêm (Số lượng)</label>
                                 <input type="number" name="main_stock_add" class="form-control form-control-sm" placeholder="VD: 10" min="0">
                             </div>
                             <div>
-                                <label class="form-label small mb-1">Nội dung bàn giao</label>
-                                <textarea name="main_stock_content" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách khi nạp hàng"></textarea>
+                                <label class="form-label small mb-1">Nội dung bàn giao cố định</label>
+                                <textarea name="static_content" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách mỗi khi mua (Dành cho Link, File, Dịch vụ)"></textarea>
                             </div>
                         </div>
                     </div>
@@ -629,7 +629,24 @@ foreach ($categories as $cat) {
 
         // Category tips
         buildTips(profile);
+
+        // Update UI based on product type
+        toggleStockUI();
     }
+
+    function toggleStockUI() {
+        const type = productTypeSelect.value;
+        const isStockBased = ['key', 'account'].includes(type);
+        const quickStockTitle = document.querySelector('#quickStockContainer .fw-bold');
+        
+        if (isStockBased) {
+            quickStockTitle.innerHTML = '<i class="fas fa-bolt me-1"></i> Nạp hàng vào kho (Dành cho Key/Account)';
+        } else {
+            quickStockTitle.innerHTML = '<i class="fas fa-magic me-1"></i> Bàn giao tự động (Dành cho Link/Dịch vụ)';
+        }
+    }
+
+    productTypeSelect.addEventListener('change', toggleStockUI);
 
     function buildTips(profile) {
         const tips = [];
@@ -703,7 +720,8 @@ foreach ($categories as $cat) {
                 <input type="number" name="variants[${index}][stock_add]" class="form-control form-control-sm" placeholder="Số lượng nạp..." min="0">
             </td>
             <td>
-                <textarea name="variants[${index}][stock_content]" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách khi nạp hàng"></textarea>
+                <textarea name="variants[${index}][static_content]" class="form-control form-control-sm" rows="2" placeholder="Nội dung bàn giao cố định (Link, File, hoặc thông tin gói)"></textarea>
+                <div class="form-text mt-1" style="font-size: 0.65rem;">Gửi cho khách mỗi khi mua gói này.</div>
             </td>
             <td class="text-center">
                 <div class="form-check form-check-inline m-0">

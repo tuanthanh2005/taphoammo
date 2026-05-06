@@ -139,222 +139,312 @@
     </div>
 </div>
 
+<style>
+:root {
+    --admin-primary: #4e73df;
+    --admin-success: #1cc88a;
+    --admin-warning: #f6c23e;
+    --admin-danger: #e74a3b;
+    --glass-bg: rgba(255, 255, 255, 0.95);
+}
+
+.dispute-modal .modal-content {
+    border: none;
+    border-radius: 20px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+}
+
+.dispute-header {
+    background: linear-gradient(135deg, #f8f9fc 0%, #edf2f7 100%);
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.evidence-card {
+    background: #fff;
+    border-radius: 15px;
+    border: 1px solid #e3e6f0;
+    transition: all 0.3s ease;
+}
+
+.evidence-card:hover {
+    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+}
+
+.timeline-modern {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline-modern::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 5px;
+    bottom: 5px;
+    width: 2px;
+    background: #e3e6f0;
+}
+
+.timeline-modern-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-modern-dot {
+    position: absolute;
+    left: -30px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid var(--admin-primary);
+    z-index: 1;
+}
+
+.decision-sidebar {
+    background: #f8f9fc;
+    border-left: 1px solid #e3e6f0;
+}
+
+.evidence-img-thumb {
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 10px;
+    cursor: zoom-in;
+    transition: transform 0.2s;
+}
+
+.evidence-img-thumb:hover {
+    transform: scale(1.05);
+}
+
+.bg-primary-soft { background-color: rgba(78, 115, 223, 0.1); color: #4e73df; }
+.bg-success-soft { background-color: rgba(28, 200, 138, 0.1); color: #1cc88a; }
+.bg-warning-soft { background-color: rgba(246, 194, 62, 0.1); color: #f6c23e; }
+.bg-danger-soft { background-color: rgba(231, 74, 59, 0.1); color: #e74a3b; }
+
+.modal-body-scroll {
+    max-height: calc(90vh - 150px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+}
+</style>
+
 <?php foreach ($disputes as $d): ?>
 <!-- Dispute Detail Modal -->
-<div class="modal fade" id="disputeModal<?= $d['id'] ?>" tabindex="-1">
+<div class="modal fade dispute-modal" id="disputeModal<?= $d['id'] ?>" tabindex="-1">
     <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-            <div class="modal-header border-0 bg-light p-4">
+        <div class="modal-content">
+            <div class="dispute-header d-flex justify-content-between align-items-center">
                 <div>
-                    <h5 class="modal-title fw-bold mb-1">Khiếu nại #<?= e($d['dispute_code']) ?></h5>
-                    <div class="small text-muted">Đơn hàng: <strong>#<?= e($d['order_code']) ?></strong> | Ngày tạo: <?= date('d/m/Y H:i', strtotime($d['created_at'])) ?></div>
+                    <span class="badge bg-primary-soft mb-2">#<?= e($d['dispute_code']) ?></span>
+                    <h4 class="fw-bold mb-0 text-dark">Chi tiết Khiếu nại</h4>
+                    <div class="small text-muted mt-1">
+                        <i class="far fa-clock me-1"></i> <?= date('d/m/Y H:i', strtotime($d['created_at'])) ?> 
+                        <span class="mx-2">|</span> 
+                        <i class="fas fa-shopping-bag me-1"></i> Đơn hàng: <strong>#<?= e($d['order_code']) ?></strong>
+                    </div>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-0">
                 <div class="row g-0">
-                    <!-- Left Column: Evidence & Timeline -->
-                    <div class="col-lg-8 border-end" style="max-height: 70vh; overflow-y: auto;">
-                        <div class="p-4">
-                            <!-- Dispute Info -->
-                            <div class="card border-0 bg-primary-subtle rounded-4 mb-4">
-                                <div class="card-body p-3">
-                                    <div class="row align-items-center">
-                                        <div class="col-auto">
-                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                                <i class="fas fa-info-circle fa-lg"></i>
-                                            </div>
-                                        </div>
-                                        <div class="col">
-                                            <div class="fw-bold text-primary">Lý do khiếu nại: <?= $reasonMap[$d['reason']] ?? 'Khác' ?></div>
-                                            <div class="small text-primary opacity-75">Số tiền tranh chấp: <strong><?= money($d['amount']) ?></strong></div>
-                                        </div>
+                    <!-- Left: Content -->
+                    <div class="col-lg-8 modal-body-scroll">
+                        <div class="p-4 p-lg-5">
+                            <!-- Quick Summary -->
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded-4 bg-light">
+                                        <div class="small text-muted mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Lý do tranh chấp</div>
+                                        <div class="fw-bold text-dark fs-5"><?= $reasonMap[$d['reason']] ?? 'Khác' ?></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="p-3 border rounded-4 bg-danger-soft">
+                                        <div class="small text-danger mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Số tiền tranh chấp</div>
+                                        <div class="fw-bold fs-5"><?= money($d['amount']) ?></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Initial Description -->
-                            <div class="mb-5">
-                                <h6 class="fw-bold mb-3 border-start border-4 border-primary ps-2">Mô tả từ Người mua</h6>
-                                <div class="p-4 bg-light rounded-4 position-relative">
-                                    <i class="fas fa-quote-left position-absolute top-0 start-0 opacity-10 mt-2 ms-2 fa-2x"></i>
-                                    <div class="text-dark"><?= nl2br(e($d['description'])) ?></div>
-                                    
-                                    <?php if(!empty($d['evidence_images'])): ?>
-                                        <?php $images = json_decode($d['evidence_images'], true); ?>
-                                        <?php if(is_array($images) && count($images) > 0): ?>
-                                            <div class="mt-4 pt-3 border-top border-white border-opacity-50">
-                                                <div class="small fw-bold text-muted mb-3 text-uppercase">Hình ảnh bằng chứng:</div>
-                                                <div class="d-flex gap-3 flex-wrap">
-                                                    <?php foreach($images as $img): ?>
-                                                        <a href="<?= asset($img) ?>" target="_blank" class="evidence-img-container">
-                                                            <img src="<?= asset($img) ?>" class="rounded-3 border shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
-                                                            <div class="overlay"><i class="fas fa-search-plus"></i></div>
-                                                        </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php endif; ?>
+                            <!-- Buyer Evidence -->
+                            <div class="evidence-card p-4 mb-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-user"></i>
+                                    </div>
+                                    <h6 class="fw-bold mb-0">Bằng chứng từ Người mua</h6>
+                                </div>
+                                <div class="p-3 bg-light rounded-3 mb-3 text-dark border-start border-4 border-primary">
+                                    <?= nl2br(e($d['description'])) ?>
+                                </div>
+                                
+                                <?php if(!empty($d['evidence_images'])): ?>
+                                    <?php $images = json_decode($d['evidence_images'], true); ?>
+                                    <?php if(is_array($images) && count($images) > 0): ?>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <?php foreach($images as $img): ?>
+                                                <a href="<?= asset($img) ?>" target="_blank">
+                                                    <img src="<?= asset($img) ?>" class="evidence-img-thumb border" alt="Evidence">
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
                                     <?php endif; ?>
-                                </div>
+                                <?php endif; ?>
                             </div>
 
-                            <div class="mb-5">
-                                <h6 class="fw-bold mb-3 border-start border-4 border-success ps-2">Giai trinh tu Seller</h6>
-                                <?php $sellerImages = json_decode($d['seller_evidence_images'] ?? '[]', true) ?: []; ?>
-                                <?php if (!empty($d['seller_responded_at']) || !empty($d['seller_response']) || !empty($sellerImages)): ?>
-                                    <div class="p-4 bg-success-subtle rounded-4 position-relative border border-success-subtle">
-                                        <div class="small text-success fw-bold mb-2">
-                                            Da phan hoi luc <?= !empty($d['seller_responded_at']) ? date('d/m/Y H:i', strtotime($d['seller_responded_at'])) : 'khong ro' ?>
-                                        </div>
-                                        <div class="text-dark"><?= nl2br(e($d['seller_response'] ?? 'Seller chi gui them bang chung.')) ?></div>
-
-                                        <?php if (!empty($sellerImages)): ?>
-                                            <div class="mt-4 pt-3 border-top border-success-subtle">
-                                                <div class="small fw-bold text-muted mb-3 text-uppercase">Bang chung tu seller:</div>
-                                                <div class="d-flex gap-3 flex-wrap">
-                                                    <?php foreach($sellerImages as $img): ?>
-                                                        <a href="<?= asset($img) ?>" target="_blank" class="evidence-img-container">
-                                                            <img src="<?= asset($img) ?>" class="rounded-3 border shadow-sm" style="width: 120px; height: 120px; object-fit: cover;">
-                                                            <div class="overlay"><i class="fas fa-search-plus"></i></div>
-                                                        </a>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                            </div>
-                                        <?php endif; ?>
+                            <!-- Seller Response -->
+                            <div class="evidence-card p-4 mb-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-store"></i>
                                     </div>
+                                    <h6 class="fw-bold mb-0">Giải trình từ Người bán</h6>
+                                </div>
+                                <?php 
+                                $sellerImages = json_decode($d['seller_evidence_images'] ?? '[]', true) ?: [];
+                                if (!empty($d['seller_responded_at']) || !empty($d['seller_response']) || !empty($sellerImages)): 
+                                ?>
+                                    <div class="p-3 bg-success-soft rounded-3 mb-3 text-dark border-start border-4 border-success">
+                                        <?= nl2br(e($d['seller_response'] ?? 'Người bán chỉ cung cấp thêm hình ảnh bằng chứng.')) ?>
+                                        <div class="mt-2 small text-muted">Phản hồi lúc: <?= date('H:i d/m/Y', strtotime($d['seller_responded_at'])) ?></div>
+                                    </div>
+                                    <?php if (!empty($sellerImages)): ?>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <?php foreach($sellerImages as $img): ?>
+                                                <a href="<?= asset($img) ?>" target="_blank">
+                                                    <img src="<?= asset($img) ?>" class="evidence-img-thumb border" alt="Seller Evidence">
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 <?php else: ?>
-                                    <div class="alert alert-light border rounded-4 mb-0">
-                                        Seller chua gui phan hoi. SLA hien tai la <?= (int)Helper::getDisputeSellerResponseHours() ?> gio ke tu luc buyer mo khieu nai.
+                                    <div class="alert alert-warning mb-0 border-0 rounded-3">
+                                        <i class="fas fa-exclamation-triangle me-2"></i> Người bán chưa gửi phản hồi giải trình.
                                     </div>
                                 <?php endif; ?>
                             </div>
 
-                            <!-- Timeline / Conversation -->
-                            <div class="mb-4">
-                                <h6 class="fw-bold mb-4 border-start border-4 border-warning ps-2">Lịch sử tranh chấp (Timeline)</h6>
-                                <div class="timeline-container ps-3">
-                                    <?php 
-                                    $dEvents = $events[$d['id']] ?? []; 
-                                    if (empty($dEvents)):
-                                    ?>
-                                        <p class="text-muted small italic">Chưa có hoạt động nào được ghi lại.</p>
-                                    <?php else: ?>
-                                        <?php foreach ($dEvents as $e): ?>
-                                            <div class="timeline-item pb-4 position-relative border-start border-dashed ps-4 ms-2">
-                                                <div class="timeline-dot bg-<?= $e['actor_role'] === 'admin' ? 'primary' : ($e['actor_role'] === 'seller' ? 'warning' : 'info') ?> position-absolute rounded-circle" style="width: 12px; height: 12px; left: -6px; top: 4px;"></div>
-                                                <div class="small fw-bold mb-1 d-flex align-items-center">
-                                                    <span class="text-capitalize"><?= $e['actor_name'] ?: ($e['actor_role'] === 'buyer' ? 'Người mua' : 'Người bán') ?></span>
-                                                    <span class="badge bg-light text-dark border ms-2" style="font-size: 9px;"><?= strtoupper($e['actor_role']) ?></span>
-                                                    <span class="text-muted ms-auto" style="font-size: 10px;"><?= date('H:i d/m/Y', strtotime($e['created_at'])) ?></span>
-                                                </div>
-                                                <div class="bg-white p-3 rounded-3 border shadow-sm small">
-                                                    <div class="fw-semibold mb-1 text-uppercase" style="font-size: 9px;"><?= $e['event_type'] ?></div>
-                                                    <div><?= nl2br(e($e['message'])) ?></div>
-                                                </div>
+                            <!-- Modern Timeline -->
+                            <h6 class="fw-bold mb-4 mt-5"><i class="fas fa-history me-2"></i> Lịch sử đối thoại & Hoạt động</h6>
+                            <div class="timeline-modern">
+                                <?php 
+                                $dEvents = $events[$d['id']] ?? []; 
+                                if (empty($dEvents)):
+                                ?>
+                                    <p class="text-muted small italic ms-2">Chưa có hoạt động nào được ghi lại.</p>
+                                <?php else: ?>
+                                    <?php foreach ($dEvents as $e): ?>
+                                        <div class="timeline-modern-item">
+                                            <div class="timeline-modern-dot" style="border-color: <?= $e['actor_role'] === 'admin' ? '#4e73df' : ($e['actor_role'] === 'seller' ? '#f6c23e' : '#36b9cc') ?>"></div>
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <span class="small fw-bold">
+                                                    <?= e($e['actor_name'] ?: ($e['actor_role'] === 'buyer' ? 'Người mua' : 'Người bán')) ?>
+                                                    <span class="badge rounded-pill bg-light text-dark border ms-1" style="font-size: 0.6rem;"><?= strtoupper($e['actor_role']) ?></span>
+                                                </span>
+                                                <span class="text-muted" style="font-size: 0.7rem;"><?= date('H:i d/m/Y', strtotime($e['created_at'])) ?></span>
                                             </div>
-                                        <?php endforeach; ?>
-                                    <?php endif; ?>
-                                </div>
+                                            <div class="p-3 rounded-4 bg-white border shadow-sm small">
+                                                <div class="text-muted fw-bold mb-1 text-uppercase" style="font-size: 0.6rem;"><?= str_replace('_', ' ', $e['event_type']) ?></div>
+                                                <div class="text-dark"><?= nl2br(e($e['message'])) ?></div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Right Column: Admin Actions -->
-                    <div class="col-lg-4 bg-white p-4" style="border-top-right-radius: 1rem; border-bottom-right-radius: 1rem;">
-                        <h6 class="fw-bold mb-4 border-start border-4 border-danger ps-2">Quyết định của Admin</h6>
-                        
-                        <?php if (in_array($d['status'], ['open', 'under_review'])): ?>
-                            <div class="alert alert-warning rounded-4 small mb-4 py-2">
-                                <i class="fas fa-gavel me-2"></i> Admin hãy đọc kỹ bằng chứng và lịch sử trao đổi trước khi đưa ra phán quyết cuối cùng.
-                            </div>
-
-                            <form action="<?= url('/admin/disputes/resolve/' . $d['id']) ?>" method="POST">
-                                <?= csrf_field() ?>
-                                <div class="mb-4">
-                                    <label class="form-label small fw-bold">1. Phán quyết</label>
-                                    <select class="form-select border-primary-subtle rounded-3" name="decision" required onchange="toggleRefundInputs(this, <?= $d['id'] ?>)">
-                                        <option value="">-- Chọn quyết định --</option>
-                                        <option value="refund">Chấp nhận (Hoàn tiền cho Người mua)</option>
-                                        <option value="reject">Từ chối (Seller đúng, thanh toán cho Seller)</option>
-                                    </select>
-                                </div>
-                                
-                                <div id="refundInputs<?= $d['id'] ?>" class="d-none animate-fade-in">
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold">2. Số tiền hoàn lại</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control rounded-3" name="refund_amount" value="<?= $d['amount'] ?>" max="<?= $d['amount'] ?>" min="1">
-                                            <span class="input-group-text bg-light">VNĐ</span>
+                    <!-- Right: Actions -->
+                    <div class="col-lg-4 decision-sidebar p-4 p-lg-5">
+                        <div class="sticky-top" style="top: 0;">
+                            <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-gavel me-2 text-danger"></i> Quyết định Admin</h5>
+                            
+                            <?php if (in_array($d['status'], ['open', 'under_review'])): ?>
+                                <div class="p-3 bg-white border rounded-4 mb-4 shadow-sm">
+                                    <form action="<?= url('/admin/disputes/resolve/' . $d['id']) ?>" method="POST">
+                                        <?= csrf_field() ?>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">1. Phán quyết cuối cùng</label>
+                                            <select class="form-select rounded-3 p-3 shadow-none border-2" name="decision" required onchange="toggleRefundInputs(this, <?= $d['id'] ?>)">
+                                                <option value="">-- Chọn quyết định --</option>
+                                                <option value="refund">Chấp nhận (Hoàn tiền cho Buyer)</option>
+                                                <option value="reject">Từ chối (Seller đúng, trả tiền Seller)</option>
+                                            </select>
                                         </div>
-                                        <div class="form-text small" style="font-size: 10px;">Có thể hoàn một phần hoặc toàn bộ số tiền (tối đa <?= money($d['amount']) ?>).</div>
-                                    </div>
-                                    <div class="mb-4">
-                                        <label class="form-label small fw-bold text-danger">3. Phạt Seller (Nếu cần)</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control border-danger-subtle rounded-3" name="penalty_amount" value="0" min="0">
-                                            <span class="input-group-text bg-danger-subtle text-danger border-danger-subtle">VNĐ</span>
+                                        
+                                        <div id="refundInputs<?= $d['id'] ?>" class="d-none animate-fade-in">
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-success">2. Số tiền hoàn lại</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control rounded-start-3 p-3" name="refund_amount" value="<?= $d['amount'] ?>" max="<?= $d['amount'] ?>" min="0">
+                                                    <span class="input-group-text bg-white">VNĐ</span>
+                                                </div>
+                                            </div>
+                                            <div class="mb-4">
+                                                <label class="form-label small fw-bold text-danger">3. Mức phạt Seller (nếu có)</label>
+                                                <div class="input-group">
+                                                    <input type="number" class="form-control rounded-start-3 p-3 border-danger" name="penalty_amount" value="0" min="0">
+                                                    <span class="input-group-text bg-danger text-white border-danger">VNĐ</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="form-text small text-danger" style="font-size: 10px;">Số tiền này sẽ được trừ từ ví Seller và cộng vào doanh thu Admin.</div>
-                                    </div>
-                                </div>
 
-                                <div class="mb-4">
-                                    <label class="form-label small fw-bold">Ghi chú & Lý do xử lý</label>
-                                    <textarea class="form-control rounded-4 bg-light border-0" name="admin_note" rows="4" required placeholder="Nêu rõ lý do vì sao đưa ra phán quyết này..."></textarea>
-                                    <div class="form-text small italic" style="font-size: 10px;">Nội dung này sẽ được gửi tới Telegram của cả hai bên.</div>
-                                </div>
-
-                                <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow" onclick="return confirm('XÁC NHẬN THI HÀNH PHÁN QUYẾT?\nHành động này không thể hoàn tác, tiền sẽ được điều chuyển ngay lập tức.')">
-                                    <i class="fas fa-balance-scale me-2"></i> THI HÀNH PHÁN QUYẾT
-                                </button>
-                            </form>
-                        <?php else: ?>
-                            <!-- Resolved Display -->
-                            <div class="card border-0 shadow-none bg-light rounded-4">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-4">
-                                        <div class="bg-success text-white rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 32px; height: 32px;">
-                                            <i class="fas fa-check"></i>
+                                        <div class="mb-4">
+                                            <label class="form-label small fw-bold">Ghi chú xử lý (Gửi cho các bên)</label>
+                                            <textarea class="form-control rounded-4 bg-light border-0" name="admin_note" rows="4" required placeholder="Nêu rõ lý do quyết định..."></textarea>
                                         </div>
-                                        <h6 class="mb-0 fw-bold">Đã được giải quyết</h6>
-                                    </div>
-                                    
-                                    <div class="mb-3">
-                                        <label class="small text-muted">Kết quả:</label>
-                                        <div class="fw-bold"><?= $statusMap[$d['status']]['text'] ?></div>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="small text-muted">Tiền đã hoàn:</label>
-                                        <div class="fw-bold text-success"><?= money($d['refund_amount']) ?></div>
-                                    </div>
-                                    <?php if($d['penalty_amount'] > 0): ?>
-                                    <div class="mb-3">
-                                        <label class="small text-muted">Mức phạt Seller:</label>
-                                        <div class="fw-bold text-danger"><?= money($d['penalty_amount']) ?></div>
-                                    </div>
-                                    <?php endif; ?>
-                                    <div class="mb-0">
-                                        <label class="small text-muted">Ghi chú phán quyết:</label>
-                                        <div class="p-3 bg-white rounded-3 border small mt-1">
+
+                                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-lg" onclick="return confirm('XÁC NHẬN THỰC THI PHÁN QUYẾT?')">
+                                            THỰC THI PHÁN QUYẾT
+                                        </button>
+                                    </form>
+                                </div>
+                            <?php else: ?>
+                                <!-- Resolved Info -->
+                                <div class="card border-0 bg-white rounded-4 shadow-sm mb-4">
+                                    <div class="card-body p-4">
+                                        <div class="text-center mb-4">
+                                            <div class="bg-success-soft rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                                                <i class="fas fa-check-double fa-2x"></i>
+                                            </div>
+                                            <h5 class="fw-bold mb-0">Đã Phán Quyết</h5>
+                                        </div>
+                                        <hr class="opacity-10">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">Kết quả:</span>
+                                            <span class="fw-bold text-dark"><?= $statusMap[$d['status']]['text'] ?></span>
+                                        </div>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="text-muted">Đã hoàn:</span>
+                                            <span class="fw-bold text-success"><?= money($d['refund_amount']) ?></span>
+                                        </div>
+                                        <?php if($d['penalty_amount'] > 0): ?>
+                                        <div class="d-flex justify-content-between mb-4">
+                                            <span class="text-muted text-danger">Mức phạt:</span>
+                                            <span class="fw-bold text-danger"><?= money($d['penalty_amount']) ?></span>
+                                        </div>
+                                        <?php endif; ?>
+                                        
+                                        <div class="p-3 bg-light rounded-4 small">
+                                            <div class="fw-bold text-muted mb-1">Ghi chú từ Admin:</div>
                                             <?= nl2br(e($d['admin_note'])) ?>
                                         </div>
                                     </div>
-                                    <div class="mt-3 small text-muted italic">
-                                        Xử lý lúc: <?= date('H:i d/m/Y', strtotime($d['resolved_at'])) ?>
-                                    </div>
                                 </div>
-                            </div>
-                        <?php endif; ?>
+                            <?php endif; ?>
 
-                        <div class="mt-5 border-top pt-4">
-                            <h6 class="small fw-bold text-muted text-uppercase mb-3">Liên kết nhanh</h6>
                             <div class="d-grid gap-2">
-                                <a href="<?= url('/admin/orders/' . $d['order_id']) ?>" target="_blank" class="btn btn-outline-primary btn-sm rounded-pill border-0 bg-primary-subtle text-primary">
-                                    <i class="fas fa-external-link-alt me-1"></i> Xem đơn hàng gốc
+                                <a href="<?= url('/admin/orders/' . $d['order_id']) ?>" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill border-0 bg-light text-dark py-2">
+                                    <i class="fas fa-receipt me-2"></i> Xem đơn hàng gốc
                                 </a>
-                                <a href="<?= url('/admin/products?search=' . urlencode($d['seller_name'])) ?>" target="_blank" class="btn btn-outline-warning btn-sm rounded-pill border-0 bg-warning-subtle text-warning">
-                                    <i class="fas fa-boxes me-1"></i> Các sp khác của Seller
+                                <a href="<?= url('/admin/products?search=' . urlencode($d['seller_name'])) ?>" target="_blank" class="btn btn-outline-secondary btn-sm rounded-pill border-0 bg-light text-dark py-2">
+                                    <i class="fas fa-store me-2"></i> Gian hàng của Seller
                                 </a>
                             </div>
                         </div>

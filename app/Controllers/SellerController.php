@@ -225,6 +225,7 @@ class SellerController extends Controller {
             'warranty_days' => $warrantyDays,
             'warranty_note' => $warrantyNote,
             'require_note' => isset($_POST['require_note']) ? 1 : 0,
+            'static_content' => $_POST['static_content'] ?? null,
             'status' => 'pending',
             'stock_quantity' => 0
         ];
@@ -253,20 +254,28 @@ class SellerController extends Controller {
                         'price'          => $variant['price'],
                         'sale_price'     => !empty($variant['sale_price']) ? $variant['sale_price'] : null,
                         'require_note'   => isset($variant['require_note']) ? 1 : 0,
+                        'static_content' => $variant['static_content'] ?? null,
                         'stock_quantity' => 0,
                         'status'         => 'active'
                     ]);
 
                     // Handle Stock Addition for new variants
+                    $stockContent = !empty($variant['stock_content']) ? trim($variant['stock_content']) : '';
                     $stockAdd = !empty($variant['stock_add']) ? (int)$variant['stock_add'] : 0;
+
+                    // Nếu có nội dung mà quên nhập số lượng, mặc định nạp 1
+                    if ($vId && $stockAdd <= 0 && !empty($stockContent)) {
+                        $stockAdd = 1;
+                    }
+
                     if ($vId && $stockAdd > 0) {
-                        $stockContent = !empty($variant['stock_content']) ? $variant['stock_content'] : 'Bàn giao thủ công';
+                        $finalContent = !empty($stockContent) ? $stockContent : 'Bàn giao thủ công';
                         for ($i = 0; $i < $stockAdd; $i++) {
                             $db->insert('product_stocks', [
                                 'product_id' => $productId,
                                 'variant_id' => $vId,
                                 'seller_id'  => Auth::id(),
-                                'content'    => $stockContent,
+                                'content'    => $finalContent,
                                 'status'     => 'available'
                             ]);
                         }
@@ -280,15 +289,22 @@ class SellerController extends Controller {
                 }
             } else {
                 // Handle Main Stock Addition (Quick Import)
+                $mainStockContent = !empty($_POST['main_stock_content']) ? trim($_POST['main_stock_content']) : '';
                 $mainStockAdd = !empty($_POST['main_stock_add']) ? (int)$_POST['main_stock_add'] : 0;
+
+                // Nếu có nội dung mà quên nhập số lượng, mặc định nạp 1
+                if ($mainStockAdd <= 0 && !empty($mainStockContent)) {
+                    $mainStockAdd = 1;
+                }
+
                 if ($mainStockAdd > 0) {
-                    $mainStockContent = !empty($_POST['main_stock_content']) ? $_POST['main_stock_content'] : 'Bàn giao thủ công';
+                    $finalMainContent = !empty($mainStockContent) ? $mainStockContent : 'Bàn giao thủ công';
                     for ($i = 0; $i < $mainStockAdd; $i++) {
                         $db->insert('product_stocks', [
                             'product_id' => $productId,
                             'variant_id' => null,
                             'seller_id'  => Auth::id(),
-                            'content'    => $mainStockContent,
+                            'content'    => $finalMainContent,
                             'status'     => 'available'
                         ]);
                     }
@@ -375,6 +391,7 @@ class SellerController extends Controller {
             'warranty_days' => $warrantyDays,
             'warranty_note' => $warrantyNote !== '' ? $warrantyNote : ($warrantyDays > 0 ? "Bao hanh {$warrantyDays} ngay" : 'Khong bao hanh'),
             'require_note' => isset($_POST['require_note']) ? 1 : 0,
+            'static_content' => $_POST['static_content'] ?? null,
             'status' => $status
         ];
         
@@ -400,7 +417,8 @@ class SellerController extends Controller {
                     'name'         => $v['name'],
                     'price'        => $v['price'],
                     'sale_price'   => !empty($v['sale_price']) ? $v['sale_price'] : null,
-                    'require_note' => isset($v['require_note']) ? 1 : 0
+                    'require_note' => isset($v['require_note']) ? 1 : 0,
+                    'static_content' => $v['static_content'] ?? null
                 ];
                 
                 $vId = null;
@@ -417,15 +435,22 @@ class SellerController extends Controller {
                 }
 
                 // Handle Stock Addition
+                $stockContent = !empty($v['stock_content']) ? trim($v['stock_content']) : '';
                 $stockAdd = !empty($v['stock_add']) ? (int)$v['stock_add'] : 0;
+
+                // Nếu có nội dung mà quên nhập số lượng, mặc định nạp 1
+                if ($vId && $stockAdd <= 0 && !empty($stockContent)) {
+                    $stockAdd = 1;
+                }
+
                 if ($vId && $stockAdd > 0) {
-                    $stockContent = !empty($v['stock_content']) ? $v['stock_content'] : 'Bàn giao thủ công';
+                    $finalContent = !empty($stockContent) ? $stockContent : 'Bàn giao thủ công';
                     for ($i = 0; $i < $stockAdd; $i++) {
                         $db->insert('product_stocks', [
                             'product_id' => $id,
                             'variant_id' => $vId,
                             'seller_id'  => Auth::id(),
-                            'content'    => $stockContent,
+                            'content'    => $finalContent,
                             'status'     => 'available'
                         ]);
                     }
@@ -451,15 +476,22 @@ class SellerController extends Controller {
             $db->query("DELETE FROM product_variants WHERE product_id = ?", [$id]);
 
             // Handle Main Stock Addition (Quick Import)
+            $mainStockContent = !empty($_POST['main_stock_content']) ? trim($_POST['main_stock_content']) : '';
             $mainStockAdd = !empty($_POST['main_stock_add']) ? (int)$_POST['main_stock_add'] : 0;
+
+            // Nếu có nội dung mà quên nhập số lượng, mặc định nạp 1
+            if ($mainStockAdd <= 0 && !empty($mainStockContent)) {
+                $mainStockAdd = 1;
+            }
+
             if ($mainStockAdd > 0) {
-                $mainStockContent = !empty($_POST['main_stock_content']) ? $_POST['main_stock_content'] : 'Bàn giao thủ công';
+                $finalMainContent = !empty($mainStockContent) ? $mainStockContent : 'Bàn giao thủ công';
                 for ($i = 0; $i < $mainStockAdd; $i++) {
                     $db->insert('product_stocks', [
                         'product_id' => $id,
                         'variant_id' => null,
                         'seller_id'  => Auth::id(),
-                        'content'    => $mainStockContent,
+                        'content'    => $finalMainContent,
                         'status'     => 'available'
                     ]);
                 }
@@ -800,7 +832,7 @@ class SellerController extends Controller {
         $status = $_POST['item_status'] ?? '';
         $note = trim($_POST['seller_note'] ?? '');
 
-        $allowed = ['processing', 'delivered', 'issue', 'refunded'];
+        $allowed = ['processing', 'delivered', 'issue'];
         if (!in_array($status, $allowed)) {
             Session::setFlash('error', 'Trạng thái không hợp lệ');
             $this->redirect('/seller/orders/' . $orderId);

@@ -65,7 +65,7 @@ class WalletService {
         $this->db->insert('transactions', [
             'user_id' => $userId,
             'type' => $type,
-            'amount' => $amount,
+            'amount' => -$amount,
             'balance_before' => $balanceBefore,
             'balance_after' => $balanceAfter,
             'reference_type' => $referenceType,
@@ -88,7 +88,7 @@ class WalletService {
         $this->db->insert('transactions', [
             'user_id' => $userId,
             'type' => $type,
-            'amount' => $amount,
+            'amount' => -$amount,
             'balance_before' => $balanceBefore,
             'balance_after' => $balanceAfter,
             'reference_type' => $referenceType,

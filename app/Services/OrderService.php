@@ -52,19 +52,72 @@ class OrderService {
                     [$item['product_id'], $variantId, $variantId, $item['quantity']]
                 );
 
+                $deliveredStocks = [];
+                
                 if (count($stocks) < $item['quantity']) {
-                    throw new Exception('Sản phẩm ' . $item['name'] . ' không đủ hàng');
+                    // Check for static_content fallback
+                    if ($variantId) {
+                        $variant = $this->db->fetchOne("SELECT static_content FROM product_variants WHERE id = ?", [$variantId]);
+                        $staticContent = $variant['static_content'] ?? null;
+                    } else {
+                        $productData = $this->db->fetchOne("SELECT static_content FROM products WHERE id = ?", [$item['product_id']]);
+                        $staticContent = $productData['static_content'] ?? null;
+                    }
+
+                    if (!empty($staticContent)) {
+                        // Use static content to fill the gap or replace entirely
+                        $needed = (int)$item['quantity'];
+                        // First use what we have in stock
+                        foreach ($stocks as $s) {
+                            $deliveredStocks[] = [
+                                'id' => $s['id'],
+                                'content' => $s['content'],
+                                'is_new' => false
+                            ];
+                        }
+                        
+                        // Then fill the rest with static content
+                        $remaining = $needed - count($stocks);
+                        for ($i = 0; $i < $remaining; $i++) {
+                            $newStockId = $this->db->insert('product_stocks', [
+                                'product_id' => $item['product_id'],
+                                'variant_id' => $variantId,
+                                'seller_id'  => $item['seller_id'],
+                                'content'    => $staticContent,
+                                'status'     => 'sold',
+                                'order_id'   => $orderId,
+                                'sold_at'    => date('Y-m-d H:i:s')
+                            ]);
+                            $deliveredStocks[] = [
+                                'id' => $newStockId,
+                                'content' => $staticContent,
+                                'is_new' => true
+                            ];
+                        }
+                    } else {
+                        throw new Exception('Sản phẩm ' . $item['name'] . ' không đủ hàng');
+                    }
+                } else {
+                    foreach ($stocks as $s) {
+                        $deliveredStocks[] = [
+                            'id' => $s['id'],
+                            'content' => $s['content'],
+                            'is_new' => false
+                        ];
+                    }
                 }
 
                 $hasManualStock = false;
-                foreach ($stocks as $stock) {
+                foreach ($deliveredStocks as $ds) {
+                    if ($ds['is_new']) continue; // Already marked as sold during creation
+
                     $updateData = [
                         'status' => 'sold',
                         'order_id' => $orderId,
                         'sold_at' => date('Y-m-d H:i:s')
                     ];
 
-                    $parsedStock = Helper::parseStockContent($stock['content']);
+                    $parsedStock = Helper::parseStockContent($ds['content']);
                     if (($parsedStock['type'] ?? 'text') === 'manual_delivery') {
                         $hasManualStock = true;
                         $isManualOrder = true;
@@ -74,7 +127,7 @@ class OrderService {
                         ]);
                     }
 
-                    $this->db->update('product_stocks', $updateData, 'id = :id', ['id' => $stock['id']]);
+                    $this->db->update('product_stocks', $updateData, 'id = :id', ['id' => $ds['id']]);
                 }
 
                 $orderItemId = $this->db->insert('order_items', [

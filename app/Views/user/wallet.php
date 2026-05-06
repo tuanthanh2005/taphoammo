@@ -216,8 +216,8 @@ $depositPresets = [50000, 100000, 200000, 500000, 1000000, 2000000];
                                                 </div>
                                             </td>
                                             <td>
-                                                <span class="amount-badge <?= $isMinus ? 'minus' : 'plus' ?>">
-                                                    <?= $isMinus ? '-' : '+' ?><?= number_format($item['amount']) ?>đ
+                                                <span class="amount-badge <?= $item['amount'] < 0 ? 'minus' : 'plus' ?>">
+                                                    <?= $item['amount'] < 0 ? '' : '+' ?><?= money($item['amount']) ?>
                                                 </span>
                                             </td>
                                             <td class="fw-bold text-muted"><?= $item['balance_after'] !== null ? number_format($item['balance_after']) . 'đ' : '---' ?></td>

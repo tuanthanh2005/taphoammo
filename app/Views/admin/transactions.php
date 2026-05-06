@@ -95,11 +95,8 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <?php 
-                                        $isMinus = in_array($tx['type'], ['purchase', 'admin_fee', 'withdrawal', 'withdrawal_fee']);
-                                        ?>
-                                        <div class="fw-bold <?= $isMinus ? 'text-danger' : 'text-success' ?>" style="font-size: 15px;">
-                                            <?= $isMinus ? '-' : '+' ?> <?= money($tx['amount']) ?>
+                                        <div class="fw-bold <?= $tx['amount'] < 0 ? 'text-danger' : 'text-success' ?>" style="font-size: 15px;">
+                                            <?= $tx['amount'] < 0 ? '' : '+' ?> <?= money($tx['amount']) ?>
                                         </div>
                                         <div class="text-muted" style="font-size: 10px;">Từ: <?= money($tx['balance_before']) ?></div>
                                     </td>

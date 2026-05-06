@@ -132,8 +132,8 @@ $deactivationRequest = $deactivationService->getSellerRequest(Auth::id());
                                     <span class="badge bg-<?= $label[0] ?> py-1 px-1" style="font-size: 0.6rem;"><?= $label[1] ?></span>
                                 </td>
                                 <td>
-                                    <?php if (in_array($tx['type'], ['purchase', 'admin_fee', 'withdrawal', 'withdrawal_fee'])): ?>
-                                        <div class="text-danger fw-bold" style="font-size: 0.75rem;">-<?= money($tx['amount']) ?></div>
+                                    <?php if ($tx['amount'] < 0): ?>
+                                        <div class="text-danger fw-bold" style="font-size: 0.75rem;"><?= money($tx['amount']) ?></div>
                                     <?php else: ?>
                                         <div class="text-success fw-bold" style="font-size: 0.75rem;">+<?= money($tx['amount']) ?></div>
                                     <?php endif; ?>

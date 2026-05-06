@@ -174,7 +174,6 @@ foreach ($stocks as $stockItem) {
                             <option value="processing" <?= $cur == 'processing' ? 'selected' : '' ?>>Đang xử lý</option>
                             <option value="delivered" <?= $cur == 'delivered' ? 'selected' : '' ?>>Đã giao hàng</option>
                             <option value="issue" <?= $cur == 'issue' ? 'selected' : '' ?>>Có vấn đề</option>
-                            <option value="refunded" <?= $cur == 'refunded' ? 'selected' : '' ?>>Đã hoàn tiền</option>
                         </select>
                     </div>
                     <div class="mb-3">
