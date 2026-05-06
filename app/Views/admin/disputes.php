@@ -150,31 +150,32 @@
 
 .dispute-modal .modal-content {
     border: none;
-    border-radius: 20px;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    border-radius: 24px;
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
     overflow: hidden;
 }
 
 .dispute-header {
-    background: linear-gradient(135deg, #f8f9fc 0%, #edf2f7 100%);
-    padding: 1.5rem 2rem;
-    border-bottom: 1px solid #e3e6f0;
+    background: #fff;
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .evidence-card {
     background: #fff;
-    border-radius: 15px;
-    border: 1px solid #e3e6f0;
-    transition: all 0.3s ease;
+    border-radius: 18px;
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .evidence-card:hover {
-    box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.04);
 }
 
 .timeline-modern {
     position: relative;
-    padding-left: 30px;
+    padding-left: 35px;
 }
 
 .timeline-modern::before {
@@ -184,17 +185,17 @@
     top: 5px;
     bottom: 5px;
     width: 2px;
-    background: #e3e6f0;
+    background: linear-gradient(to bottom, #e3e6f0, #f8f9fc);
 }
 
 .timeline-modern-item {
     position: relative;
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .timeline-modern-dot {
     position: absolute;
-    left: -30px;
+    left: -35px;
     top: 5px;
     width: 16px;
     height: 16px;
@@ -202,35 +203,82 @@
     background: #fff;
     border: 3px solid var(--admin-primary);
     z-index: 1;
+    box-shadow: 0 0 0 4px rgba(78, 115, 223, 0.1);
 }
 
 .decision-sidebar {
-    background: #f8f9fc;
-    border-left: 1px solid #e3e6f0;
+    background: #fbfcfe;
+    border-left: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
 }
 
 .evidence-img-thumb {
-    width: 100px;
-    height: 100px;
+    width: 110px;
+    height: 110px;
     object-fit: cover;
-    border-radius: 10px;
+    border-radius: 14px;
     cursor: zoom-in;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    border: 3px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
 }
 
 .evidence-img-thumb:hover {
-    transform: scale(1.05);
+    transform: scale(1.08) rotate(2deg);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
 }
 
-.bg-primary-soft { background-color: rgba(78, 115, 223, 0.1); color: #4e73df; }
-.bg-success-soft { background-color: rgba(28, 200, 138, 0.1); color: #1cc88a; }
-.bg-warning-soft { background-color: rgba(246, 194, 62, 0.1); color: #f6c23e; }
-.bg-danger-soft { background-color: rgba(231, 74, 59, 0.1); color: #e74a3b; }
+.bg-primary-soft { background-color: rgba(78, 115, 223, 0.08); color: #4e73df; }
+.bg-success-soft { background-color: rgba(28, 200, 138, 0.08); color: #1cc88a; }
+.bg-warning-soft { background-color: rgba(246, 194, 62, 0.08); color: #f6c23e; }
+.bg-danger-soft { background-color: rgba(231, 74, 59, 0.08); color: #e74a3b; }
+.bg-info-soft { background-color: rgba(54, 185, 204, 0.08); color: #36b9cc; }
 
 .modal-body-scroll {
-    max-height: calc(90vh - 150px);
+    max-height: calc(90vh - 120px);
     overflow-y: auto;
-    scrollbar-width: thin;
+    scrollbar-width: none;
+}
+.modal-body-scroll::-webkit-scrollbar { display: none; }
+
+.decision-sidebar-scroll {
+    max-height: calc(90vh - 120px);
+    overflow-y: auto;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #4e73df 0%, #224abe 100%) !important;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%) !important;
+}
+
+.evidence-img-link {
+    display: block;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+}
+
+.evidence-img-link::after {
+    content: '\f00e';
+    font-family: 'Font Awesome 5 Free';
+    font-weight: 900;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(78, 115, 223, 0.4);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.evidence-img-link:hover::after {
+    opacity: 1;
 }
 </style>
 
@@ -287,9 +335,9 @@
                                 <?php if(!empty($d['evidence_images'])): ?>
                                     <?php $images = json_decode($d['evidence_images'], true); ?>
                                     <?php if(is_array($images) && count($images) > 0): ?>
-                                        <div class="d-flex gap-2 flex-wrap">
+                                        <div class="d-flex gap-3 flex-wrap">
                                             <?php foreach($images as $img): ?>
-                                                <a href="<?= asset($img) ?>" target="_blank">
+                                                <a href="<?= asset($img) ?>" target="_blank" class="evidence-img-link">
                                                     <img src="<?= asset($img) ?>" class="evidence-img-thumb border" alt="Evidence">
                                                 </a>
                                             <?php endforeach; ?>
@@ -315,9 +363,9 @@
                                         <div class="mt-2 small text-muted">Phản hồi lúc: <?= date('H:i d/m/Y', strtotime($d['seller_responded_at'])) ?></div>
                                     </div>
                                     <?php if (!empty($sellerImages)): ?>
-                                        <div class="d-flex gap-2 flex-wrap">
+                                        <div class="d-flex gap-3 flex-wrap">
                                             <?php foreach($sellerImages as $img): ?>
-                                                <a href="<?= asset($img) ?>" target="_blank">
+                                                <a href="<?= asset($img) ?>" target="_blank" class="evidence-img-link">
                                                     <img src="<?= asset($img) ?>" class="evidence-img-thumb border" alt="Seller Evidence">
                                                 </a>
                                             <?php endforeach; ?>
@@ -361,79 +409,91 @@
                     </div>
 
                     <!-- Right: Actions -->
-                    <div class="col-lg-4 decision-sidebar p-4 p-lg-5">
+                    <div class="col-lg-4 decision-sidebar p-4 p-lg-5 decision-sidebar-scroll">
                         <div class="sticky-top" style="top: 0;">
-                            <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-gavel me-2 text-danger"></i> Quyết định Admin</h5>
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-danger-soft rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
+                                    <i class="fas fa-gavel text-danger"></i>
+                                </div>
+                                <h5 class="fw-bold mb-0 text-dark">Quyết định Admin</h5>
+                            </div>
                             
                             <?php if (in_array($d['status'], ['open', 'under_review'])): ?>
-                                <div class="p-3 bg-white border rounded-4 mb-4 shadow-sm">
+                                <div class="p-4 bg-white border-0 rounded-4 mb-4 shadow-sm">
                                     <form action="<?= url('/admin/disputes/resolve/' . $d['id']) ?>" method="POST">
                                         <?= csrf_field() ?>
                                         <div class="mb-4">
-                                            <label class="form-label small fw-bold">1. Phán quyết cuối cùng</label>
-                                            <select class="form-select rounded-3 p-3 shadow-none border-2" name="decision" required onchange="toggleRefundInputs(this, <?= $d['id'] ?>)">
+                                            <label class="form-label small fw-bold text-muted mb-2">1. Phán quyết cuối cùng</label>
+                                            <select class="form-select rounded-4 p-3 shadow-none border-2 bg-light border-0" name="decision" required onchange="toggleRefundInputs(this, <?= $d['id'] ?>)">
                                                 <option value="">-- Chọn quyết định --</option>
-                                                <option value="refund">Chấp nhận (Hoàn tiền cho Buyer)</option>
-                                                <option value="reject">Từ chối (Seller đúng, trả tiền Seller)</option>
+                                                <option value="refund">Chấp nhận (Hoàn tiền Buyer)</option>
+                                                <option value="reject">Từ chối (Seller thắng)</option>
                                             </select>
                                         </div>
                                         
                                         <div id="refundInputs<?= $d['id'] ?>" class="d-none animate-fade-in">
                                             <div class="mb-3">
-                                                <label class="form-label small fw-bold text-success">2. Số tiền hoàn lại</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control rounded-start-3 p-3" name="refund_amount" value="<?= $d['amount'] ?>" max="<?= $d['amount'] ?>" min="0">
-                                                    <span class="input-group-text bg-white">VNĐ</span>
+                                                <label class="form-label small fw-bold text-success mb-2">2. Số tiền hoàn lại</label>
+                                                <div class="input-group input-group-lg">
+                                                    <input type="number" class="form-control rounded-start-4 border-0 bg-light" name="refund_amount" value="<?= $d['amount'] ?>" max="<?= $d['amount'] ?>" min="0">
+                                                    <span class="input-group-text bg-light border-0 text-muted small">VNĐ</span>
                                                 </div>
                                             </div>
                                             <div class="mb-4">
-                                                <label class="form-label small fw-bold text-danger">3. Mức phạt Seller (nếu có)</label>
-                                                <div class="input-group">
-                                                    <input type="number" class="form-control rounded-start-3 p-3 border-danger" name="penalty_amount" value="0" min="0">
-                                                    <span class="input-group-text bg-danger text-white border-danger">VNĐ</span>
+                                                <label class="form-label small fw-bold text-danger mb-2">3. Mức phạt Seller (nếu có)</label>
+                                                <div class="input-group input-group-lg">
+                                                    <input type="number" class="form-control rounded-start-4 border-0 bg-light text-danger fw-bold" name="penalty_amount" value="0" min="0">
+                                                    <span class="input-group-text bg-light border-0 text-muted small">VNĐ</span>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="mb-4">
-                                            <label class="form-label small fw-bold">Ghi chú xử lý (Gửi cho các bên)</label>
-                                            <textarea class="form-control rounded-4 bg-light border-0" name="admin_note" rows="4" required placeholder="Nêu rõ lý do quyết định..."></textarea>
+                                            <label class="form-label small fw-bold text-muted mb-2">Ghi chú công khai</label>
+                                            <textarea class="form-control rounded-4 bg-light border-0 p-3" name="admin_note" rows="5" required placeholder="Lý do chi tiết cho quyết định này..."></textarea>
                                         </div>
 
-                                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-lg" onclick="return confirm('XÁC NHẬN THỰC THI PHÁN QUYẾT?')">
+                                        <button type="submit" class="btn btn-primary w-100 rounded-pill py-3 fw-bold shadow-lg border-0 bg-gradient-primary" onclick="return confirm('XÁC NHẬN THỰC THI PHÁN QUYẾT?')">
                                             THỰC THI PHÁN QUYẾT
                                         </button>
                                     </form>
                                 </div>
                             <?php else: ?>
                                 <!-- Resolved Info -->
-                                <div class="card border-0 bg-white rounded-4 shadow-sm mb-4">
+                                <div class="card border-0 bg-white rounded-4 shadow-sm mb-4 overflow-hidden">
+                                    <div class="p-4 bg-success-soft border-bottom border-white text-center">
+                                        <div class="bg-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 70px; height: 70px;">
+                                            <i class="fas fa-check-circle fa-2x text-success"></i>
+                                        </div>
+                                        <h5 class="fw-bold mb-1 text-success">Đã Phán Quyết</h5>
+                                        <div class="small text-muted">Xử lý lúc: <?= date('H:i d/m/Y', strtotime($d['resolved_at'] ?? $d['status_updated_at'] ?? 'now')) ?></div>
+                                    </div>
                                     <div class="card-body p-4">
-                                        <div class="text-center mb-4">
-                                            <div class="bg-success-soft rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
-                                                <i class="fas fa-check-double fa-2x"></i>
-                                            </div>
-                                            <h5 class="fw-bold mb-0">Đã Phán Quyết</h5>
+                                        <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-light rounded-4">
+                                            <span class="text-muted small fw-bold text-uppercase">Kết quả</span>
+                                            <?php
+                                            $finalStatus = $statusMap[$d['status']] ?? ['text' => $d['status'], 'class' => 'bg-secondary'];
+                                            ?>
+                                            <span class="badge rounded-pill <?= $finalStatus['class'] ?> px-3 py-2"><?= $finalStatus['text'] ?></span>
                                         </div>
-                                        <hr class="opacity-10">
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">Kết quả:</span>
-                                            <span class="fw-bold text-dark"><?= $statusMap[$d['status']]['text'] ?></span>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center mb-3 px-3">
+                                            <span class="text-muted small fw-bold text-uppercase">Số tiền hoàn</span>
+                                            <span class="fw-bold text-success fs-5"><?= money($d['refund_amount']) ?></span>
                                         </div>
-                                        <div class="d-flex justify-content-between mb-2">
-                                            <span class="text-muted">Đã hoàn:</span>
-                                            <span class="fw-bold text-success"><?= money($d['refund_amount']) ?></span>
-                                        </div>
+
                                         <?php if($d['penalty_amount'] > 0): ?>
-                                        <div class="d-flex justify-content-between mb-4">
-                                            <span class="text-muted text-danger">Mức phạt:</span>
-                                            <span class="fw-bold text-danger"><?= money($d['penalty_amount']) ?></span>
+                                        <div class="d-flex justify-content-between align-items-center mb-4 px-3">
+                                            <span class="text-danger small fw-bold text-uppercase">Mức phạt Seller</span>
+                                            <span class="fw-bold text-danger fs-5"><?= money($d['penalty_amount']) ?></span>
                                         </div>
                                         <?php endif; ?>
                                         
-                                        <div class="p-3 bg-light rounded-4 small">
-                                            <div class="fw-bold text-muted mb-1">Ghi chú từ Admin:</div>
-                                            <?= nl2br(e($d['admin_note'])) ?>
+                                        <div class="mt-4">
+                                            <div class="small fw-bold text-muted mb-2 text-uppercase" style="font-size: 0.65rem;">Ghi chú từ Admin:</div>
+                                            <div class="p-3 bg-light rounded-4 text-dark small" style="line-height: 1.6;">
+                                                <?= nl2br(e($d['admin_note'])) ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
