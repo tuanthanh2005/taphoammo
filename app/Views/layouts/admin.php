@@ -320,7 +320,6 @@
                 if (loader) loader.classList.remove('active');
             };
 
-            window.addEventListener('beforeunload', showLoader);
             document.addEventListener('submit', (e) => {
                 if (!e.target.hasAttribute('data-no-loader')) showLoader();
             });

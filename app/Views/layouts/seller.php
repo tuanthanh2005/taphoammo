@@ -435,9 +435,6 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
             document.getElementById('global-loader').classList.remove('active');
         };
 
-        // Kích hoạt khi chuyển trang
-        window.addEventListener('beforeunload', showLoader);
-
         // Kích hoạt khi submit form (ngoại trừ các form có thuộc tính data-no-loader)
         document.addEventListener('submit', (e) => {
             if (!e.target.hasAttribute('data-no-loader')) {
