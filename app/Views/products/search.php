@@ -88,6 +88,39 @@
                     <?php endfor; ?>
                 </div>
             </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2 px-1">
+                                    <div class="small text-muted d-flex align-items-center">
+                                        <div class="avatar-mini bg-light rounded-circle me-1" style="width: 18px; height: 18px; font-size: 9px; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-user"></i>
+                                        </div>
+                                        <span style="font-size: 10.5px;"><?= e(Helper::truncate($p['seller_name'], 15)) ?></span>
+                                    </div>
+                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-10 rounded-pill" style="font-size: 9.5px;">
+                                        Đã bán: <strong><?= $p['total_sold'] ?? 0 ?></strong>
+                                    </span>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <!-- Ô trống cho thuê VIP -->
+                            <div class="mb-3 <?= $i < 2 ? 'border-bottom pb-3' : '' ?>">
+                                <div class="golden-slot p-3 text-center rounded-4 border-dashed position-relative overflow-hidden">
+                                    <div class="slot-glow"></div>
+                                    <div class="position-relative z-1">
+                                        <div class="slot-icon mb-2">
+                                            <i class="fas fa-crown text-warning fa-lg animate-bounce"></i>
+                                        </div>
+                                        <h6 class="text-dark small fw-black mb-1 text-uppercase letter-spacing-1">Vị Trí Vàng</h6>
+                                        <p class="text-muted mb-2" style="font-size: 9px;">Tiếp cận hàng ngàn khách hàng tiềm năng ngay hôm nay!</p>
+                                        <a href="https://t.me/admin_taphoammo" target="_blank" class="btn btn-warning btn-xs rounded-pill fw-bold py-1 px-3 shadow-sm border-0 bg-gradient-warning text-white" style="font-size: 9px;">
+                                            LIÊN HỆ THUÊ <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+                </div>
+            </div>
         </div>
 
         <!-- Main Content -->

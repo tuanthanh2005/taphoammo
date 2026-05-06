@@ -92,6 +92,27 @@
                         <?php endif; ?>
                     <?php endfor; ?>
                 </div>
+                            </div>
+                        <?php else: ?>
+                            <!-- Ô trống cho thuê VIP -->
+                            <div class="mb-3 <?= $i < 2 ? 'border-bottom pb-3' : '' ?>">
+                                <div class="golden-slot p-3 text-center rounded-4 border-dashed position-relative overflow-hidden">
+                                    <div class="slot-glow"></div>
+                                    <div class="position-relative z-1">
+                                        <div class="slot-icon mb-2">
+                                            <i class="fas fa-crown text-warning fa-lg animate-bounce"></i>
+                                        </div>
+                                        <h6 class="text-dark small fw-black mb-1 text-uppercase letter-spacing-1">Vị Trí Vàng</h6>
+                                        <p class="text-muted mb-2" style="font-size: 9px;">Tiếp cận hàng ngàn khách hàng tiềm năng ngay hôm nay!</p>
+                                        <a href="https://t.me/admin_taphoammo" target="_blank" class="btn btn-warning btn-xs rounded-pill fw-bold py-1 px-3 shadow-sm border-0 bg-gradient-warning text-white" style="font-size: 9px;">
+                                            LIÊN HỆ THUÊ <i class="fas fa-arrow-right ms-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+                </div>
             </div>
         </div>
 
