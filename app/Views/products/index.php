@@ -50,7 +50,7 @@
                                         <img src="<?= asset($p['thumbnail'] ?? 'images/no-image.png') ?>" alt="<?= e($p['name']) ?>" class="w-100 h-100" style="object-fit: cover;">
                                     </div>
                                     <div class="ms-2">
-                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-medium small hover-primary d-block text-truncate stretched-link" style="max-width: 150px;" title="<?= e($p['name']) ?>">
+                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-medium small hover-primary d-block stretched-link" title="<?= e($p['name']) ?>">
                                             <?= e($p['name']) ?>
                                         </a>
                                         <?php if ($p['sale_price']): ?>
