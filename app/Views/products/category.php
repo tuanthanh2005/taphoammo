@@ -33,64 +33,47 @@
                     </form>
                 </div>
             </div>
-            <!-- 🔥 Sản phẩm HOT / Vị Trí Vàng VIP 🔥 -->
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 featured-widget">
-                <div class="card-header bg-gradient-warning py-3 border-0">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold mb-0 text-white"><i class="fas fa-fire-alt me-2 animate-pulse"></i>Sản phẩm HOT</h6>
-                        <span class="badge bg-white text-warning rounded-pill px-2 py-1 fw-bold" style="font-size: 9px; letter-spacing: 0.5px;">TÀI TRỢ</span>
+            <!-- Sản phẩm HOT / Cho thuê -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0 text-warning"><i class="fas fa-fire"></i> Sản phẩm HOT</h6>
+                        <span class="badge bg-warning text-dark" style="font-size: 10px;">Tài trợ</span>
                     </div>
-                </div>
-                <div class="card-body p-3">
+                    
                     <?php for ($i = 0; $i < 3; $i++): ?>
-                        <?php if (isset($sponsoredProducts[$i])): $p = $sponsoredProducts[$i]; ?>
-                            <!-- Thẻ sản phẩm thật VIP -->
-                            <div class="featured-item mb-3 p-2 rounded-3 transition-all <?= $i < 2 ? 'border-bottom' : '' ?>">
+                        <?php if (isset($sponsoredProducts[$i])): $product = $sponsoredProducts[$i]; ?>
+                            <!-- Thẻ sản phẩm thật -->
+                            <div class="mb-3 position-relative <?= $i < 2 ? 'border-bottom pb-3' : '' ?>">
                                 <div class="d-flex align-items-center mb-2">
-                                    <div class="featured-img-wrap rounded-3 overflow-hidden flex-shrink-0 shadow-sm">
-                                        <img src="<?= asset($p['thumbnail'] ?? 'images/no-image.png') ?>" alt="<?= e($p['name']) ?>" class="w-100 h-100" style="object-fit: cover;">
+                                    <div class="rounded overflow-hidden flex-shrink-0" style="width: 50px; height: 50px; border: 1px solid #eee;">
+                                        <img src="<?= asset($product['thumbnail'] ?? 'images/no-image.png') ?>" alt="<?= e($product['name']) ?>" class="w-100 h-100" style="object-fit: cover;">
                                     </div>
-                                    <div class="ms-3 flex-grow-1 min-w-0">
-                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-bold small hover-primary d-block text-truncate mb-1" title="<?= e($p['name']) ?>">
-                                            <?= e($p['name']) ?>
+                                    <div class="ms-2">
+                                        <a href="<?= url('/product/' . $product['slug']) ?>" class="text-dark text-decoration-none fw-medium small hover-primary d-block text-truncate stretched-link" style="max-width: 150px;" title="<?= e($product['name']) ?>">
+                                            <?= e($product['name']) ?>
                                         </a>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <?php if ($p['sale_price']): ?>
-                                                <span class="text-danger fw-black small"><?= money($p['sale_price']) ?></span>
-                                                <span class="text-muted text-decoration-line-through" style="font-size: 10px;"><?= money($p['price']) ?></span>
-                                            <?php else: ?>
-                                                <span class="text-primary fw-black small"><?= money($p['price']) ?></span>
-                                            <?php endif; ?>
-                                        </div>
+                                        <?php if (!empty($product['display_price'])): ?>
+                                            <span class="text-primary fw-bold small"><?= e($product['display_price']) ?></span>
+                                        <?php elseif ($product['sale_price']): ?>
+                                            <span class="text-danger fw-bold small"><?= money($product['sale_price']) ?></span>
+                                        <?php else: ?>
+                                            <span class="text-primary fw-bold small"><?= money($product['price']) ?></span>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2 px-1">
-                                    <div class="small text-muted d-flex align-items-center">
-                                        <div class="avatar-mini bg-light rounded-circle me-1" style="width: 18px; height: 18px; font-size: 9px; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <span style="font-size: 10.5px;"><?= e(Helper::truncate($p['seller_name'], 15)) ?></span>
-                                    </div>
-                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-10 rounded-pill" style="font-size: 9.5px;">
-                                        Đã bán: <strong><?= $p['total_sold'] ?? 0 ?></strong>
-                                    </span>
+                                <div class="d-flex justify-content-between text-muted" style="font-size: 11px;">
+                                    <span><i class="fas fa-user"></i> <?= e(Helper::truncate($product['seller_name'], 15)) ?></span>
+                                    <span>Đã bán: <strong class="text-success"><?= $product['total_sold'] ?? 0 ?></strong></span>
                                 </div>
                             </div>
                         <?php else: ?>
-                            <!-- Ô trống cho thuê VIP -->
+                            <!-- Ô trống cho thuê -->
                             <div class="mb-3 <?= $i < 2 ? 'border-bottom pb-3' : '' ?>">
-                                <div class="golden-slot p-3 text-center rounded-4 border-dashed position-relative overflow-hidden">
-                                    <div class="slot-glow"></div>
-                                    <div class="position-relative z-1">
-                                        <div class="slot-icon mb-2">
-                                            <i class="fas fa-crown text-warning fa-lg animate-bounce"></i>
-                                        </div>
-                                        <h6 class="text-dark small fw-black mb-1 text-uppercase letter-spacing-1">Vị Trí Vàng</h6>
-                                        <p class="text-muted mb-2" style="font-size: 9px;">Tiếp cận hàng ngàn khách hàng tiềm năng ngay hôm nay!</p>
-                                        <a href="https://t.me/admin_taphoammo" target="_blank" class="btn btn-warning btn-xs rounded-pill fw-bold py-1 px-3 shadow-sm border-0 bg-gradient-warning text-white" style="font-size: 9px;">
-                                            LIÊN HỆ THUÊ <i class="fas fa-arrow-right ms-1"></i>
-                                        </a>
-                                    </div>
+                                <div class="border border-dashed rounded text-center p-2 bg-light" style="border: 1px dashed #ced4da !important;">
+                                    <div class="text-muted mb-1"><i class="fas fa-plus-circle text-warning"></i></div>
+                                    <h6 class="text-muted small fw-bold mb-1">Vị Trí Vàng</h6>
+                                    <p class="text-muted mb-0" style="font-size: 10px;">Liên hệ admin để thuê chỗ này</p>
                                 </div>
                             </div>
                         <?php endif; ?>
@@ -305,52 +288,6 @@ body {
     background-color: #e8f4fd !important;
     color: #0056b3 !important;
 }
-.bg-gradient-warning { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
-.btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
-.fw-black { font-weight: 900; }
-.letter-spacing-1 { letter-spacing: 1px; }
-
-.featured-widget { border: 1px solid rgba(0,0,0,0.05); }
-.featured-item { transition: all 0.2s ease; }
-.featured-item:hover { background: #fff8f0; transform: scale(1.02); }
-.featured-img-wrap { width: 55px; height: 55px; border: 1px solid #f1f5f9; }
-
-.golden-slot {
-    background: #fff;
-    border: 2px dashed #f6d365;
-    transition: all 0.3s ease;
-}
-.golden-slot:hover {
-    border-style: solid;
-    background: #fffdf5;
-    box-shadow: 0 10px 20px rgba(246, 211, 101, 0.15);
-}
-.slot-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% 50%, rgba(246, 211, 101, 0.1), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.golden-slot:hover .slot-glow { opacity: 1; }
-
-@keyframes pulse-custom {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-.animate-pulse { animation: pulse-custom 2s infinite; }
-
-@keyframes bounce-custom {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-}
-.animate-bounce { animation: bounce-custom 2s infinite; }
-
-.bg-success-subtle { background-color: rgba(25, 135, 84, 0.1); }
 </style>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
