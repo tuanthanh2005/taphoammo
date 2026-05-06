@@ -33,48 +33,65 @@
                     </form>
                 </div>
             </div>
-            <!-- 🔥 Sản phẩm HOT / Vị Trí Vàng VIP 🔥 -->
-            <div class="card border-0 shadow-lg rounded-4 overflow-hidden mb-4 featured-widget">
-                <div class="card-header bg-gradient-warning py-3 border-0">
+            <!-- 🔥 Sản phẩm HOT / Vị Trí Vàng 🔥 -->
+            <div class="card border-0 shadow-sm rounded-3 overflow-hidden mb-4 featured-widget">
+                <div class="card-header bg-dark py-2 border-0">
                     <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="fw-bold mb-0 text-white"><i class="fas fa-fire-alt me-2 animate-pulse"></i>Sản phẩm HOT</h6>
-                        <span class="badge bg-white text-danger rounded-pill px-2 py-1 fw-bold shadow-sm" style="font-size: 9px; letter-spacing: 0.5px;">TÀI TRỢ</span>
+                        <h6 class="fw-bold mb-0 text-white" style="font-size: 13px;"><i class="fas fa-fire-alt me-1 text-danger"></i> Sản phẩm HOT</h6>
+                        <span class="badge bg-secondary rounded-pill px-2 py-1 fw-bold" style="font-size: 8px; letter-spacing: 0.5px; opacity: 0.8;">TÀI TRỢ</span>
                     </div>
                 </div>
-                <div class="card-body p-3">
+                <div class="card-body p-2">
                     <?php for ($i = 0; $i < 3; $i++): ?>
                         <?php if (isset($sponsoredProducts[$i])): $p = $sponsoredProducts[$i]; ?>
-                            <!-- Thẻ sản phẩm thật VIP -->
-                            <div class="featured-item mb-3 p-2 rounded-3 transition-all <?= $i < 2 ? 'border-bottom' : '' ?>">
-                                <div class="d-flex align-items-start mb-2">
-                                    <div class="featured-img-wrap rounded-3 overflow-hidden flex-shrink-0 shadow-sm mt-1">
+                            <!-- Thẻ sản phẩm thật -->
+                            <div class="featured-item mb-2 p-2 rounded-2 transition-all <?= $i < 2 ? 'border-bottom' : '' ?>">
+                                <div class="d-flex align-items-start">
+                                    <div class="featured-img-wrap rounded-2 overflow-hidden flex-shrink-0 border mt-1">
                                         <img src="<?= asset($p['thumbnail'] ?? 'images/no-image.png') ?>" alt="<?= e($p['name']) ?>" class="w-100 h-100" style="object-fit: cover;">
                                     </div>
-                                    <div class="ms-3 flex-grow-1">
-                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-bold small hover-primary d-block mb-1 featured-title" title="<?= e($p['name']) ?>">
+                                    <div class="ms-2 flex-grow-1">
+                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-bold small hover-primary d-block mb-1 featured-title" title="<?= e($p['name']) ?>" style="font-size: 12px; line-height: 1.3;">
                                             <?= e($p['name']) ?>
                                         </a>
                                         <div class="d-flex align-items-center gap-2">
                                             <?php if ($p['sale_price']): ?>
-                                                <span class="text-danger fw-black small"><?= money($p['sale_price']) ?></span>
-                                                <span class="text-muted text-decoration-line-through" style="font-size: 10px;"><?= money($p['price']) ?></span>
+                                                <span class="text-danger fw-bold" style="font-size: 12px;"><?= money($p['sale_price']) ?></span>
+                                                <span class="text-muted text-decoration-line-through" style="font-size: 9px;"><?= money($p['price']) ?></span>
                                             <?php else: ?>
-                                                <span class="text-primary fw-black small"><?= money($p['price']) ?></span>
+                                                <span class="text-primary fw-bold" style="font-size: 12px;"><?= money($p['price']) ?></span>
                                             <?php endif; ?>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="d-flex justify-content-between align-items-center mt-2 px-1">
-                                    <div class="small text-muted d-flex align-items-center">
-                                        <div class="avatar-mini bg-light rounded-circle me-1" style="width: 18px; height: 18px; font-size: 9px; display: flex; align-items: center; justify-content: center;">
-                                            <i class="fas fa-user"></i>
-                                        </div>
-                                        <span style="font-size: 10.5px;"><?= e(Helper::truncate($p['seller_name'], 15)) ?></span>
+                                <div class="d-flex justify-content-between align-items-center mt-1 px-1">
+                                    <div class="small text-muted d-flex align-items-center" style="font-size: 10px;">
+                                        <i class="fas fa-user me-1"></i>
+                                        <span><?= e(Helper::truncate($p['seller_name'], 15)) ?></span>
                                     </div>
-                                    <span class="badge bg-success-subtle text-success border border-success border-opacity-10 rounded-pill" style="font-size: 9.5px;">
-                                        Đã bán: <strong><?= $p['total_sold'] ?? 0 ?></strong>
+                                    <span class="text-success fw-bold" style="font-size: 10px;">
+                                        Bán: <?= $p['total_sold'] ?? 0 ?>
                                     </span>
                                 </div>
+                            </div>
+                        <?php else: ?>
+                            <!-- Ô trống cho thuê -->
+                            <div class="mb-2 <?= $i < 2 ? 'border-bottom pb-2' : '' ?>">
+                                <div class="golden-slot p-3 text-center rounded-3 border-dashed position-relative">
+                                    <div class="position-relative z-1">
+                                        <div class="slot-icon mb-1">
+                                            <i class="fas fa-crown text-muted opacity-50"></i>
+                                        </div>
+                                        <h6 class="text-muted small fw-bold mb-1" style="font-size: 11px;">Vị Trí Vàng</h6>
+                                        <a href="https://t.me/admin_taphoammo" target="_blank" class="text-primary text-decoration-none fw-bold" style="font-size: 10px;">
+                                            Thuê ngay <i class="fas fa-chevron-right ms-1" style="font-size: 8px;"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    <?php endfor; ?>
+                </div>
                             </div>
                         <?php else: ?>
                             <!-- Ô trống cho thuê VIP -->
@@ -301,16 +318,10 @@ body {
     background-color: #e8f4fd !important;
     color: #0056b3 !important;
 }
-.bg-gradient-warning { background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%); }
-.bg-gradient-warning { background: linear-gradient(135deg, #f6d365 0%, #fda085 100%); }
-.btn-xs { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
-.fw-black { font-weight: 900; }
-.letter-spacing-1 { letter-spacing: 1px; }
-
-.featured-widget { border: 1px solid rgba(0,0,0,0.05); }
+.featured-widget { border: 1px solid #eee; }
 .featured-item { transition: all 0.2s ease; }
-.featured-item:hover { background: #fff8f0; transform: scale(1.02); }
-.featured-img-wrap { width: 55px; height: 55px; border: 1px solid #f1f5f9; }
+.featured-item:hover { background: #f8f9fa; }
+.featured-img-wrap { width: 45px; height: 45px; border-color: #eee !important; }
 .featured-title {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -321,40 +332,13 @@ body {
 }
 
 .golden-slot {
-    background: #fff;
-    border: 2px dashed #f6d365;
-    transition: all 0.3s ease;
+    background: #fdfdfd;
+    border: 1px dashed #ddd;
 }
 .golden-slot:hover {
-    border-style: solid;
-    background: #fffdf5;
-    box-shadow: 0 10px 20px rgba(246, 211, 101, 0.15);
+    background: #f8f9fa;
+    border-color: #ccc;
 }
-.slot-glow {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(circle at 50% 50%, rgba(246, 211, 101, 0.1), transparent);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-.golden-slot:hover .slot-glow { opacity: 1; }
-
-@keyframes pulse-custom {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
-}
-.animate-pulse { animation: pulse-custom 2s infinite; }
-
-@keyframes bounce-custom {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-}
-.animate-bounce { animation: bounce-custom 2s infinite; }
-
 .bg-success-subtle { background-color: rgba(25, 135, 84, 0.1); }
 </style>
 
