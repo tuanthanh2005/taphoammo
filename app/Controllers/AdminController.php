@@ -468,7 +468,34 @@ class AdminController extends Controller {
         ]);
     }
 
+    public function disputeDetail($id) {
+        require_once __DIR__ . '/../Models/Dispute.php';
+        $disputeModel = new Dispute();
+        
+        $dispute = $disputeModel->getDisputeDetail($id);
+        if (!$dispute) {
+            $this->redirect('/admin/disputes');
+            return;
+        }
+
+        // Fetch events for this dispute
+        $events = Database::getInstance()->fetchAll(
+            "SELECT de.*, u.name as actor_name 
+             FROM dispute_events de
+             LEFT JOIN users u ON de.actor_id = u.id
+             WHERE de.dispute_id = ?
+             ORDER BY de.created_at ASC",
+            [$id]
+        );
+
+        $this->view('admin/dispute_detail', [
+            'd' => $dispute,
+            'events' => $events
+        ]);
+    }
+
     public function resolveDispute($id) {
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/admin/disputes');
             return;

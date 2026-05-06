@@ -108,4 +108,21 @@ class Dispute extends Model {
             [$disputeId]
         );
     }
+
+    public function getDisputeDetail($id) {
+        return $this->db->fetchOne(
+            "SELECT d.*, o.order_code, o.total_amount as order_total,
+                    p.name as product_name,
+                    u.name as user_name, u.username as user_username, u.email as user_email,
+                    s.name as seller_name, s.username as seller_username, s.email as seller_email
+             FROM {$this->table} d
+             LEFT JOIN orders o ON d.order_id = o.id
+             LEFT JOIN order_items oi ON d.order_item_id = oi.id
+             LEFT JOIN products p ON oi.product_id = p.id
+             LEFT JOIN users u ON d.user_id = u.id
+             LEFT JOIN users s ON d.seller_id = s.id
+             WHERE d.id = ?",
+            [$id]
+        );
+    }
 }
