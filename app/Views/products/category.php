@@ -38,7 +38,7 @@
                 <div class="card-header bg-gradient-warning py-3 border-0">
                     <div class="d-flex justify-content-between align-items-center">
                         <h6 class="fw-bold mb-0 text-white"><i class="fas fa-fire-alt me-2 animate-pulse"></i>Sản phẩm HOT</h6>
-                        <span class="badge bg-white text-warning rounded-pill px-2 py-1 fw-bold" style="font-size: 9px; letter-spacing: 0.5px;">TÀI TRỢ</span>
+                        <span class="badge bg-white text-danger rounded-pill px-2 py-1 fw-bold shadow-sm" style="font-size: 9px; letter-spacing: 0.5px;">TÀI TRỢ</span>
                     </div>
                 </div>
                 <div class="card-body p-3">
@@ -46,12 +46,12 @@
                         <?php if (isset($sponsoredProducts[$i])): $p = $sponsoredProducts[$i]; ?>
                             <!-- Thẻ sản phẩm thật VIP -->
                             <div class="featured-item mb-3 p-2 rounded-3 transition-all <?= $i < 2 ? 'border-bottom' : '' ?>">
-                                <div class="d-flex align-items-center mb-2">
-                                    <div class="featured-img-wrap rounded-3 overflow-hidden flex-shrink-0 shadow-sm">
+                                <div class="d-flex align-items-start mb-2">
+                                    <div class="featured-img-wrap rounded-3 overflow-hidden flex-shrink-0 shadow-sm mt-1">
                                         <img src="<?= asset($p['thumbnail'] ?? 'images/no-image.png') ?>" alt="<?= e($p['name']) ?>" class="w-100 h-100" style="object-fit: cover;">
                                     </div>
-                                    <div class="ms-3 flex-grow-1 min-w-0">
-                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-bold small hover-primary d-block text-truncate mb-1" title="<?= e($p['name']) ?>">
+                                    <div class="ms-3 flex-grow-1">
+                                        <a href="<?= url('/product/' . $p['slug']) ?>" class="text-dark text-decoration-none fw-bold small hover-primary d-block mb-1 featured-title" title="<?= e($p['name']) ?>">
                                             <?= e($p['name']) ?>
                                         </a>
                                         <div class="d-flex align-items-center gap-2">
@@ -314,6 +314,14 @@ body {
 .featured-item { transition: all 0.2s ease; }
 .featured-item:hover { background: #fff8f0; transform: scale(1.02); }
 .featured-img-wrap { width: 55px; height: 55px; border: 1px solid #f1f5f9; }
+.featured-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+    max-height: 2.8em;
+}
 
 .golden-slot {
     background: #fff;
