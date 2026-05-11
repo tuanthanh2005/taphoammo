@@ -86,13 +86,13 @@
             <!-- Search bar ngang -->
             <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; overflow: hidden;">
                 <div class="card-body p-1">
-                    <form action="<?= url('/products') ?>" method="GET" class="d-flex w-100 align-items-stretch m-0">
+                    <form action="<?= url('/products') ?>" method="GET" class="d-flex flex-column flex-md-row w-100 align-items-stretch m-0">
                         <?php foreach($selectedCategories as $catId): ?>
                             <input type="hidden" name="category[]" value="<?= $catId ?>">
                         <?php endforeach; ?>
-                        <input type="text" name="search" class="form-control border-0 bg-transparent flex-grow-1 px-4 py-2" value="<?= e($_GET['search'] ?? '') ?>" placeholder="Tìm kiếm sản phẩm..." style="box-shadow: none; font-size: 0.95rem;">
+                        <input type="text" name="search" class="form-control border-0 bg-transparent flex-grow-1 px-3 px-md-4 py-2 border-bottom border-md-0" value="<?= e($_GET['search'] ?? '') ?>" placeholder="Tìm kiếm sản phẩm..." style="box-shadow: none; font-size: 0.95rem;">
                         
-                        <div class="border-start d-flex align-items-center" style="min-width: 140px; background-color: #f8fafc;">
+                        <div class="d-flex align-items-center border-bottom border-md-0 border-md-start" style="min-width: 140px; background-color: #f8fafc;">
                             <select class="form-select border-0 text-muted px-3 py-2 bg-transparent w-100" style="box-shadow: none; cursor: pointer; font-size: 0.9rem;">
                                 <option>Ngẫu nhiên</option>
                                 <option>Mới nhất</option>
@@ -102,7 +102,7 @@
                             </select>
                         </div>
                         
-                        <button type="submit" class="btn btn-success px-4 rounded-end border-0 text-nowrap d-flex align-items-center justify-content-center m-1" style="min-width: 110px; border-radius: 8px;">
+                        <button type="submit" class="btn btn-success px-4 rounded border-0 text-nowrap d-flex align-items-center justify-content-center m-1 mt-2 mt-md-1" style="min-width: 110px;">
                             <i class="fas fa-search me-2"></i> Tìm
                         </button>
                     </form>

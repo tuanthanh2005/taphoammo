@@ -22,7 +22,7 @@
                                 <p class="text-muted small">Bắt đầu kinh doanh sản phẩm số của bạn ngay hôm nay.</p>
                             </div>
 
-                            <form action="<?= url('/register-seller') ?>" method="POST">
+                            <form action="<?= url('/register-seller') ?>" method="POST" id="sellerRegForm">
                                 <?= csrf_field() ?>
                                 
                                 <div class="row g-3 mb-3">
@@ -41,11 +41,16 @@
                                     <input type="email" name="email" class="form-control rounded-3 bg-light border-0" required placeholder="example@email.com">
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label class="form-label small fw-bold text-muted">Mật khẩu</label>
-                                    <input type="password" name="password" class="form-control rounded-3 bg-light border-0" required minlength="6" placeholder="••••••••">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">Mật khẩu</label>
+                                        <input type="password" name="password" id="regPassword" class="form-control rounded-3 bg-light border-0" required minlength="6" placeholder="••••••••">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label small fw-bold text-muted">Nhập lại mật khẩu</label>
+                                        <input type="password" name="password_confirmation" id="regPasswordConfirm" class="form-control rounded-3 bg-light border-0" required minlength="6" placeholder="••••••••">
+                                    </div>
                                 </div>
-
                                 <div class="mb-4">
                                     <div class="form-check small">
                                         <input class="form-check-input" type="checkbox" id="agreeRules" required>
@@ -63,6 +68,20 @@
                                     <p class="small text-muted mb-0">Hệ thống sẽ xem xét và phê duyệt trong vòng 24h.</p>
                                 </div>
                             </form>
+                            <script>
+                                document.getElementById('sellerRegForm').addEventListener('submit', function(e) {
+                                    var pass = document.getElementById('regPassword').value;
+                                    var confirmPass = document.getElementById('regPasswordConfirm').value;
+                                    if (pass !== confirmPass) {
+                                        e.preventDefault();
+                                        Swal.fire({
+                                            icon: 'error',
+                                            title: 'Mật khẩu không khớp',
+                                            text: 'Vui lòng kiểm tra lại mật khẩu xác nhận của bạn.'
+                                        });
+                                    }
+                                });
+                            </script>
                         <?php endif; ?>
                     </div>
                 </div>

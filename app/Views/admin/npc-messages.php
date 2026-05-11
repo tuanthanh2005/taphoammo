@@ -129,13 +129,28 @@
                         <?php endif; ?>
                     </div>
 
-                    <div class="card-footer bg-white border-top p-3">
-                        <form action="<?= url('/admin/npc-messages/reply/' . $selectedConversation['id']) ?>" method="POST" class="d-flex gap-2 align-items-end">
+                    <div class="card-footer bg-white border-top p-3 position-relative">
+                        <!-- Preview container -->
+                        <div id="npcAttachmentPreview" class="d-none mb-2 position-relative d-inline-block">
+                            <img id="npcPreviewImg" src="" alt="Preview" class="img-thumbnail" style="max-height: 80px;">
+                            <button type="button" class="btn btn-sm btn-danger rounded-circle position-absolute top-0 start-100 translate-middle" id="npcRemoveAttachmentBtn" style="padding: 2px 6px;">
+                                <i class="fas fa-times" style="font-size: 10px;"></i>
+                            </button>
+                        </div>
+
+                        <form action="<?= url('/admin/npc-messages/reply/' . $selectedConversation['id']) ?>" method="POST" enctype="multipart/form-data" class="d-flex gap-2 align-items-end">
                             <?= csrf_field() ?>
+                            
+                            <label class="btn btn-light text-muted border npc-action-btn mb-0 shadow-sm" title="Đính kèm ảnh">
+                                <i class="fas fa-image"></i>
+                                <input type="file" name="attachment" id="npcAttachmentInput" class="d-none" accept="image/*">
+                            </label>
+
                             <div class="flex-grow-1">
-                                <textarea name="message" class="form-control npc-reply-input" rows="2" placeholder="Nhập trả lời với tư cách NPC..." required></textarea>
+                                <textarea name="message" id="npcMessageInput" class="form-control npc-reply-input shadow-sm" rows="1" placeholder="Nhập tin nhắn..."></textarea>
                             </div>
-                            <button type="submit" class="btn btn-primary npc-send-btn">
+                            
+                            <button type="submit" class="btn btn-primary npc-action-btn shadow-sm" id="npcSubmitBtn">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </form>
@@ -148,23 +163,27 @@
 
 <style>
 .npc-panel {
-    border-radius: 8px;
+    border-radius: 12px;
     overflow: hidden;
-    min-height: 640px;
+    height: calc(100vh - 160px);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
 }
 .npc-list {
-    max-height: 580px;
+    flex: 1;
     overflow-y: auto;
 }
 .npc-list .list-group-item {
     border-left: 0;
     border-right: 0;
-    padding: 16px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f1f5f9;
 }
 .npc-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     background: #eef2ff;
     color: #4f46e5;
     display: flex;
@@ -178,42 +197,55 @@
     color: #fff;
 }
 .npc-thread {
-    height: 482px;
+    flex: 1;
     overflow-y: auto;
     background: #f8fafc;
+    padding: 1rem;
 }
 .npc-empty {
-    min-height: 640px;
+    height: 100%;
+    flex: 1;
 }
 .npc-message {
-    max-width: min(620px, 82%);
-    border-radius: 8px;
-    padding: 12px 14px;
+    max-width: min(620px, 85%);
+    border-radius: 16px;
+    padding: 10px 14px;
     word-break: break-word;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .npc-message-user {
     background: #fff;
     border: 1px solid #e5e7eb;
+    border-bottom-left-radius: 4px;
 }
 .npc-message-bot {
     background: #4f46e5;
     color: #fff;
+    border-bottom-right-radius: 4px;
 }
 .message-text {
     white-space: normal;
-    line-height: 1.5;
+    line-height: 1.4;
 }
 .bg-primary-subtle { background-color: rgba(13, 110, 253, 0.1); }
 .bg-secondary-subtle { background-color: rgba(108, 117, 125, 0.1); }
 .min-width-0 { min-width: 0; }
 .npc-reply-input {
     resize: none;
-    border-radius: 8px;
+    border-radius: 24px;
+    padding: 10px 16px;
+    line-height: 1.4;
+    max-height: 120px;
+    overflow-y: auto;
 }
-.npc-send-btn {
-    width: 46px;
-    height: 46px;
-    border-radius: 8px;
+.npc-action-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
 }
 </style>
 
@@ -222,6 +254,59 @@ document.addEventListener('DOMContentLoaded', function () {
     const thread = document.getElementById('npcThread');
     if (thread) {
         thread.scrollTop = thread.scrollHeight;
+    }
+
+    const fileInput = document.getElementById('npcAttachmentInput');
+    const msgInput = document.getElementById('npcMessageInput');
+    const previewContainer = document.getElementById('npcAttachmentPreview');
+    const previewImg = document.getElementById('npcPreviewImg');
+    const removeBtn = document.getElementById('npcRemoveAttachmentBtn');
+    const submitBtn = document.getElementById('npcSubmitBtn');
+
+    if (fileInput) {
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const file = this.files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        previewImg.src = e.target.result;
+                        previewContainer.classList.remove('d-none');
+                    }
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Chỉ hỗ trợ đính kèm hình ảnh.');
+                    this.value = '';
+                }
+            }
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            fileInput.value = '';
+            previewContainer.classList.add('d-none');
+            previewImg.src = '';
+        });
+    }
+
+    if (msgInput) {
+        msgInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (this.value.trim() !== '' || (fileInput && fileInput.files.length > 0)) {
+                submitBtn.disabled = false;
+            }
+        });
+        
+        msgInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (this.value.trim() !== '' || (fileInput && fileInput.files.length > 0)) {
+                    this.closest('form').submit();
+                }
+            }
+        });
     }
 });
 </script>

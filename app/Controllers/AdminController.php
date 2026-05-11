@@ -763,11 +763,27 @@ class AdminController extends Controller {
         $systemUserId = Helper::getSystemUserId();
         $conversationId = (int)$id;
         $message = trim($_POST['message'] ?? '');
+        
+        $attachmentPath = null;
+        if (isset($_FILES['attachment']) && $_FILES['attachment']['error'] === UPLOAD_ERR_OK) {
+            $upload = Helper::uploadFile($_FILES['attachment'], 'chat');
+            if ($upload['success']) {
+                $attachmentPath = $upload['path'];
+            } else {
+                Session::setFlash('error', $upload['message']);
+                $this->redirect('/admin/npc-messages?conversation_id=' . $conversationId);
+                return;
+            }
+        }
 
-        if ($message === '') {
-            Session::setFlash('error', 'Vui lòng nhập nội dung trả lời.');
+        if ($message === '' && !$attachmentPath) {
+            Session::setFlash('error', 'Vui lòng nhập nội dung trả lời hoặc gửi tệp.');
             $this->redirect('/admin/npc-messages?conversation_id=' . $conversationId);
             return;
+        }
+
+        if ($message === '' && $attachmentPath) {
+            $message = '[Tệp đính kèm]';
         }
 
         $conversation = $db->fetchOne(
@@ -787,6 +803,7 @@ class AdminController extends Controller {
                 'conversation_id' => $conversationId,
                 'sender_id' => $systemUserId,
                 'message' => $message,
+                'attachment' => $attachmentPath,
                 'created_at' => date('Y-m-d H:i:s')
             ]);
 

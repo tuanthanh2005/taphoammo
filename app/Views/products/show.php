@@ -253,12 +253,12 @@
                             </div>
                             <div class="text-muted small">Người bán chuyên nghiệp</div>
                         </div>
-                        <div class="ms-auto">
+                        <div class="ms-auto flex-shrink-0 ms-2">
                             <?php
                             $sellerSlug = !empty($product['seller_username']) ? $product['seller_username'] : (string)$product['seller_id'];
                             ?>
                             <a href="<?= url('/seller/' . rawurlencode($sellerSlug)) ?>"
-                                class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                                class="btn btn-outline-primary btn-sm rounded-pill px-3 text-nowrap fw-medium">
                                 Xem Shop
                             </a>
                         </div>
