@@ -27,21 +27,7 @@ if (Auth::check()) {
     <style>
         /* Global Loader Styles */
         #global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 99999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.3s ease;
+            display: none !important;
         }
         #global-loader.active {
             visibility: visible;

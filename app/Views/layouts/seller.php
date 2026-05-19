@@ -136,26 +136,7 @@
 
         /* Global Loader */
         #global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-
-        #global-loader.active {
-            visibility: visible;
-            opacity: 1;
+            display: none !important;
         }
 
         .loader-content {
@@ -421,25 +402,21 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
             }
         });
 
-        // SMART GLOBAL LOADER LOGIC
+        // SMART GLOBAL LOADER LOGIC (DISABLED)
         let loaderTimeout;
         const showLoader = () => {
-            // Chỉ hiện loader nếu tác vụ mất hơn 500ms (0.5 giây)
-            loaderTimeout = setTimeout(() => {
-                document.getElementById('global-loader').classList.add('active');
-            }, 500);
+            // Disabled
         };
 
         const hideLoader = () => {
             clearTimeout(loaderTimeout);
-            document.getElementById('global-loader').classList.remove('active');
+            const loader = document.getElementById('global-loader');
+            if (loader) loader.classList.remove('active');
         };
 
         // Kích hoạt khi submit form (ngoại trừ các form có thuộc tính data-no-loader)
         document.addEventListener('submit', (e) => {
-            if (!e.target.hasAttribute('data-no-loader')) {
-                showLoader();
-            }
+            // Disabled
         });
 
         // Đảm bảo loader biến mất khi quay lại từ cache trình duyệt (nút Back)

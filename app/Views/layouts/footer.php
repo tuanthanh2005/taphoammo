@@ -290,12 +290,11 @@
     <?php require_once __DIR__ . '/chat_widget.php'; ?>
     <script src="<?= asset('js/main.js') ?>"></script>
     <script>
-        // SMART GLOBAL LOADER LOGIC
+        // SMART GLOBAL LOADER LOGIC (DISABLED GLOBALLY)
         (function() {
             let loaderTimeout;
             const showLoader = () => {
-                const loader = document.getElementById('global-loader');
-                if (loader) loader.classList.add('active');
+                // Disabled to prevent hanging on AJAX/popups
             };
 
             const hideLoader = () => {
@@ -306,9 +305,7 @@
 
             // Only show loader for form submissions to prevent "hanging" on menu navigation
             document.addEventListener('submit', (e) => {
-                if (!e.target.hasAttribute('data-no-loader')) {
-                    showLoader();
-                }
+                // Disabled
             });
 
             window.addEventListener('pageshow', (event) => {

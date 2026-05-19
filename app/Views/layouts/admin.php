@@ -61,25 +61,7 @@
 
         /* Global Loader Styles */
         #global-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.8);
-            backdrop-filter: blur(4px);
-            z-index: 99999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            visibility: hidden;
-            opacity: 0;
-            transition: all 0.3s ease;
-        }
-        #global-loader.active {
-            visibility: visible;
-            opacity: 1;
+            display: none !important;
         }
         .loader-content {
             text-align: center;
@@ -304,14 +286,11 @@
 
     <?php require_once __DIR__ . '/chat_widget.php'; ?>
     <script>
-        // SMART GLOBAL LOADER LOGIC
+        // SMART GLOBAL LOADER LOGIC (DISABLED)
         (function() {
             let loaderTimeout;
             const showLoader = () => {
-                loaderTimeout = setTimeout(() => {
-                    const loader = document.getElementById('global-loader');
-                    if (loader) loader.classList.add('active');
-                }, 500);
+                // Disabled
             };
 
             const hideLoader = () => {
@@ -321,7 +300,7 @@
             };
 
             document.addEventListener('submit', (e) => {
-                if (!e.target.hasAttribute('data-no-loader')) showLoader();
+                // Disabled
             });
             window.addEventListener('pageshow', (event) => {
                 if (event.persisted) hideLoader();
