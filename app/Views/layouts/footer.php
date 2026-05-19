@@ -96,7 +96,13 @@
                         <li><a href="javascript:void(0)" onclick="openInfoModal('support')">Trung tâm trợ giúp</a></li>
                         <li><a href="javascript:void(0)" onclick="openInfoModal('guide')">Hướng dẫn mua bán</a></li>
                         <li><a href="javascript:void(0)" onclick="openInfoModal('warranty')">Chính sách bảo hành</a></li>
+                        <?php 
+                        $dbFooter = Database::getInstance();
+                        $sellerRegEnabledFooter = $dbFooter->fetchOne("SELECT value FROM settings WHERE key_name = 'enable_seller_registration'")['value'] ?? 1;
+                        if ((int)$sellerRegEnabledFooter === 1): 
+                        ?>
                         <li><a href="<?= url('/nha-ban-hang') ?>" class="text-warning fw-bold"><i class="fas fa-rocket me-1"></i> Trở thành người bán</a></li>
+                        <?php endif; ?>
                     </ul>
                 </div>
 

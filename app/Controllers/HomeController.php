@@ -74,6 +74,14 @@ class HomeController extends Controller {
     }
 
     public function sellerRegistration() {
+        $db = Database::getInstance();
+        $isSellerRegEnabled = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'enable_seller_registration'")['value'] ?? 1;
+        if ((int)$isSellerRegEnabled === 0) {
+            Session::setFlash('error', 'Tính năng đăng ký nhà bán hàng hiện đang tạm khóa.');
+            $this->redirect('/');
+            return;
+        }
+
         $this->view('home/seller-registration', [
             'title' => 'Trở thành Nhà bán hàng - AI CỦA TÔI'
         ]);

@@ -39,24 +39,29 @@ if (Auth::check()) {
                             </div>
                             <input type="text" name="q" class="search-input-main"
                                 placeholder="Tìm tài khoản AI, phần mềm, khóa học..." required>
-                            <div class="search-filters-toggle" id="filterToggleBtn" title="Mở bộ lọc">
+                            <button type="button" class="search-filters-toggle" id="filterToggleBtn" title="Mở bộ lọc">
                                 <i class="fas fa-sliders-h"></i>
-                            </div>
+                            </button>
+                            <button type="submit" class="search-btn-ultra">
+                                <i class="fas fa-search"></i>
+                                <span>Tìm</span>
+                            </button>
                         </div>
 
                         <!-- Filter Panel (ẩn mặc định) -->
                         <div class="search-filters-panel" id="searchFilterPanel" style="display:none;">
-                            <select class="form-select filter-select" name="search_option">
-                                <option value="all">Tất cả loại</option>
-                                <option value="product">Sản phẩm</option>
-                                <option value="shop">Shop</option>
-                                <option value="seller">Seller</option>
-                            </select>
                             <select class="form-select filter-select" name="category">
                                 <option value="">Tất cả danh mục</option>
-                                <option value="accounts">Tài khoản</option>
-                                <option value="software">Phần mềm</option>
-                                <option value="courses">Khóa học</option>
+                                <?php foreach ($categories as $category): ?>
+                                    <option value="<?= (int) $category['id'] ?>"><?= e($category['name']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <select class="form-select filter-select" name="sort">
+                                <option value="random">Ngẫu nhiên</option>
+                                <option value="newest">Mới nhất</option>
+                                <option value="best_selling">Bán chạy</option>
+                                <option value="price_asc">Giá thấp đến cao</option>
+                                <option value="price_desc">Giá cao đến thấp</option>
                             </select>
                             <select class="form-select filter-select" name="price_range">
                                 <option value="">Tất cả giá</option>
@@ -67,10 +72,6 @@ if (Auth::check()) {
                             </select>
                         </div>
 
-                        <button type="submit" class="search-btn-ultra">
-                            <i class="fas fa-search me-2"></i>
-                            <span>TÌM NGAY</span>
-                        </button>
                     </form>
                 </div>
 
@@ -112,7 +113,7 @@ if (Auth::check()) {
     <div class="container-fluid px-lg-5">
         <div class="row gx-5">
             <!-- Sidebar Left VIP -->
-            <div class="col-xl-2 col-lg-2 d-none d-lg-block">
+            <div class="d-none">
                 <div class="sidebar-vip sticky-top pt-5" style="top: 120px;">
                     <div class="vip-banner-card mb-4">
                         <a href="<?= e($bannerLeftLink) ?>" class="banner-link-vip">
@@ -147,7 +148,7 @@ if (Auth::check()) {
             </div>
 
             <!-- 🔥 MAIN CONTENT 🔥 -->
-            <div class="col-xl-8 col-lg-8">
+            <div class="col-12">
                 <!-- Categories Compact Scroll -->
                 <section class="section-compact mb-4" data-aos="fade-up">
                     <div class="section-header-compact">
@@ -244,7 +245,7 @@ if (Auth::check()) {
                 <?php endif; ?>
 
                 <!-- 🔥 Mobile VIP Banners (Top) 🔥 -->
-                <div class="row g-3 d-lg-none mb-4" data-aos="fade-up">
+                <div class="d-none" data-aos="fade-up">
                     <div class="col-6">
                         <div class="vip-banner-card" style="aspect-ratio: auto;">
                             <a href="<?= e($bannerLeftLink) ?>" class="banner-link-vip" style="height: 220px;">
@@ -302,7 +303,7 @@ if (Auth::check()) {
                     </div>
                     <div class="vip-scroll-wrap">
                         <div class="vip-scroll-row">
-                            <?php for ($i = 0; $i < 10; $i++): ?>
+                            <?php for ($i = 0; $i < 12; $i++): ?>
                                 <?php if (isset($sponsoredProducts[$i])):
                                     $product = $sponsoredProducts[$i]; ?>
                                     <a href="<?= url('/product/' . $product['slug']) ?>" class="vip-card-sm">
@@ -353,7 +354,7 @@ if (Auth::check()) {
             </div>
 
             <!-- Sidebar Right VIP -->
-            <div class="col-xl-2 col-lg-2 d-none d-lg-block">
+            <div class="d-none">
                 <div class="sidebar-vip sticky-top pt-5" style="top: 120px;">
                     <div class="vip-banner-card mb-4">
                         <a href="<?= e($bannerRightLink) ?>" class="banner-link-vip">
@@ -493,29 +494,30 @@ if (Auth::check()) {
     }
 
     .search-container {
-        max-width: 640px;
+        max-width: 820px;
         margin: 0 auto;
         width: 100%;
     }
 
     .search-form-ultra {
-        background: var(--glass-bg);
+        background: rgba(255, 255, 255, 0.14);
         backdrop-filter: blur(20px);
-        border-radius: 18px;
+        border-radius: 22px;
         border: 1px solid var(--glass-border);
-        padding: 12px 16px 14px;
-        box-shadow: var(--shadow-vip);
+        padding: 10px;
+        box-shadow: 0 18px 48px rgba(31, 41, 55, 0.2);
     }
 
     .search-input-wrapper {
         position: relative;
         display: flex;
         align-items: center;
-        min-height: 58px;
-        margin-bottom: 18px;
+        min-height: 64px;
+        margin-bottom: 0;
         border-radius: 16px;
-        background: rgba(255, 255, 255, 0.12);
-        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.96);
+        border: 1px solid rgba(255, 255, 255, 0.42);
+        box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.08);
     }
 
     .search-icon-left,
@@ -523,7 +525,7 @@ if (Auth::check()) {
         position: absolute;
         top: 50%;
         transform: translateY(-50%);
-        color: rgba(255, 255, 255, 0.9);
+        color: var(--vip-purple);
         z-index: 2;
     }
 
@@ -532,7 +534,27 @@ if (Auth::check()) {
     }
 
     .search-filters-toggle {
-        right: 18px;
+        right: 124px;
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 12px;
+        background: #f3f0ff;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .search-filters-toggle:hover {
+        background: #e8ddff;
+        transform: translateY(-50%) scale(1.03);
+    }
+
+    .search-filters-toggle.is-active {
+        color: #fff;
+        background: var(--vip-purple);
     }
 
     .search-filters-toggle i {
@@ -544,14 +566,14 @@ if (Auth::check()) {
         border: none;
         background: transparent;
         width: 100%;
-        padding: 16px 52px 16px 54px;
-        font-size: 1.1rem;
-        color: #fff;
+        padding: 16px 178px 16px 56px;
+        font-size: 1.02rem;
+        color: #1f2937;
         outline: none;
     }
 
     .search-input-main::placeholder {
-        color: rgba(255, 255, 255, 0.7);
+        color: #9ca3af;
     }
 
     .search-filters-panel {
@@ -559,7 +581,8 @@ if (Auth::check()) {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 12px;
         padding: 0;
-        margin-bottom: 18px;
+        margin-top: 10px;
+        margin-bottom: 0;
         scrollbar-width: none;
     }
 
@@ -569,9 +592,9 @@ if (Auth::check()) {
 
     .filter-select {
         min-width: 0;
-        background: rgba(255, 255, 255, 0.15);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #fff;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(139, 92, 246, 0.14);
+        color: #374151;
         border-radius: 12px;
         padding: 12px 16px;
     }
@@ -584,19 +607,29 @@ if (Auth::check()) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 240px;
-        background: linear-gradient(45deg, #ff6b6b, #ffd93d, #6bcf7f, #4facfe);
-        background-size: 300% 300%;
+        gap: 8px;
+        position: absolute;
+        top: 50%;
+        right: 8px;
+        transform: translateY(-50%);
+        min-width: 104px;
+        min-height: 48px;
+        background: linear-gradient(135deg, var(--vip-purple), #a855f7);
         border: none;
-        padding: 18px 34px;
+        padding: 12px 18px;
         color: #fff;
         font-weight: 700;
-        font-size: 1.1rem;
-        border-radius: 16px;
-        position: relative;
+        font-size: 0.95rem;
+        border-radius: 13px;
         overflow: hidden;
         cursor: pointer;
-        animation: gradient-shift 3s ease infinite;
+        box-shadow: 0 10px 24px rgba(139, 92, 246, 0.32);
+        transition: all 0.2s ease;
+    }
+
+    .search-btn-ultra:hover {
+        transform: translateY(-50%) translateY(-1px);
+        box-shadow: 0 14px 28px rgba(139, 92, 246, 0.38);
     }
 
     @keyframes gradient-shift {
@@ -754,7 +787,7 @@ if (Auth::check()) {
 
     .categories-scroll-row {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 10px;
         width: 100%;
     }
@@ -763,49 +796,68 @@ if (Auth::check()) {
         display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 6px;
+        gap: 12px;
         text-decoration: none;
         color: inherit;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         width: 100%;
+        padding: 16px 10px;
+        border-radius: 20px;
+        background: #ffffff;
+        border: 1px solid rgba(139, 92, 246, 0.08);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
     }
 
     .cat-pill:hover {
-        transform: translateY(-4px);
+        transform: translateY(-6px);
+        background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+        border-color: rgba(139, 92, 246, 0.3);
+        box-shadow: 0 12px 25px rgba(139, 92, 246, 0.15);
     }
 
     .cat-pill-icon {
-        width: 54px;
-        height: 54px;
-        background: var(--vip-gradient);
-        border-radius: 14px;
+        width: 50px;
+        height: 50px;
+        background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+        border-radius: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35);
-        transition: all 0.3s ease;
+        box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.5), 0 4px 10px rgba(139, 92, 246, 0.1);
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         margin: 0 auto;
     }
 
     .cat-pill:hover .cat-pill-icon {
-        transform: scale(1.1) rotate(8deg);
-        box-shadow: 0 8px 24px rgba(139, 92, 246, 0.5);
+        transform: scale(1.08) rotate(5deg);
+        background: linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%);
+        box-shadow: 0 8px 20px rgba(139, 92, 246, 0.4);
     }
 
     .cat-pill-icon i {
-        font-size: 1.25rem;
+        font-size: 1.3rem;
+        color: #8b5cf6;
+        transition: all 0.3s ease;
+    }
+
+    .cat-pill:hover .cat-pill-icon i {
         color: white;
     }
 
     .cat-pill-name {
-        font-size: 0.7rem;
-        font-weight: 600;
+        font-size: 0.8rem;
+        font-weight: 700;
         text-align: center;
-        color: #374151;
-        line-height: 1.2;
+        color: #1f2937;
+        line-height: 1.3;
         white-space: normal;
         word-break: break-word;
         max-width: 100%;
+        transition: color 0.3s ease;
+    }
+
+    .cat-pill:hover .cat-pill-name {
+        color: #7c3aed;
     }
 
     /* 🔥 PRODUCTS ULTRA 🔥 */
@@ -1054,7 +1106,7 @@ if (Auth::check()) {
 
     .vip-scroll-row {
         display: grid;
-        grid-template-columns: repeat(5, 1fr);
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
         gap: 12px;
         width: 100%;
     }
@@ -1391,14 +1443,14 @@ if (Auth::check()) {
         }
 
         .search-input-wrapper {
-            min-height: 48px;
-            margin-bottom: 10px;
+            min-height: 54px;
+            margin-bottom: 0;
             border-radius: 12px;
         }
 
         .search-input-main {
             font-size: 0.9rem;
-            padding: 12px 40px 12px 42px;
+            padding: 12px 112px 12px 42px;
         }
 
         .search-icon-left {
@@ -1410,7 +1462,10 @@ if (Auth::check()) {
         }
 
         .search-filters-toggle {
-            right: 14px;
+            right: 62px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
         }
 
         .search-filters-toggle i {
@@ -1418,17 +1473,22 @@ if (Auth::check()) {
         }
 
         .search-btn-ultra {
-            width: 100%;
+            width: 46px;
             min-width: unset;
-            padding: 12px 20px;
+            min-height: 38px;
+            padding: 0;
             font-size: 0.95rem;
-            border-radius: 12px;
-            display: block;
+            border-radius: 10px;
+        }
+
+        .search-btn-ultra span {
+            display: none;
         }
 
         .search-filters-panel {
             grid-template-columns: 1fr;
-            margin-bottom: 10px;
+            margin-top: 10px;
+            margin-bottom: 0;
         }
 
         .products-grid-ultra {
@@ -1474,14 +1534,16 @@ if (Auth::check()) {
 
         .categories-scroll-row {
             display: grid !important;
-            grid-template-columns: repeat(5, 1fr) !important;
-            gap: 6px !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 10px !important;
             width: 100% !important;
         }
 
         .cat-pill {
             width: 100% !important;
             flex-shrink: unset;
+            padding: 12px 4px !important;
+            gap: 6px !important;
         }
 
         .cat-pill-icon {
@@ -1522,13 +1584,24 @@ if (Auth::check()) {
         }
 
         .search-input-main {
-            padding: 10px 40px;
+            padding: 10px 100px 10px 38px;
             font-size: 0.9rem;
         }
 
         .search-btn-ultra {
-            padding: 10px 18px;
+            width: 42px;
+            min-width: unset;
+            min-height: 38px;
+            padding: 0;
+            right: 8px;
             font-size: 0.9rem;
+            border-radius: 10px;
+        }
+
+        .search-filters-toggle {
+            right: 56px;
+            width: 38px;
+            height: 38px;
             border-radius: 10px;
         }
 
@@ -1558,17 +1631,18 @@ if (Auth::check()) {
         }
 
         .cat-pill {
-            width: 60px;
+            width: 100%;
         }
 
         .cat-pill-icon {
             width: 40px;
             height: 40px;
+            border-radius: 12px;
         }
 
         .cat-pill-name {
-            font-size: 0.6rem;
-            max-width: 60px;
+            font-size: 0.65rem;
+            max-width: 100%;
         }
 
         .cta-btn-ultra {
@@ -1636,8 +1710,7 @@ if (Auth::check()) {
                 filterPanel.style.maxHeight = '0';
                 filterPanel.style.opacity = '0';
                 setTimeout(() => { filterPanel.style.display = 'none'; }, 250);
-                filterBtn.style.background = 'transparent';
-                filterBtn.style.borderRadius = '';
+                filterBtn.classList.remove('is-active');
             } else {
                 filterPanel.style.display = 'grid';
                 filterPanel.style.maxHeight = '0';
@@ -1647,8 +1720,7 @@ if (Auth::check()) {
                     filterPanel.style.maxHeight = '200px';
                     filterPanel.style.opacity = '1';
                 });
-                filterBtn.style.background = 'rgba(255,255,255,0.25)';
-                filterBtn.style.borderRadius = '8px';
+                filterBtn.classList.add('is-active');
             }
         });
     }

@@ -5,7 +5,7 @@
     <div class="row">
 
         <!-- Sidebar (Bộ lọc) -->
-        <div class="col-lg-3 col-md-4 mb-4">
+        <div class="d-none">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">Bộ lọc danh mục</h6>
@@ -85,7 +85,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="col-lg-9 col-md-8">
+        <div class="col-12">
 
             <!-- Search bar ngang -->
             <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; overflow: hidden;">
@@ -129,7 +129,7 @@
                     <?php foreach ($products as $index => $product): ?>
 
                         <!-- Horizontal Product Card -->
-                        <div class="col-xl-6 col-lg-12">
+                        <div class="col-xxl-4 col-xl-4 col-lg-6">
                             <div class="card h-100 border-0 shadow-sm product-horizontal-card position-relative">
                                 <div class="row g-0 p-3 h-100">
                                     <!-- Trái: Hình ảnh & Giá -->

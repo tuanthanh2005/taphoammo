@@ -109,10 +109,32 @@ class Product extends Model {
             $where[] = 'p.sale_price > 0 AND p.sale_price < p.price';
         }
 
+        if (!empty($filters['price_range'])) {
+            [$minPrice, $maxPrice] = array_pad(explode('-', (string) $filters['price_range'], 2), 2, '');
+            $priceExpr = "CASE WHEN p.sale_price > 0 AND p.sale_price < p.price THEN p.sale_price ELSE p.price END";
+
+            if ($minPrice !== '' && is_numeric($minPrice)) {
+                $where[] = "{$priceExpr} >= ?";
+                $params[] = (float) $minPrice;
+            }
+
+            if ($maxPrice !== '' && is_numeric($maxPrice)) {
+                $where[] = "{$priceExpr} <= ?";
+                $params[] = (float) $maxPrice;
+            }
+        }
+
         $orderBy = 'p.created_at DESC';
         if (!empty($filters['sort'])) {
             switch ($filters['sort']) {
+                case 'random':
+                    $orderBy = 'RAND()';
+                    break;
+                case 'newest':
+                    $orderBy = 'p.created_at DESC';
+                    break;
                 case 'hot':
+                case 'best_selling':
                     $orderBy = 'p.total_sold DESC, p.created_at DESC';
                     break;
                 case 'top_seller':

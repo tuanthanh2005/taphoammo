@@ -20,13 +20,10 @@ class ProductController extends Controller {
             $filters['search'] = $_GET['search'];
         }
 
-        if (!empty($_GET['sort'])) {
-            $filters['sort'] = $_GET['sort'];
-        }
-
         if (isset($_GET['on_sale'])) {
             $filters['on_sale'] = $_GET['on_sale'];
         }
+        $filters['sort'] = $_GET['sort'] ?? 'random';
         
         $products = $productModel->getAll($filters, $page, $perPage);
         $categories = $categoryModel->getActive();
@@ -68,6 +65,8 @@ class ProductController extends Controller {
         if (isset($_GET['q'])) {
             $filters['search'] = $_GET['q'];
         }
+
+        $filters['sort'] = $_GET['sort'] ?? 'random';
 
         $products = $productModel->getAll($filters, $page, $perPage);
         
@@ -137,9 +136,19 @@ class ProductController extends Controller {
         $page = $_GET['page'] ?? 1;
         $perPage = 20;
         
-        $products = $productModel->getAll([
-            'search' => $keyword
-        ], $page, $perPage);
+        $filters = ['search' => $keyword];
+
+        if (!empty($_GET['category'])) {
+            $filters['category_id'] = $_GET['category'];
+        }
+
+        if (!empty($_GET['price_range'])) {
+            $filters['price_range'] = $_GET['price_range'];
+        }
+
+        $filters['sort'] = $_GET['sort'] ?? 'random';
+
+        $products = $productModel->getAll($filters, $page, $perPage);
 
         $categories = $categoryModel->getActive();
         $sponsoredProducts = $productModel->getSponsored(3);

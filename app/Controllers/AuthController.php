@@ -243,6 +243,14 @@ class AuthController extends Controller {
     }
 
     public function registerAsSeller() {
+        $db = Database::getInstance();
+        $isSellerRegEnabled = $db->fetchOne("SELECT value FROM settings WHERE key_name = 'enable_seller_registration'")['value'] ?? 1;
+        if ((int)$isSellerRegEnabled === 0) {
+            Session::setFlash('error', 'Tính năng đăng ký người bán đang bị tạm khóa.');
+            $this->redirect('/');
+            return;
+        }
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/nha-ban-hang');
             return;

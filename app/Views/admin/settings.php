@@ -62,21 +62,28 @@ ob_start();
                 <div class="col-12 mt-5">
                     <h6 class="fw-bold mb-3 text-dark border-start border-4 border-primary ps-3">Cấu hình chức năng</h6>
                     <div class="row g-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <div class="form-check form-switch card p-3 shadow-none border h-100">
+                                <input type="hidden" name="enable_seller_registration" value="0">
+                                <input class="form-check-input ms-0 me-2" type="checkbox" name="enable_seller_registration" value="1" <?= ($settings['enable_seller_registration'] ?? 1) ? 'checked' : '' ?>>
+                                <label class="form-check-label fw-semibold">Đăng ký bán hàng</label>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="form-check form-switch card p-3 shadow-none border h-100">
                                 <input type="hidden" name="enable_product_approval" value="0">
                                 <input class="form-check-input ms-0 me-2" type="checkbox" name="enable_product_approval" value="1" <?= ($settings['enable_product_approval'] ?? 1) ? 'checked' : '' ?>>
-                                <label class="form-check-label fw-semibold">Duyệt sản phẩm seller</label>
+                                <label class="form-check-label fw-semibold">Duyệt SP seller</label>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-check form-switch card p-3 shadow-none border h-100">
                                 <input type="hidden" name="enable_google_login" value="0">
                                 <input class="form-check-input ms-0 me-2" type="checkbox" name="enable_google_login" value="1" <?= ($settings['enable_google_login'] ?? 1) ? 'checked' : '' ?>>
                                 <label class="form-check-label fw-semibold">Đăng nhập Google</label>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <div class="form-check form-switch card p-3 shadow-none border h-100">
                                 <input type="hidden" name="enable_affiliate" value="0">
                                 <input class="form-check-input ms-0 me-2" type="checkbox" name="enable_affiliate" value="1" <?= ($settings['enable_affiliate'] ?? 1) ? 'checked' : '' ?>>

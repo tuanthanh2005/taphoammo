@@ -86,37 +86,80 @@ if (Auth::check()) {
             <div class="loader-text text-uppercase">Đang kết nối...</div>
         </div>
     </div>
-    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm site-navbar">
         <div class="container">
             <a class="navbar-brand fw-bold text-success" href="<?= url('/') ?>">
                 <i class="fas fa-store"></i> AI CỦA TÔI
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler site-navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Mở menu">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav mx-auto">
+                <ul class="navbar-nav site-main-nav mx-auto">
                     <?php
                     $menuModel = new Menu();
                     $menuTree = $menuModel->getTree();
+                    $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+                    
+                    $headerDbSettings = Database::getInstance();
+                    $isSellerRegEnabledMenu = $headerDbSettings->fetchOne("SELECT value FROM settings WHERE key_name = 'enable_seller_registration'")['value'] ?? 1;
+
+                    $isMenuActive = function ($menuUrl) use ($currentPath) {
+                        $menuUrl = trim((string) $menuUrl);
+
+                        if ($menuUrl === '' || $menuUrl === '#' || stripos($menuUrl, 'javascript:') === 0) {
+                            return false;
+                        }
+
+                        $path = parse_url($menuUrl, PHP_URL_PATH);
+                        if ($path === null || $path === false || $path === '') {
+                            $path = parse_url(url($menuUrl), PHP_URL_PATH) ?: $menuUrl;
+                        }
+
+                        $path = '/' . trim($path, '/');
+
+                        if ($path === '/') {
+                            return $currentPath === '/';
+                        }
+
+                        return $currentPath === $path;
+                    };
+                    
                     foreach ($menuTree as $menu):
+                        if ((int)$isSellerRegEnabledMenu === 0 && strpos($menu['url'], 'nha-ban-hang') !== false) {
+                            continue;
+                        }
+                        
+                        $menuActive = $isMenuActive($menu['url']);
+                        if (!empty($menu['children'])) {
+                            foreach ($menu['children'] as $child) {
+                                if ($isMenuActive($child['url'])) {
+                                    $menuActive = true;
+                                    break;
+                                }
+                            }
+                        }
                         if (empty($menu['children'])):
                     ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="<?= url($menu['url']) ?>">
+                            <a class="nav-link site-nav-link <?= $menuActive ? 'active' : '' ?>" href="<?= url($menu['url']) ?>">
                                 <?php if ($menu['icon']): ?><i class="<?= e($menu['icon']) ?>"></i><?php endif; ?>
                                 <?= e($menu['title']) ?>
                             </a>
                         </li>
                     <?php else: ?>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="<?= url($menu['url']) ?>" id="menuDropdown<?= $menu['id'] ?>" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link site-nav-link dropdown-toggle <?= $menuActive ? 'active' : '' ?>" href="<?= url($menu['url']) ?>" id="menuDropdown<?= $menu['id'] ?>" role="button" data-bs-toggle="dropdown">
                                 <?php if ($menu['icon']): ?><i class="<?= e($menu['icon']) ?>"></i><?php endif; ?>
                                 <?= e($menu['title']) ?>
                             </a>
-                            <ul class="dropdown-menu border-0 shadow-sm">
-                                <?php foreach ($menu['children'] as $child): ?>
-                                <li><a class="dropdown-item py-2" href="<?= url($child['url']) ?>">
+                            <ul class="dropdown-menu site-dropdown-menu">
+                                <?php foreach ($menu['children'] as $child): 
+                                    if ((int)$isSellerRegEnabledMenu === 0 && strpos($child['url'], 'nha-ban-hang') !== false) {
+                                        continue;
+                                    }
+                                ?>
+                                <li><a class="dropdown-item site-dropdown-item" href="<?= url($child['url']) ?>">
                                     <?php
                                     $iconClass = !empty($child['icon']) ? $child['icon'] : 'fas fa-chevron-right';
                                     if (strpos($iconClass, ' ') === false) {
@@ -126,7 +169,7 @@ if (Auth::check()) {
                                         }
                                     }
                                     ?>
-                                    <i class="<?= $iconClass ?> text-success" style="width: 20px;"></i> <?= e($child['title']) ?>
+                                    <i class="<?= $iconClass ?>"></i> <span><?= e($child['title']) ?></span>
                                 </a></li>
                                 <?php endforeach; ?>
                             </ul>
@@ -137,7 +180,7 @@ if (Auth::check()) {
                     ?>
                 </ul>
 
-                <ul class="navbar-nav align-items-center d-none d-lg-flex">
+                <ul class="navbar-nav site-user-nav align-items-center d-none d-lg-flex">
                     <?php if (Auth::check()): ?>
                         <?php
                         $headerWalletService = new WalletService();
@@ -145,7 +188,7 @@ if (Auth::check()) {
                         $headerWalletBalance = $headerWallet['balance'] ?? 0;
                         ?>
                         <li class="nav-item me-2 position-relative">
-                            <button onclick="event.stopPropagation(); toggleInboxWidget()" class="btn btn-link p-2 d-flex align-items-center justify-content-center position-relative text-secondary shadow-none border-0" style="width: 40px; height: 40px; text-decoration: none;">
+                            <button onclick="event.stopPropagation(); toggleInboxWidget()" class="btn site-icon-btn position-relative">
                                 <i class="fas fa-comment-dots fs-5"></i>
                                 <?php $unreadCount = (new Conversation())->getTotalUnread(Auth::id()); ?>
                                 <span id="globalUnreadBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger <?= $unreadCount > 0 ? '' : 'd-none' ?>" style="font-size: 0.65rem; padding: 0.25em 0.6em; border: 2px solid #fff;">
@@ -155,17 +198,17 @@ if (Auth::check()) {
                         </li>
 
                         <li class="nav-item me-2">
-                            <a class="btn btn-success rounded-pill px-3 py-2 fw-bold d-flex align-items-center gap-2" href="<?= url('/user/wallet') ?>" style="font-size: 0.95rem;">
+                            <a class="btn site-wallet-btn" href="<?= url('/user/wallet') ?>">
                                 <i class="fas fa-wallet"></i>
                                 <span><?= compact_money($headerWalletBalance) ?></span>
                             </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link site-account-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user-circle fs-3 text-secondary"></i>
                                 <span><?= e(Auth::user()['name']) ?></span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
+                            <ul class="dropdown-menu dropdown-menu-end site-dropdown-menu">
                                 <?php if (Auth::isAdmin()): ?>
                                     <li><a class="dropdown-item" href="<?= url('/admin/dashboard') ?>"><i class="fas fa-tachometer-alt"></i> Admin</a></li>
                                 <?php endif; ?>
@@ -191,7 +234,7 @@ if (Auth::check()) {
                     <?php endif; ?>
                 </ul>
 
-                <ul class="navbar-nav d-lg-none border-top mt-2 pt-3">
+                <ul class="navbar-nav site-mobile-nav d-lg-none">
                     <?php if (Auth::check()): ?>
                         <li class="nav-item">
                             <span class="nav-link fw-bold text-dark text-uppercase small opacity-50 mb-2">Tài khoản</span>

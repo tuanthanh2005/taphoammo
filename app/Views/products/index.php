@@ -5,7 +5,7 @@
     <div class="row">
         
         <!-- Sidebar (Bộ lọc) -->
-        <div class="col-lg-3 col-md-4 mb-4">
+        <div class="d-none">
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">Bộ lọc</h6>
@@ -81,7 +81,7 @@
         </div>
 
         <!-- Main Content (Danh sách sản phẩm) -->
-        <div class="col-lg-9 col-md-8">
+        <div class="col-12">
             
             <!-- Search bar ngang -->
             <div class="card border-0 shadow-sm mb-4" style="border-radius: 10px; overflow: hidden;">
@@ -93,12 +93,12 @@
                         <input type="text" name="search" class="form-control border-0 bg-transparent flex-grow-1 px-3 px-md-4 py-2 border-bottom border-md-0" value="<?= e($_GET['search'] ?? '') ?>" placeholder="Tìm kiếm sản phẩm..." style="box-shadow: none; font-size: 0.95rem;">
                         
                         <div class="d-flex align-items-center border-bottom border-md-0 border-md-start" style="min-width: 140px; background-color: #f8fafc;">
-                            <select class="form-select border-0 text-muted px-3 py-2 bg-transparent w-100" style="box-shadow: none; cursor: pointer; font-size: 0.9rem;">
-                                <option>Ngẫu nhiên</option>
-                                <option>Mới nhất</option>
-                                <option>Bán chạy</option>
-                                <option>Giá ↑</option>
-                                <option>Giá ↓</option>
+                            <select name="sort" class="form-select border-0 text-muted px-3 py-2 bg-transparent w-100" style="box-shadow: none; cursor: pointer; font-size: 0.9rem;">
+                                <option value="random" <?= ($_GET['sort'] ?? 'random') === 'random' ? 'selected' : '' ?>>Ngẫu nhiên</option>
+                                <option value="newest" <?= ($_GET['sort'] ?? '') === 'newest' ? 'selected' : '' ?>>Mới nhất</option>
+                                <option value="best_selling" <?= ($_GET['sort'] ?? '') === 'best_selling' ? 'selected' : '' ?>>Bán chạy</option>
+                                <option value="price_asc" <?= ($_GET['sort'] ?? '') === 'price_asc' ? 'selected' : '' ?>>Giá ↑</option>
+                                <option value="price_desc" <?= ($_GET['sort'] ?? '') === 'price_desc' ? 'selected' : '' ?>>Giá ↓</option>
                             </select>
                         </div>
                         
@@ -115,22 +115,31 @@
                 <span class="text-muted small"><?= count($products) ?> sản phẩm</span>
             </div>
             
+            <?php
+            $currentSort = $_GET['sort'] ?? 'random';
+            $sortTabs = [
+                'random' => ['icon' => 'fas fa-random', 'label' => 'Ngẫu nhiên'],
+                'newest' => ['icon' => '', 'label' => 'Mới nhất'],
+                'best_selling' => ['icon' => '', 'label' => 'Bán chạy'],
+                'price_asc' => ['icon' => '', 'label' => 'Giá ↑'],
+                'price_desc' => ['icon' => '', 'label' => 'Giá ↓'],
+            ];
+            $sortUrl = function ($sort) {
+                $params = $_GET;
+                unset($params['page']);
+                $params['sort'] = $sort;
+                return '?' . http_build_query($params);
+            };
+            ?>
             <ul class="nav nav-tabs border-0 mb-3 filter-tabs">
-                <li class="nav-item">
-                    <a class="nav-link active fw-bold text-success" href="#"><i class="fas fa-random"></i> Ngẫu nhiên</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-muted" href="#">Mới nhất</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-muted" href="#">Bán chạy</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-muted" href="#">Giá ↑</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-muted" href="#">Giá ↓</a>
-                </li>
+                <?php foreach ($sortTabs as $sortKey => $tab): ?>
+                    <li class="nav-item">
+                        <a class="nav-link <?= $currentSort === $sortKey ? 'active fw-bold text-success' : 'text-muted' ?>" href="<?= e($sortUrl($sortKey)) ?>">
+                            <?php if ($tab['icon']): ?><i class="<?= e($tab['icon']) ?>"></i><?php endif; ?>
+                            <?= e($tab['label']) ?>
+                        </a>
+                    </li>
+                <?php endforeach; ?>
             </ul>
             
             <!-- Alert -->
@@ -151,7 +160,7 @@
                     <?php foreach ($products as $index => $product): ?>
                     
                     <!-- Horizontal Product Card -->
-                    <div class="col-xl-6 col-lg-12">
+                    <div class="col-xxl-4 col-xl-4 col-lg-6">
                         <div class="card h-100 border-0 shadow-sm product-horizontal-card position-relative">
                             <div class="row g-0 p-3 h-100">
                                 <!-- Trái: Hình ảnh & Giá -->
