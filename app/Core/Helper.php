@@ -525,6 +525,9 @@ class Helper
         if (
             str_contains($content, 'Sản phẩm bàn giao thủ công. Vui lòng liên hệ Người bán qua mục Chat.')
             || str_contains($content, 'Đơn hàng #')
+            || trim($content) === 'Bàn giao thủ công'
+            || str_contains(mb_strtolower($content), 'bàn giao thủ công')
+            || str_contains(strtolower($content), 'ban giao thu cong')
         ) {
             return [
                 'type' => 'manual_delivery',
