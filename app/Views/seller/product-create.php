@@ -173,11 +173,10 @@ foreach ($categories as $cat) {
                             <table class="table table-sm table-borderless align-middle" id="variantsTable" style="min-width: 900px;">
                                 <thead class="text-muted small text-uppercase">
                                     <tr>
-                                        <th style="width: 25%;">Tên gói</th>
-                                        <th style="width: 20%;">Giá / Sale</th>
-                                        <th style="width: 15%;">Số lượng</th>
-                                        <th style="width: 30%;">Nội dung bàn giao</th>
-                                        <th style="width: 5%;" class="text-center">Ghi chú?</th>
+                                        <th style="width: 30%;">Tên gói</th>
+                                        <th style="width: 30%;">Giá / Sale</th>
+                                        <th style="width: 25%;">Số lượng</th>
+                                        <th style="width: 10%;" class="text-center">Ghi chú?</th>
                                         <th style="width: 5%;"></th>
                                     </tr>
                                 </thead>
@@ -249,10 +248,6 @@ foreach ($categories as $cat) {
                             <div class="mb-2">
                                 <label class="form-label small mb-1">Nạp kho thêm (Số lượng)</label>
                                 <input type="number" name="main_stock_add" class="form-control form-control-sm" placeholder="VD: 10" min="0">
-                            </div>
-                            <div>
-                                <label class="form-label small mb-1">Nội dung bàn giao cố định</label>
-                                <textarea name="static_content" class="form-control form-control-sm" rows="2" placeholder="Nội dung gửi khách mỗi khi mua (Dành cho Link, File, Dịch vụ)"></textarea>
                             </div>
                         </div>
                     </div>
@@ -718,10 +713,6 @@ foreach ($categories as $cat) {
             </td>
             <td>
                 <input type="number" name="variants[${index}][stock_add]" class="form-control form-control-sm" placeholder="Số lượng nạp..." min="0">
-            </td>
-            <td>
-                <textarea name="variants[${index}][static_content]" class="form-control form-control-sm" rows="2" placeholder="Nội dung bàn giao cố định (Link, File, hoặc thông tin gói)"></textarea>
-                <div class="form-text mt-1" style="font-size: 0.65rem;">Gửi cho khách mỗi khi mua gói này.</div>
             </td>
             <td class="text-center">
                 <div class="form-check form-check-inline m-0">
