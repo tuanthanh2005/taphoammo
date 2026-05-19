@@ -94,26 +94,50 @@
 </div>
 
 <style>
-    /* Reuse Product Cards Style from Home */
+    .seller-shop-header {
+        position: relative;
+        overflow: hidden;
+    }
+    .seller-shop-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+        pointer-events: none;
+    }
+    .seller-avatar-large {
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.2), 0 10px 25px rgba(0, 0, 0, 0.15);
+        transition: transform 0.3s ease;
+    }
+    .seller-avatar-large:hover {
+        transform: scale(1.05);
+    }
     .section-title {
         position: relative;
-        font-size: 1.5rem;
+        font-size: 1.4rem;
+        font-weight: 700;
     }
     .product-card {
-        transition: all 0.3s ease;
-        border-radius: 8px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1px solid rgba(0, 0, 0, 0.05) !important;
+        border-radius: 16px;
+        overflow: hidden;
     }
     .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+        transform: translateY(-6px);
+        box-shadow: 0 15px 30px rgba(139, 92, 246, 0.08) !important;
+        border-color: rgba(139, 92, 246, 0.2) !important;
     }
     .product-img {
-        height: 180px;
+        height: 170px;
         object-fit: cover;
-        transition: transform 0.5s ease;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .product-card:hover .product-img {
-        transform: scale(1.05);
+        transform: scale(1.04);
     }
     .product-title {
         line-height: 1.4;
@@ -122,15 +146,20 @@
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
+        font-weight: 600;
     }
-    .product-title a:hover {
-        color: #8b5cf6 !important;
+    .product-title a {
+        color: #1f2937;
+        transition: color 0.2s ease;
+    }
+    .product-card:hover .product-title a {
+        color: var(--brand-main) !important;
     }
     .product-badges {
         position: absolute;
-        top: 8px;
-        left: 8px;
+        top: 10px;
+        left: 10px;
         z-index: 2;
     }
     .product-action-overlay {
@@ -139,7 +168,8 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0,0,0,0.3);
+        background: rgba(139, 92, 246, 0.15);
+        backdrop-filter: blur(2px);
         opacity: 0;
         transition: all 0.3s ease;
         z-index: 3;
@@ -147,5 +177,55 @@
     .product-card:hover .product-action-overlay {
         opacity: 1;
     }
+
+    /* Mobile Responsive Styles */
+    @media (max-width: 767.98px) {
+        .seller-shop-header {
+            padding-top: 2.5rem !important;
+            padding-bottom: 2.5rem !important;
+            margin-bottom: 2rem !important;
+        }
+        .seller-avatar-large {
+            width: 80px !important;
+            height: 80px !important;
+            font-size: 32px !important;
+        }
+        .seller-shop-header h2 {
+            font-size: 1.5rem !important;
+        }
+        .product-img {
+            height: 130px !important;
+        }
+        .product-action-overlay {
+            display: none !important; /* Disable overlay for touch screens */
+        }
+        .product-card .card-body {
+            padding: 10px !important;
+        }
+        .product-title {
+            font-size: 0.8rem !important;
+            height: 2.8em !important;
+            margin-bottom: 6px !important;
+        }
+        .product-price {
+            font-size: 0.85rem !important;
+        }
+        .stock-badge {
+            font-size: 10px !important;
+            padding: 4px 6px !important;
+        }
+        .section-title {
+            font-size: 1.15rem !important;
+        }
+        .container.mb-5.pb-5 {
+            padding-left: 10px;
+            padding-right: 10px;
+        }
+        .row.g-4 {
+            --bs-gutter-x: 10px;
+            --bs-gutter-y: 10px;
+        }
+    }
+</style>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
