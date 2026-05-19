@@ -22,9 +22,11 @@ class DisputeService {
             }
 
             $params = [$orderId];
-            $sql = "SELECT oi.*, p.name as product_name, p.product_type, COALESCE(p.warranty_days, 0) as warranty_days, p.warranty_note
+            $sql = "SELECT oi.*, p.name as product_name, p.product_type,
+                           COALESCE(pv.warranty_days, p.warranty_days, 0) as warranty_days, p.warranty_note
                     FROM order_items oi
                     LEFT JOIN products p ON p.id = oi.product_id
+                    LEFT JOIN product_variants pv ON pv.id = oi.variant_id
                     WHERE oi.order_id = ?";
             if ($orderItemId) {
                 $sql .= " AND oi.id = ?";

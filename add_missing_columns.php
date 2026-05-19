@@ -43,6 +43,10 @@ try {
         $pdo->exec('ALTER TABLE product_variants ADD COLUMN static_content TEXT DEFAULT NULL');
         echo "✓ Added static_content to product_variants\n";
     }
+    if (!in_array('warranty_days', $columns)) {
+        $pdo->exec('ALTER TABLE product_variants ADD COLUMN warranty_days INT DEFAULT 0 AFTER stock_quantity');
+        echo "✓ Added warranty_days to product_variants\n";
+    }
 } catch (PDOException $e) {
     echo "⚠ Cannot check product_variants table: " . $e->getMessage() . "\n";
 }

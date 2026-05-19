@@ -255,6 +255,7 @@ class SellerController extends Controller {
                         'sale_price'     => !empty($variant['sale_price']) ? $variant['sale_price'] : null,
                         'require_note'   => isset($variant['require_note']) ? 1 : 0,
                         'static_content' => $variant['static_content'] ?? null,
+                        'warranty_days'  => max(0, (int)($variant['warranty_days'] ?? 0)),
                         'stock_quantity' => 0,
                         'status'         => 'active'
                     ]);
@@ -418,7 +419,8 @@ class SellerController extends Controller {
                     'price'        => $v['price'],
                     'sale_price'   => !empty($v['sale_price']) ? $v['sale_price'] : null,
                     'require_note' => isset($v['require_note']) ? 1 : 0,
-                    'static_content' => $v['static_content'] ?? null
+                    'static_content' => $v['static_content'] ?? null,
+                    'warranty_days'  => max(0, (int)($v['warranty_days'] ?? 0))
                 ];
                 
                 $vId = null;

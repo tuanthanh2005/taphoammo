@@ -188,6 +188,7 @@
                                             data-require-note="<?= $v['require_note'] ?>"
                                             data-name="<?= e($v['name']) ?>"
                                             data-stock="<?= $v['stock_quantity'] ?>"
+                                            data-warranty-days="<?= (int)($v['warranty_days'] ?? 0) ?>"
                                             <?= $isOutOfStock ? 'disabled' : '' ?>>
                                         <?= e($v['name']) ?>
                                         <?php if ($v['sale_price'] && !$isOutOfStock): ?>
@@ -209,11 +210,13 @@
                     <?php
                     $displayPrice = $product['price'];
                     $displaySalePrice = $product['sale_price'];
+                    $initialWarrantyDays = $product['warranty_days'] ?? 0;
                     
                     if (!empty($variants) && $firstAvailableIndex !== -1) {
                         $v = $variants[$firstAvailableIndex];
                         $displayPrice = $v['price'];
                         $displaySalePrice = $v['sale_price'];
+                        $initialWarrantyDays = $v['warranty_days'] ?? 0;
                     }
                     ?>
                     <div class="bg-light p-4 rounded-4 mb-4">
@@ -230,10 +233,13 @@
                         </div>
                     </div>
 
-                    <div class="alert alert-info py-2 small mb-4">
-                        <strong>Bảo hành:</strong> <?= e(Helper::formatWarranty($product['warranty_days'] ?? 0)) ?>
+                    <div class="alert alert-info py-2 small mb-4" id="warrantyInfoBox">
+                        <strong>Bảo hành:</strong>
+                        <span id="displayWarrantyText" class="<?= $initialWarrantyDays > 0 ? 'text-success fw-bold' : 'text-danger fw-bold' ?>">
+                            <?= e(Helper::formatWarranty($initialWarrantyDays)) ?>
+                        </span>
                         <?php if (!empty($product['warranty_note'])): ?>
-                            <div><?= nl2br(e($product['warranty_note'])) ?></div>
+                            <div class="mt-1 text-muted border-top pt-1"><?= nl2br(e($product['warranty_note'])) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -441,6 +447,19 @@
                     if (pageQty) {
                         pageQty.max = stock;
                         if (parseInt(pageQty.value) > stock) pageQty.value = stock > 0 ? 1 : 0;
+                    }
+
+                    // Cập nhật bảo hành
+                    const warrantyDays = parseInt(this.dataset.warrantyDays || 0);
+                    const displayWarrantyText = document.getElementById('displayWarrantyText');
+                    if (displayWarrantyText) {
+                        if (warrantyDays > 0) {
+                            displayWarrantyText.textContent = warrantyDays + ' ngày';
+                            displayWarrantyText.className = 'text-success fw-bold';
+                        } else {
+                            displayWarrantyText.textContent = 'Không bảo hành';
+                            displayWarrantyText.className = 'text-danger fw-bold';
+                        }
                     }
                 });
             });

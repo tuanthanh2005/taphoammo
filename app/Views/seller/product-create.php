@@ -134,15 +134,15 @@ foreach ($categories as $cat) {
                         </div>
                     </div>
 
-                    <div class="row g-3 mt-1">
+                    <div class="row g-3 mt-1" id="globalWarrantyContainer">
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Bảo hành (ngày) *</label>
-                            <input type="number" name="warranty_days" class="form-control" min="0" value="0" required>
+                            <input type="number" name="warranty_days" id="global_warranty_days" class="form-control" min="0" value="0" required>
                             <div class="form-text">Nhập 0 nếu sản phẩm không bảo hành.</div>
                         </div>
                         <div class="col-md-8">
                             <label class="form-label fw-semibold">Điều kiện bảo hành *</label>
-                            <textarea name="warranty_note" class="form-control" rows="2" required placeholder="VD: Bảo hành 30 ngày nếu account bị khóa. Nếu không bảo hành, ghi: Không bảo hành."></textarea>
+                            <textarea name="warranty_note" id="global_warranty_note" class="form-control" rows="2" required placeholder="VD: Bảo hành 30 ngày nếu account bị khóa. Nếu không bảo hành, ghi: Không bảo hành."></textarea>
                             <div class="form-text">Admin se doc noi dung nay truoc khi duyet san pham.</div>
                         </div>
                     </div>
@@ -173,11 +173,12 @@ foreach ($categories as $cat) {
                             <table class="table table-sm table-borderless align-middle" id="variantsTable" style="min-width: 900px;">
                                 <thead class="text-muted small text-uppercase">
                                     <tr>
-                                        <th style="width: 30%;">Tên gói</th>
-                                        <th style="width: 30%;">Giá / Sale</th>
-                                        <th style="width: 25%;">Số lượng</th>
-                                        <th style="width: 10%;" class="text-center">Ghi chú?</th>
-                                        <th style="width: 5%;"></th>
+                                        <th style="width: 25%;">Tên gói</th>
+                                        <th style="width: 25%;">Giá / Sale</th>
+                                        <th style="width: 20%;">Số lượng</th>
+                                        <th style="width: 20%;">Bảo hành (ngày)</th>
+                                        <th style="width: 8%;" class="text-center">Ghi chú?</th>
+                                        <th style="width: 2%;"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -674,6 +675,9 @@ foreach ($categories as $cat) {
     const mainSalePriceWrapper = document.getElementById('mainSalePriceContainer');
     const quickStockWrapper = document.getElementById('quickStockContainer');
     const displayPriceWrapper = document.getElementById('displayPriceContainer');
+    const globalWarrantyContainer = document.getElementById('globalWarrantyContainer');
+    const globalWarrantyDays = document.getElementById('global_warranty_days');
+    const globalWarrantyNote = document.getElementById('global_warranty_note');
 
     enableVariants.addEventListener('change', function() {
         if (this.checked) {
@@ -682,7 +686,10 @@ foreach ($categories as $cat) {
             mainSalePriceWrapper.style.display = 'none';
             displayPriceWrapper.style.display = 'block';
             quickStockWrapper.style.display = 'none';
+            if (globalWarrantyContainer) globalWarrantyContainer.style.display = 'none';
             inputPrice.required = false;
+            if (globalWarrantyDays) globalWarrantyDays.required = false;
+            if (globalWarrantyNote) globalWarrantyNote.required = false;
             if (variantsTableBody.children.length === 0) addVariantRow();
         } else {
             variantsContainer.style.display = 'none';
@@ -690,7 +697,10 @@ foreach ($categories as $cat) {
             mainSalePriceWrapper.style.display = 'block';
             displayPriceWrapper.style.display = 'none';
             quickStockWrapper.style.display = 'block';
+            if (globalWarrantyContainer) globalWarrantyContainer.style.display = '';
             inputPrice.required = true;
+            if (globalWarrantyDays) globalWarrantyDays.required = true;
+            if (globalWarrantyNote) globalWarrantyNote.required = true;
         }
     });
 
@@ -714,6 +724,9 @@ foreach ($categories as $cat) {
             <td>
                 <input type="number" name="variants[${index}][stock_add]" class="form-control form-control-sm" placeholder="Số lượng nạp..." min="0">
             </td>
+            <td>
+                <input type="number" name="variants[${index}][warranty_days]" class="form-control form-control-sm" placeholder="Không bảo hành" min="0" value="0">
+            </td>
             <td class="text-center">
                 <div class="form-check form-check-inline m-0">
                     <input class="form-check-input" type="checkbox" name="variants[${index}][require_note]" value="1">
@@ -727,7 +740,10 @@ foreach ($categories as $cat) {
 
         tr.querySelector('.btn-remove-variant').addEventListener('click', () => {
             tr.remove();
-            if (variantsTableBody.children.length === 0) enableVariants.checked = false;
+            if (variantsTableBody.children.length === 0) {
+                enableVariants.checked = false;
+                enableVariants.dispatchEvent(new Event('change'));
+            }
         });
     }
 

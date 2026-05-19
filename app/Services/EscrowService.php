@@ -84,7 +84,14 @@ class EscrowService {
     }
 
     public function holdFundsFromOrder($orderId, $orderItemId, $sellerId, $amount, $productId = null, $quantity = 1) {
-        $holdDays = $this->getHoldDays($productId);
+        $variantId = null;
+        if ($orderItemId) {
+            $item = $this->db->fetchOne("SELECT variant_id FROM order_items WHERE id = ?", [$orderItemId]);
+            if ($item) {
+                $variantId = $item['variant_id'];
+            }
+        }
+        $holdDays = $this->getHoldDays($productId, $variantId);
 
         $startedTransaction = false;
         try {
@@ -214,7 +221,15 @@ class EscrowService {
         return max(0, min(100, $percent));
     }
 
-    private function getHoldDays($productId = null) {
+    private function getHoldDays($productId = null, $variantId = null) {
+        if ($variantId) {
+            $variant = $this->db->fetchOne("SELECT warranty_days FROM product_variants WHERE id = ?", [$variantId]);
+            if ($variant && array_key_exists('warranty_days', $variant)) {
+                $warrantyDays = max(0, (int)$variant['warranty_days']);
+                $minimumHoldDays = (int)ceil(Helper::getMinimumDisputeHours() / 24);
+                return max($minimumHoldDays, $warrantyDays);
+            }
+        }
         if ($productId) {
             $product = $this->db->fetchOne("SELECT warranty_days FROM products WHERE id = ?", [$productId]);
             if ($product && array_key_exists('warranty_days', $product)) {

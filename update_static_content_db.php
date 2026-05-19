@@ -52,6 +52,12 @@ try {
         } else {
             echo "<p style='color: blue;'>- Bảng <b>product_variants</b> đã có sẵn cột <b>static_content</b>.</p>";
         }
+        if (!in_array('warranty_days', $columns)) {
+            $pdo->exec('ALTER TABLE product_variants ADD COLUMN warranty_days INT DEFAULT 0 AFTER stock_quantity');
+            echo "<p style='color: green;'>✓ Đã thêm cột <b>warranty_days</b> vào bảng <b>product_variants</b> thành công!</p>";
+        } else {
+            echo "<p style='color: blue;'>- Bảng <b>product_variants</b> đã có sẵn cột <b>warranty_days</b>.</p>";
+        }
     } catch (PDOException $e) {
         echo "<p style='color: orange;'>⚠ Không thể kiểm tra bảng product_variants (có thể bảng này không tồn tại): " . $e->getMessage() . "</p>";
     }

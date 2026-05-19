@@ -280,11 +280,12 @@ class OrderService {
 
         $items = $this->db->fetchAll(
             "SELECT oi.*, p.name as product_name, p.thumbnail, p.product_type,
-                    COALESCE(p.warranty_days, 0) as warranty_days, p.warranty_note,
+                    COALESCE(pv.warranty_days, p.warranty_days, 0) as warranty_days, p.warranty_note,
                     u.name as seller_name, u.username as seller_username,
                     oi.item_status, oi.seller_note, oi.status_updated_at
              FROM order_items oi
              LEFT JOIN products p ON oi.product_id = p.id
+             LEFT JOIN product_variants pv ON pv.id = oi.variant_id
              LEFT JOIN users u ON oi.seller_id = u.id
              WHERE oi.order_id = ?",
             [$orderId]
