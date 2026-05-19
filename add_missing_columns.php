@@ -31,6 +31,21 @@ if (!in_array('deposit_status', $columns)) {
     $pdo->exec("ALTER TABLE products ADD COLUMN deposit_status ENUM('pending', 'paid', 'released') DEFAULT 'pending'");
     echo "✓ Added deposit_status to products\n";
 }
+if (!in_array('static_content', $columns)) {
+    $pdo->exec("ALTER TABLE products ADD COLUMN static_content TEXT DEFAULT NULL");
+    echo "✓ Added static_content to products\n";
+}
+
+// Check product_variants table
+try {
+    $columns = $pdo->query('SHOW COLUMNS FROM product_variants')->fetchAll(PDO::FETCH_COLUMN);
+    if (!in_array('static_content', $columns)) {
+        $pdo->exec('ALTER TABLE product_variants ADD COLUMN static_content TEXT DEFAULT NULL');
+        echo "✓ Added static_content to product_variants\n";
+    }
+} catch (PDOException $e) {
+    echo "⚠ Cannot check product_variants table: " . $e->getMessage() . "\n";
+}
 
 // Check wallets table
 $columns = $pdo->query('SHOW COLUMNS FROM wallets')->fetchAll(PDO::FETCH_COLUMN);

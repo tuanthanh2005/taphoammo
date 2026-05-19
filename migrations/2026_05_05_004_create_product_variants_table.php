@@ -21,6 +21,7 @@ try {
         `stock_quantity` INT DEFAULT 0,
         `warranty_days` INT DEFAULT 0,
         `require_note` TINYINT(1) DEFAULT 0,
+        `static_content` TEXT DEFAULT NULL,
         `status` ENUM('active', 'hidden') DEFAULT 'active',
         `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

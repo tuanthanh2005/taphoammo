@@ -75,6 +75,7 @@ CREATE TABLE `products` (
   `total_sold` int(11) NOT NULL DEFAULT 0,
   `rating_avg` decimal(3,2) DEFAULT 0.00,
   `rating_count` int(11) DEFAULT 0,
+  `static_content` text DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
