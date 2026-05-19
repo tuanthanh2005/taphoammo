@@ -146,7 +146,7 @@
                                                         <input type="radio" name="rating" value="<?= $i ?>"
                                                             id="star_<?= $item['id'] ?>_<?= $i ?>" class="btn-check" <?= $i === 5 ? 'checked' : '' ?>>
                                                         <label for="star_<?= $item['id'] ?>_<?= $i ?>"
-                                                            class="btn btn-sm btn-outline-warning border-0 p-0 fs-5">
+                                                            class="rating-star-label text-muted fs-4">
                                                             <i class="far fa-star"></i>
                                                         </label>
                                                     <?php endfor; ?>
@@ -350,6 +350,18 @@
 </div>
 
 <style>
+    .rating-stars {
+        display: inline-flex;
+    }
+    .rating-star-label {
+        cursor: pointer;
+        padding: 2px 6px;
+        transition: transform 0.15s ease, color 0.15s ease;
+        color: #ccc;
+    }
+    .rating-star-label:hover {
+        transform: scale(1.2);
+    }
     .rating-stars input:checked~label i,
     .rating-stars label:hover~label i,
     .rating-stars label:hover i {
