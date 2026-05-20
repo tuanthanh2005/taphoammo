@@ -73,10 +73,6 @@
                         Sàn giao dịch sản phẩm số hàng đầu dành cho dân công nghệ. Cung cấp tài khoản Premium, phần mềm bản quyền, công cụ AI và khóa học chuyên sâu với mức giá ưu đãi nhất.
                     </p>
                     <div class="d-flex gap-3">
-                        <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-telegram-plane"></i></a>
-                        <a href="#" class="social-icon"><i class="fab fa-youtube"></i></a>
                     </div>
                 </div>
                 

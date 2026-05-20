@@ -152,16 +152,15 @@ foreach ($categories as $cat) {
                         </div>
                         
                         <div class="table-responsive">
-                            <table class="table table-sm table-borderless align-middle" id="variantsTable" style="min-width: 900px;">
+                            <table class="table table-sm table-borderless align-middle" id="variantsTable" style="min-width: 700px;">
                                 <thead class="text-muted small text-uppercase">
                                     <tr>
-                                        <th style="width: 20%;">Tên gói</th>
-                                        <th style="width: 20%;">Giá / Sale</th>
-                                        <th style="width: 12%;">Tồn / Nạp</th>
-                                        <th style="width: 15%;">Bảo hành (ngày)</th>
-                                        <th style="width: 25%;">Nội dung bàn giao</th>
-                                        <th style="width: 5%;" class="text-center">Ghi chú?</th>
-                                        <th style="width: 3%;"></th>
+                                        <th style="width: 28%;">Tên gói</th>
+                                        <th style="width: 25%;">Giá / Sale</th>
+                                        <th style="width: 17%;">Tồn / Nạp</th>
+                                        <th style="width: 17%;">Bảo hành (ngày)</th>
+                                        <th style="width: 8%;" class="text-center">Ghi chú?</th>
+                                        <th style="width: 5%;"></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -277,6 +276,10 @@ foreach ($categories as $cat) {
     </form>
 </div>
 
+<script>
+    // Existing variants data from PHP
+    const existingVariants = <?= json_encode($variants ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+</script>
 <script>
     (function() {
         const profiles = <?= json_encode($categoryProfiles, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
@@ -429,10 +432,6 @@ foreach ($categories as $cat) {
                 </td>
                 <td>
                     <input type="number" name="variants[${index}][warranty_days]" class="form-control form-control-sm" placeholder="Không bảo hành" min="0" value="${data ? (data.warranty_days || 0) : 0}">
-                </td>
-                <td>
-                    <textarea name="variants[${index}][static_content]" class="form-control form-control-sm" rows="2" placeholder="Nội dung bàn giao cố định (Link, File, hoặc thông tin gói)">${data ? (data.static_content || '') : ''}</textarea>
-                    <div class="form-text mt-1" style="font-size: 0.65rem;">Gửi cho khách mỗi khi mua gói này.</div>
                 </td>
                 <td class="text-center">
                     <div class="form-check form-check-inline m-0">
