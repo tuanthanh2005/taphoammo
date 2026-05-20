@@ -303,4 +303,16 @@ class ChatController extends Controller {
             'last_npc_message_id' => $npcMessage['id'] ?? null
         ]);
     }
+
+    public function getNegotiationRooms() {
+        if (!Auth::check()) return $this->json(['success' => false]);
+        $userId = Auth::id();
+        $roomModel = new NegotiationRoom();
+        $rooms = $roomModel->getRoomsForUser($userId);
+        // Compute unread for current user
+        foreach ($rooms as &$r) {
+            $r['unread_count'] = (int)$r['buyer_id'] === (int)$userId ? (int)$r['unread_buyer'] : (int)$r['unread_seller'];
+        }
+        return $this->json(['success' => true, 'rooms' => $rooms]);
+    }
 }

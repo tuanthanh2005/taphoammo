@@ -78,6 +78,7 @@ $router->get('/api/chat/conversation', [ChatController::class, 'getConversationM
 $router->get('/api/chat/list', [ChatController::class, 'getChatList'], [AuthMiddleware::class]);
 $router->post('/api/chat/send', [ChatController::class, 'sendMessage'], [AuthMiddleware::class]);
 $router->get('/api/notifications/check', [ChatController::class, 'checkNotifications'], [AuthMiddleware::class]);
+$router->get('/api/chat/negotiation-rooms', [ChatController::class, 'getNegotiationRooms'], [AuthMiddleware::class]);
 
 // Affiliate routes
 $router->get('/affiliate/dashboard', [AffiliateController::class, 'dashboard'], [AffiliateMiddleware::class]);
@@ -140,6 +141,16 @@ $router->post('/admin/bai-viet/delete/{id}', [ArticleController::class, 'delete'
 
 // SePay Webhook
 $router->post('/webhook/sepay', [SePayController::class, 'handleWebhook']);
+
+// Negotiation Rooms
+$router->get('/admin/negotiations', [NegotiationController::class, 'adminIndex'], [AdminMiddleware::class]);
+$router->post('/admin/negotiations/create', [NegotiationController::class, 'adminCreate'], [AdminMiddleware::class]);
+$router->get('/admin/negotiations/{id}', [NegotiationController::class, 'adminDetail'], [AdminMiddleware::class]);
+$router->post('/admin/negotiations/{id}/status', [NegotiationController::class, 'adminClose'], [AdminMiddleware::class]);
+$router->get('/api/admin/users/search', [NegotiationController::class, 'searchUsers'], [AdminMiddleware::class]);
+$router->get('/negotiation/{id}', [NegotiationController::class, 'show'], [AuthMiddleware::class]);
+$router->get('/api/negotiation/{id}/messages', [NegotiationController::class, 'getMessagesApi'], [AuthMiddleware::class]);
+$router->post('/api/negotiation/{id}/send', [NegotiationController::class, 'sendMessage'], [AuthMiddleware::class]);
 
 // Public seller shop route
 $router->get('/seller/{username}', [ProductController::class, 'sellerShop']);

@@ -79,6 +79,16 @@
 .article-media-frame { border-radius: 12px; overflow: hidden; border: 1px solid #eee; }
 .article-media-frame img { width: 100%; height: auto; display: block; }
 
+/* Negotiation room section */
+.neg-room-section { padding: 10px 12px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-bottom: 1px solid #fbbf24; }
+.neg-room-section-title { font-size: 0.7rem; font-weight: 700; color: #92400e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
+.neg-room-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #fff; border-radius: 10px; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; border: 1px solid #fcd34d; text-decoration: none; color: inherit; }
+.neg-room-item:hover { transform: translateX(2px); box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2); }
+.neg-room-icon { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #dc2626); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.9rem; }
+.neg-room-name { font-size: 0.82rem; font-weight: 700; color: #1e293b; line-height: 1.2; }
+.neg-room-preview { font-size: 0.7rem; color: #64748b; }
+.neg-room-badge { background: #dc2626; color: #fff; font-size: 0.6rem; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+
 @media (max-width: 768px) {
     .floating-chat-bubble { bottom: 85px; right: 20px; width: 50px; height: 50px; font-size: 1.2rem; }
     #inboxWidget { 
@@ -106,6 +116,7 @@
                 <i class="fas fa-robot me-2"></i> Chat với <?= e(Helper::getSystemDisplayName()) ?>
             </button>
         </div>
+        <div id="inboxNegotiationSection"></div>
         <div id="inboxConvListBody">
             <div class="text-center text-muted py-5" style="font-size:0.9rem;">
                 <div class="spinner-border spinner-border-sm mb-2" role="status"></div><br>Đang tải...
@@ -267,8 +278,45 @@
         return html.replace(/<[^>]*>?/gm, '');
     }
 
+    async function _iwLoadNegotiationRooms() {
+        const wrap = document.getElementById('inboxNegotiationSection');
+        if (!wrap) return;
+        try {
+            const r = await fetch('<?= url('/api/chat/negotiation-rooms') ?>');
+            const d = await r.json();
+            if (!d.success || !d.rooms || !d.rooms.length) {
+                wrap.innerHTML = '';
+                return;
+            }
+            const openRooms = d.rooms.filter(r => r.status === 'open');
+            if (!openRooms.length) { wrap.innerHTML = ''; return; }
+            wrap.innerHTML = `
+                <div class="neg-room-section">
+                    <div class="neg-room-section-title">
+                        <i class="fas fa-handshake"></i> Phòng đàm phán (${openRooms.length})
+                    </div>
+                    ${openRooms.map(r => {
+                        const preview = (r.last_message || 'Chưa có tin').substring(0, 35);
+                        return `<a href="<?= url('/negotiation') ?>/${r.id}" class="neg-room-item">
+                            <div class="neg-room-icon">🏛️</div>
+                            <div style="flex:1;min-width:0;">
+                                <div class="neg-room-name">${(r.title || '').substring(0, 28)}</div>
+                                <div class="neg-room-preview">${preview}</div>
+                            </div>
+                            ${r.unread_count > 0 ? `<span class="neg-room-badge">${r.unread_count}</span>` : ''}
+                        </a>`;
+                    }).join('')}
+                </div>
+            `;
+        } catch (e) {
+            wrap.innerHTML = '';
+        }
+    }
+
     async function _iwLoadConvList() {
         const body = document.getElementById('inboxConvListBody');
+        // Load negotiation rooms first (separate section)
+        _iwLoadNegotiationRooms();
         try {
             const r = await fetch('<?= url('/api/chat/list') ?>');
             const d = await r.json();

@@ -247,6 +247,7 @@ $sellerId = Auth::id();
 $pendingOrders = $db->fetchOne("SELECT COUNT(*) as count FROM order_items WHERE seller_id = ? AND is_read = 0", [$sellerId])['count'] ?? 0;
 $openDisputes = $db->fetchOne("SELECT COUNT(*) as count FROM disputes WHERE seller_id = ? AND status IN ('open', 'under_review')", [$sellerId])['count'] ?? 0;
 $totalProducts = $db->fetchOne("SELECT COUNT(*) as count FROM products WHERE seller_id = ?", [$sellerId])['count'] ?? 0;
+$openNegotiations = $db->fetchOne("SELECT COUNT(*) as count FROM negotiation_rooms WHERE seller_id = ? AND status = 'open'", [$sellerId])['count'] ?? 0;
 $conversationModel = new Conversation();
 $unreadMessages = $conversationModel->getTotalUnread($sellerId);
 $sellerCurrentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
@@ -299,6 +300,15 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
                                 <?php endif; ?>
                             </a>
                         </li>
+
+                        <?php if ($openNegotiations > 0): ?>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex justify-content-between" href="#" onclick="_negShowRoomList(event)">
+                                <span><i class="fas fa-handshake text-warning"></i> Phòng đàm phán</span>
+                                <span class="badge" style="background:#f59e0b;color:#fff;"><?= $openNegotiations ?></span>
+                            </a>
+                        </li>
+                        <?php endif; ?>
 
                         <li class="nav-item">
                             <a class="nav-link d-flex justify-content-between <?= $sellerIsActive('/seller/chat') ? 'active' : '' ?>" href="<?= url('/seller/chat') ?>">
@@ -433,6 +443,29 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
                 hideLoader();
             }
         });
+
+        // Negotiation room list popup
+        window._negShowRoomList = async function(e) {
+            e.preventDefault();
+            try {
+                const r = await fetch('<?= url('/api/chat/negotiation-rooms') ?>');
+                const d = await r.json();
+                if (!d.success || !d.rooms.length) {
+                    alert('Bạn chưa có phòng đàm phán nào.');
+                    return;
+                }
+                const open = d.rooms.filter(x => x.status === 'open');
+                if (!open.length) { alert('Không có phòng đàm phán đang mở.'); return; }
+                if (open.length === 1) {
+                    window.location.href = '<?= url('/negotiation') ?>/' + open[0].id;
+                    return;
+                }
+                // multiple → simple chooser
+                const list = open.map(r => `${r.id} - ${r.title}`).join('\n');
+                const id = prompt('Chọn ID phòng để mở:\n\n' + list);
+                if (id) window.location.href = '<?= url('/negotiation') ?>/' + parseInt(id, 10);
+            } catch (err) { alert('Lỗi tải danh sách phòng'); }
+        };
     </script>
     <?php require_once __DIR__ . '/chat_widget.php'; ?>
 </body>

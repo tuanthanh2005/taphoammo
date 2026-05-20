@@ -212,6 +212,18 @@
                         </li>
                         <li class="nav-item">
                             <a class="nav-link rounded-pill d-flex justify-content-between align-items-center"
+                                href="<?= url('/admin/negotiations') ?>">
+                                <span><i class="fas fa-handshake me-2 text-purple" style="color:#8b5cf6;"></i> Phòng đàm phán</span>
+                                <?php
+                                $adminOpenNegotiations = $db->fetchOne("SELECT COUNT(*) as count FROM negotiation_rooms WHERE status = 'open'")['count'] ?? 0;
+                                if ($adminOpenNegotiations > 0):
+                                    ?>
+                                    <span class="badge rounded-pill" style="background:#8b5cf6;color:#fff;"><?= $adminOpenNegotiations ?></span>
+                                <?php endif; ?>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link rounded-pill d-flex justify-content-between align-items-center"
                                 href="<?= url('/admin/withdrawals') ?>">
                                 <span><i class="fas fa-money-bill-wave me-2 text-success"></i> Rút tiền</span>
                                 <?php if ($adminPendingWithdrawals > 0): ?>
