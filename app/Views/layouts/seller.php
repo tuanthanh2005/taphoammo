@@ -246,6 +246,7 @@ $db = Database::getInstance();
 $sellerId = Auth::id();
 $pendingOrders = $db->fetchOne("SELECT COUNT(*) as count FROM order_items WHERE seller_id = ? AND is_read = 0", [$sellerId])['count'] ?? 0;
 $openDisputes = $db->fetchOne("SELECT COUNT(*) as count FROM disputes WHERE seller_id = ? AND status IN ('open', 'under_review')", [$sellerId])['count'] ?? 0;
+$totalProducts = $db->fetchOne("SELECT COUNT(*) as count FROM products WHERE seller_id = ?", [$sellerId])['count'] ?? 0;
 $conversationModel = new Conversation();
 $unreadMessages = $conversationModel->getTotalUnread($sellerId);
 $sellerCurrentPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
@@ -266,7 +267,7 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
                             <a class="nav-link <?= $sellerIsActive('/seller/products') ? 'active' : '' ?>" href="<?= url('/seller/products') ?>">
                                 <i class="fas fa-boxes-stacked"></i>
                                 <span>Sản phẩm</span>
-                                <span class="badge bg-light text-dark ms-auto small rounded-pill" id="product-count">0</span>
+                                <span class="badge bg-light text-dark ms-auto small rounded-pill" id="product-count"><?= (int)$totalProducts ?></span>
                             </a>
                         </li>
 
