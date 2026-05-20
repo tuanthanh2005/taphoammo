@@ -23,15 +23,21 @@ if (Auth::check()) {
     <?php endif; ?>
 
     <div class="container position-relative z-3">
-        <div class="row align-items-center justify-content-center min-vh-90">
-            <div class="col-xl-8 col-lg-9 col-md-11 text-center">
-                <h1 class="hero-title display-2 fw-bold mb-2" data-aos="fade-up" data-aos-delay="100">
-                    🛒 aicuatoi.com
+        <div class="row align-items-center justify-content-center">
+            <div class="col-xl-7 col-lg-8 col-md-10 text-center">
+                <h1 class="hero-title fw-bold mb-2" data-aos="fade-up" data-aos-delay="100">
+                    <a href="<?= url('/') ?>" class="brand-logo">
+                        <span class="brand-icon">
+                            <i class="fas fa-bolt"></i>
+                        </span>
+                        <span class="brand-text">
+                            <span class="brand-name">aicuatoi</span><span class="brand-tld">.com</span>
+                        </span>
+                    </a>
                 </h1>
 
-
                 <!-- 🔥 SEARCH BAR SIÊU XỊN 🔥 -->
-                <div class="search-container position-relative" data-aos="fade-up" data-aos-delay="300">
+                <div class="search-container position-relative" data-aos="fade-up" data-aos-delay="200">
                     <form action="<?= url('/search') ?>" method="GET" class="search-form-ultra">
                         <div class="search-input-wrapper">
                             <div class="search-icon-left">
@@ -408,7 +414,7 @@ if (Auth::check()) {
         align-items: center;
         position: relative;
         overflow: hidden;
-        padding: 16px 0 14px;
+        padding: 10px 0 10px;
     }
 
     .min-vh-90 {
@@ -466,14 +472,65 @@ if (Auth::check()) {
     }
 
     .hero-title {
-        background: linear-gradient(135deg, #fff 0%, #f0f9ff 100%);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        letter-spacing: -0.01em;
+        font-size: clamp(0.95rem, 2vw, 1.15rem);
+        line-height: 1.2;
+        margin-bottom: 8px !important;
+    }
+
+    .brand-logo {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        padding: 4px 14px 4px 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        transition: all 0.25s ease;
+    }
+
+    .brand-logo:hover {
+        background: rgba(255, 255, 255, 0.18);
+        transform: translateY(-1px);
+    }
+
+    .brand-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+        border-radius: 50%;
+        color: #5b21b6;
+        font-size: 0.78rem;
+        box-shadow: 0 4px 12px rgba(255, 165, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+        flex-shrink: 0;
+    }
+
+    .brand-text {
+        display: inline-flex;
+        align-items: baseline;
+        font-family: 'Poppins', system-ui, -apple-system, sans-serif;
+        line-height: 1;
+    }
+
+    .brand-name {
+        font-weight: 800;
+        font-size: 1.15rem;
+        color: #fff;
+        letter-spacing: -0.02em;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .brand-tld {
+        font-weight: 600;
+        font-size: 0.78rem;
+        color: #FFD700;
+        margin-left: 1px;
         letter-spacing: 0;
-        font-size: clamp(1.1rem, 3vw, 1.6rem);
-        margin-bottom: 4px !important;
     }
 
     .hero-subtitle {
@@ -494,30 +551,30 @@ if (Auth::check()) {
     }
 
     .search-container {
-        max-width: 820px;
+        max-width: 680px;
         margin: 0 auto;
         width: 100%;
     }
 
     .search-form-ultra {
-        background: rgba(255, 255, 255, 0.14);
+        background: rgba(255, 255, 255, 0.12);
         backdrop-filter: blur(20px);
-        border-radius: 22px;
+        border-radius: 16px;
         border: 1px solid var(--glass-border);
-        padding: 10px;
-        box-shadow: 0 18px 48px rgba(31, 41, 55, 0.2);
+        padding: 6px;
+        box-shadow: 0 10px 30px rgba(31, 41, 55, 0.18);
     }
 
     .search-input-wrapper {
         position: relative;
         display: flex;
         align-items: center;
-        min-height: 64px;
+        min-height: 48px;
         margin-bottom: 0;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.96);
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.97);
         border: 1px solid rgba(255, 255, 255, 0.42);
-        box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.08);
+        box-shadow: inset 0 0 0 1px rgba(139, 92, 246, 0.06);
     }
 
     .search-icon-left,
@@ -530,18 +587,22 @@ if (Auth::check()) {
     }
 
     .search-icon-left {
-        left: 18px;
+        left: 14px;
+    }
+
+    .search-icon-left i {
+        font-size: 0.9rem;
     }
 
     .search-filters-toggle {
-        right: 124px;
-        width: 42px;
-        height: 42px;
+        right: 92px;
+        width: 34px;
+        height: 34px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         border: 0;
-        border-radius: 12px;
+        border-radius: 9px;
         background: #f3f0ff;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -558,7 +619,7 @@ if (Auth::check()) {
     }
 
     .search-filters-toggle i {
-        font-size: 1rem;
+        font-size: 0.85rem;
     }
 
     .search-input-main {
@@ -566,8 +627,8 @@ if (Auth::check()) {
         border: none;
         background: transparent;
         width: 100%;
-        padding: 16px 178px 16px 56px;
-        font-size: 1.02rem;
+        padding: 12px 138px 12px 42px;
+        font-size: 0.92rem;
         color: #1f2937;
         outline: none;
     }
@@ -579,9 +640,9 @@ if (Auth::check()) {
     .search-filters-panel {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
+        gap: 8px;
         padding: 0;
-        margin-top: 10px;
+        margin-top: 8px;
         margin-bottom: 0;
         scrollbar-width: none;
     }
@@ -595,8 +656,9 @@ if (Auth::check()) {
         background: rgba(255, 255, 255, 0.94);
         border: 1px solid rgba(139, 92, 246, 0.14);
         color: #374151;
-        border-radius: 12px;
-        padding: 12px 16px;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
     }
 
     .filter-select option {
@@ -607,29 +669,33 @@ if (Auth::check()) {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 8px;
+        gap: 6px;
         position: absolute;
         top: 50%;
-        right: 8px;
+        right: 6px;
         transform: translateY(-50%);
-        min-width: 104px;
-        min-height: 48px;
+        min-width: 80px;
+        min-height: 36px;
         background: linear-gradient(135deg, var(--vip-purple), #a855f7);
         border: none;
-        padding: 12px 18px;
+        padding: 8px 14px;
         color: #fff;
-        font-weight: 700;
-        font-size: 0.95rem;
-        border-radius: 13px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        border-radius: 9px;
         overflow: hidden;
         cursor: pointer;
-        box-shadow: 0 10px 24px rgba(139, 92, 246, 0.32);
+        box-shadow: 0 6px 16px rgba(139, 92, 246, 0.3);
         transition: all 0.2s ease;
     }
 
     .search-btn-ultra:hover {
         transform: translateY(-50%) translateY(-1px);
-        box-shadow: 0 14px 28px rgba(139, 92, 246, 0.38);
+        box-shadow: 0 10px 22px rgba(139, 92, 246, 0.38);
+    }
+
+    .search-btn-ultra i {
+        font-size: 0.8rem;
     }
 
     @keyframes gradient-shift {
@@ -1390,15 +1456,29 @@ if (Auth::check()) {
     /* 🔥 RESPONSIVE 🔥 */
     @media (max-width: 991.98px) {
         .hero-ultra {
-            padding: 14px 0 12px;
+            padding: 10px 0 8px;
         }
 
         .hero-title {
-            font-size: 1.4rem !important;
+            font-size: 1.05rem !important;
+        }
+
+        .brand-name {
+            font-size: 1.05rem;
+        }
+
+        .brand-tld {
+            font-size: 0.72rem;
+        }
+
+        .brand-icon {
+            width: 26px;
+            height: 26px;
+            font-size: 0.72rem;
         }
 
         .hero-subtitle {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
         }
 
         .search-container {
@@ -1425,60 +1505,81 @@ if (Auth::check()) {
 
     @media (max-width: 768px) {
         .hero-ultra {
-            padding: 12px 0 10px;
+            padding: 8px 0 8px;
         }
 
         .hero-title {
-            font-size: 1.2rem !important;
+            font-size: 0.98rem !important;
+            margin-bottom: 6px !important;
+        }
+
+        .brand-logo {
+            padding: 3px 12px 3px 3px;
+            gap: 6px;
+        }
+
+        .brand-icon {
+            width: 24px;
+            height: 24px;
+            font-size: 0.68rem;
+        }
+
+        .brand-name {
+            font-size: 0.98rem;
+        }
+
+        .brand-tld {
+            font-size: 0.68rem;
         }
 
         .hero-subtitle {
-            font-size: 0.78rem;
+            font-size: 0.74rem;
         }
 
         .search-form-ultra {
-            padding: 10px;
-            border-radius: 14px;
+            padding: 5px;
+            border-radius: 12px;
             display: block;
         }
 
         .search-input-wrapper {
-            min-height: 54px;
+            min-height: 42px;
             margin-bottom: 0;
-            border-radius: 12px;
+            border-radius: 10px;
         }
 
         .search-input-main {
-            font-size: 0.9rem;
-            padding: 12px 112px 12px 42px;
+            font-size: 0.85rem;
+            padding: 8px 92px 8px 36px;
         }
 
         .search-icon-left {
-            left: 14px;
+            left: 12px;
         }
 
         .search-icon-left i {
-            font-size: 0.9rem;
+            font-size: 0.82rem;
         }
 
         .search-filters-toggle {
-            right: 62px;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
+            right: 50px;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
         }
 
         .search-filters-toggle i {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
 
         .search-btn-ultra {
-            width: 46px;
+            width: 38px;
             min-width: unset;
-            min-height: 38px;
+            min-height: 30px;
             padding: 0;
-            font-size: 0.95rem;
-            border-radius: 10px;
+            font-size: 0.82rem;
+            border-radius: 8px;
+            right: 5px;
         }
 
         .search-btn-ultra span {
@@ -1487,7 +1588,7 @@ if (Auth::check()) {
 
         .search-filters-panel {
             grid-template-columns: 1fr;
-            margin-top: 10px;
+            margin-top: 8px;
             margin-bottom: 0;
         }
 
@@ -1572,11 +1673,11 @@ if (Auth::check()) {
 
     @media (max-width: 576px) {
         .hero-ultra {
-            padding: 10px 0 8px;
+            padding: 6px 0 6px;
         }
 
         .hero-title {
-            font-size: 1.1rem !important;
+            font-size: 0.92rem !important;
         }
 
         .hero-subtitle {
@@ -1584,25 +1685,25 @@ if (Auth::check()) {
         }
 
         .search-input-main {
-            padding: 10px 100px 10px 38px;
-            font-size: 0.9rem;
+            padding: 8px 86px 8px 34px;
+            font-size: 0.82rem;
         }
 
         .search-btn-ultra {
-            width: 42px;
+            width: 36px;
             min-width: unset;
-            min-height: 38px;
+            min-height: 30px;
             padding: 0;
-            right: 8px;
-            font-size: 0.9rem;
-            border-radius: 10px;
+            right: 5px;
+            font-size: 0.8rem;
+            border-radius: 8px;
         }
 
         .search-filters-toggle {
-            right: 56px;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
+            right: 47px;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
         }
 
         .products-grid-ultra {
