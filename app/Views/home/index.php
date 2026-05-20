@@ -340,7 +340,7 @@ if (Auth::check()) {
                                         <div class="vip-card-body">
                                             <p class="vip-card-name fw-bold">VIP SLOT</p>
                                             <span class="vip-card-shop">Liên hệ admin ghim top</span>
-                                            <div class="vip-contact-sm">Telegram: @vip_support</div>
+                                            <div class="vip-contact-sm">Telegram: @specademy</div>
                                         </div>
                                     </div>
                                 <?php endif; ?>

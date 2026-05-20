@@ -328,6 +328,13 @@ $sellerIsActive = function ($path) use ($sellerCurrentPath) {
                         <!-- Account -->
                         <li class="sidebar-divider mt-auto"></li>
                         <li class="nav-item">
+                            <a class="nav-link" href="<?= url('/') ?>" target="_blank">
+                                <i class="fas fa-eye text-info"></i>
+                                <span>Xem giao diện</span>
+                                <i class="fas fa-up-right-from-square ms-auto small opacity-50"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="<?= url('/seller/profile') ?>">
                                 <i class="fas fa-user-cog"></i>
                                 <span>Hồ sơ</span>
