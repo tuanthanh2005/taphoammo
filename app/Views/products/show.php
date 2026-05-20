@@ -152,9 +152,9 @@
                     </div>
 
                     <!-- 🔥 CẤU HÌNH GÓI SẢN PHẨM 🔥 -->
+                    <?php $firstAvailableIndex = -1; ?>
                     <?php if (!empty($variants)): ?>
                         <?php 
-                        $firstAvailableIndex = -1;
                         foreach ($variants as $idx => $v) {
                             if ($v['stock_quantity'] > 0) {
                                 $firstAvailableIndex = $idx;
@@ -295,7 +295,7 @@
                                         <button class="btn btn-outline-secondary border-start-0 px-3" type="button"
                                             onclick="this.previousElementSibling.stepUp()"><i class="fas fa-plus"></i></button>
                                     </div>
-                                    <div class="ms-3 text-muted small">Có sẵn: <span id="displayStock"><?= $firstAvailableIndex !== -1 ? $variants[$firstAvailableIndex]['stock_quantity'] : $product['stock_quantity'] ?></span></div>
+                                    <div class="ms-3 text-muted small">Có sẵn: <span id="displayStock"><?= ($firstAvailableIndex !== -1 && !empty($variants)) ? $variants[$firstAvailableIndex]['stock_quantity'] : $product['stock_quantity'] ?></span></div>
                                 </div>
 
                                 <div class="row g-2">
